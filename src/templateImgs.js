@@ -1,6 +1,5 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
-  "faith-hoodie-athens": B + "templates/faith-hoodie-athens.jpg",
   "bakery-counter-box": B + "templates/bakery-counter-box.jpg",
   "necklace-collarbone": B + "templates/necklace-collarbone.jpg",
   "latte-art-pour": B + "templates/latte-art-pour.jpg",
@@ -255,7 +254,6 @@ const TEMPLATE_IMGS = {
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
-  "faith-hoodie-athens": B + "templates/faith-hoodie-athens.mp4",
   "bakery-counter-box": B + "templates/bakery-counter-box.mp4",
   "necklace-collarbone": B + "templates/necklace-collarbone.mp4",
   "latte-art-pour": B + "templates/latte-art-pour.mp4",
@@ -281,7 +279,6 @@ const TEMPLATE_VIDS = {
 /* Reference frames for a video template, in playing order. */
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
-  "faith-hoodie-athens": refs("faith-hoodie-athens"),
   "bakery-counter-box": refs("bakery-counter-box"),
   "necklace-collarbone": refs("necklace-collarbone"),
   "latte-art-pour": refs("latte-art-pour"),

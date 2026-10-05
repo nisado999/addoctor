@@ -11,21 +11,6 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
-    id: "faith-hoodie-athens", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
-    category: "Fashion", label: "Fashion", title: "Faith Apparel, Athens Street",
-    format: "9:16 · Video · Blank hoodie in front of an Orthodox church", framework: "Identity",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#292524 0%,#0c0a09 100%)", hl: "#fde68a", hook: "Faith, *worn daily*", text: "Your design goes here.", sign: "Christian streetwear", tag: "Christian wear" },
-    why: [
-      "A Byzantine church between modern apartment blocks places faith in everyday city life, which is where the clothes are worn.",
-      "A calm, direct look at the camera reads as conviction, not performance.",
-      "The black hoodie is left completely blank so your own design can be added, and the caption can say what it stands for.",
-    ],
-    desc: "A clip for Christian and Orthodox clothing brands. A man in a blank black hoodie stands on an Athens street in front of a small Byzantine church, in natural daylight.",
-    tags: ["Christian wear", "Athens", "Blank hoodie", "Natural light"],
-    headline: "Faith, worn daily",
-    primary: "A blank hoodie ready for your design. Say what the piece stands for and which sizes you stock.",
-  },
-  {
     id: "bakery-counter-box", type: "video", trending: true, isNew: true, dur: "0:08",
     category: "Food & Bev", label: "Food & Bev", title: "Bakery Counter Box",
     format: "9:16 · Video · Phone-style shot of a pastry box being filled", framework: "Native UGC",
