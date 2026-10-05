@@ -11,13 +11,13 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
-    id: "noir-grip-hand", type: "static", trending: true, isNew: true,
-    category: "Fragrances", label: "Fragrances", title: "Bottle In Hand",
-    format: "4:5 · Static · Dark studio shot, one hand holding the product", framework: "Desire",
+    id: "two-hands-fragrance", type: "static", trending: true, isNew: true,
+    category: "Fragrances", label: "Fragrances", title: "Two Hands, One Bottle",
+    format: "4:5 · Static · Dark studio shot, ringed hands holding the product", framework: "Desire",
     art: { kind: "quote", bg: "linear-gradient(160deg,#18181b 0%,#000000 100%)", hl: "#e4e4e7", hook: "Hold *the night*", text: "A darker, deeper scent.", sign: "Eau de parfum", tag: "Fragrance" },
     why: [
-      "A hand holding the bottle adds scale, weight and a sense of ownership that a bottle alone on a table cannot.",
-      "A black background and one light make the glass and the rings the only things to look at, which reads as luxury.",
+      "Two hands on the bottle add scale, weight and a sense of ownership that a bottle alone on a table cannot.",
+      "Heavy silver rings and a black background give it a rugged, masculine character and make the glass the only bright thing in the frame.",
       "The image carries no text, so your own name and one short line can be added. The less a fragrance ad says, the more expensive it feels.",
     ],
     headline: "Hold the night",
