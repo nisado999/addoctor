@@ -11,6 +11,51 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "sunglasses-island-ledge", type: "video", trending: true, isNew: true, dur: "0:08",
+    category: "Fashion", label: "Eyewear", title: "Sunglasses In The Sun",
+    format: "9:16 · Video · Product on location, slow push-in", framework: "Aspiration",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#0284c7 0%,#0c4a6e 100%)", hl: "#fef08a", hook: "Made for *this light*", text: "Polarised. Built for summer.", sign: "Eyewear", tag: "Sunglasses" },
+    why: [
+      "Sunglasses on a sunlit ledge by the sea sell the summer they are bought for, without a model.",
+      "Sun glinting off the lenses shows their finish and makes the clip feel alive.",
+      "Mention polarisation and UV protection, the two things buyers check before paying.",
+    ],
+    desc: "An eyewear clip for sunglasses brands and opticians. A pair of plain black sunglasses on a white stone ledge in bright island light, with the sea behind.",
+    tags: ["Eyewear", "Summer", "Island light", "Product"],
+    headline: "Made for this light",
+    primary: "Polarised and built for summer. Add the lens type, the frame sizes and the price.",
+  },
+  {
+    id: "car-wax-beads", type: "video", trending: true, isNew: true, dur: "0:08",
+    category: "Local Services", label: "Car Detailing", title: "Water Beads On Wax",
+    format: "9:16 · Video · Macro glide across the paint", framework: "Show, don't tell",
+    art: { kind: "beforeafter", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#7dd3fc", hook: "This is what *protected* looks like", before: { label: "Before", metric: "Dull" }, after: { label: "After", metric: "Beading" }, tag: "Detailing" },
+    why: [
+      "Perfect water beads are the visible proof that a wax or ceramic coating works.",
+      "It is satisfying to watch, so people stay to the end without being told anything.",
+      "State how long the protection lasts and give a fixed price per car size.",
+    ],
+    desc: "A car care clip for detailers, ceramic coatings and wax brands. Water beads roll across glossy black paint in a slow macro glide.",
+    tags: ["Car detailing", "Macro", "Satisfying", "No branding"],
+    headline: "This is what protected looks like",
+    primary: "Ceramic coating and full detail. Add how long it lasts, your prices and how to book.",
+  },
+  {
+    id: "candle-bedside-dusk", type: "video", trending: true, isNew: true, dur: "0:08",
+    category: "Home & Decor", label: "Candles", title: "Candle At Dusk",
+    format: "9:16 · Video · Flickering flame, slow push-in", framework: "Mood",
+    art: { kind: "stat", bg: "linear-gradient(160deg,#451a03 0%,#1c1917 100%)", hl: "#fde68a", hook: "60 hours of *quiet evenings*", big: "60", unit: "hours of burn time", chips: ["Hand poured", "Cotton wick"], tag: "Candle" },
+    why: [
+      "A real flickering flame in a dim room sells the mood, which is what a candle buyer is after.",
+      "The jar is plain, so it works for any candle brand or for your own label.",
+      "Name the scent and the burn time. Burn time turns the price into a cost per evening.",
+    ],
+    desc: "A home fragrance clip for candle brands and gift shops. A plain candle burns on a bedside table at dusk, with books and a cup behind it.",
+    tags: ["Candles", "Cosy", "Dusk", "Blank jar"],
+    headline: "60 hours of quiet evenings",
+    primary: "Hand poured, cotton wick. Add the scent, the size and the price.",
+  },
+  {
     id: "faith-night-campaign", type: "video", trending: true, isNew: true, dur: "0:07", focus: "50% 0%",
     category: "Fashion", label: "Fashion", title: "Faith Apparel, Night Campaign",
     format: "9:16 · Video · Held pose, slow dolly push-in", framework: "Identity",

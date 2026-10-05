@@ -1,5 +1,8 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "sunglasses-island-ledge": B + "templates/sunglasses-island-ledge.jpg",
+  "car-wax-beads": B + "templates/car-wax-beads.jpg",
+  "candle-bedside-dusk": B + "templates/candle-bedside-dusk.jpg",
   "faith-night-campaign": B + "templates/faith-night-campaign.jpg",
   "fragrance-light-sweep": B + "templates/fragrance-light-sweep.jpg",
   "activewear-rooftop-pose": B + "templates/activewear-rooftop-pose.jpg",
@@ -263,6 +266,9 @@ const TEMPLATE_IMGS = {
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
+  "sunglasses-island-ledge": B + "templates/sunglasses-island-ledge.mp4",
+  "car-wax-beads": B + "templates/car-wax-beads.mp4",
+  "candle-bedside-dusk": B + "templates/candle-bedside-dusk.mp4",
   "faith-night-campaign": B + "templates/faith-night-campaign.mp4",
   "fragrance-light-sweep": B + "templates/fragrance-light-sweep.mp4",
   "activewear-rooftop-pose": B + "templates/activewear-rooftop-pose.mp4",
@@ -296,6 +302,9 @@ const TEMPLATE_VIDS = {
 /* Reference frames for a video template, in playing order. */
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
+  "sunglasses-island-ledge": refs("sunglasses-island-ledge"),
+  "car-wax-beads": refs("car-wax-beads"),
+  "candle-bedside-dusk": refs("candle-bedside-dusk"),
   "faith-night-campaign": refs("faith-night-campaign"),
   "fragrance-light-sweep": refs("fragrance-light-sweep"),
   "activewear-rooftop-pose": refs("activewear-rooftop-pose"),
