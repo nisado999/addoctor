@@ -2,12 +2,12 @@
 
 ## What this is
 React + Vite app (src/, public/templates). Bright healthcare-SaaS look: white, slate, sapphire #2563EB, emerald #10B981. No dark mode, no icon packages (inline SVG only).
-Audits ad creatives, analyses competitor ads, generates new creatives. 216 gallery templates.
+Audits ad creatives, analyses competitor ads, generates new creatives. 230 gallery templates.
 
 ## State
-- src/data.jsx = TEMPLATES (216), src/templateImgs.js maps id -> public/templates/<id>.jpg (216 images, 600x750, 4:5).
+- src/data.jsx = TEMPLATES (230), src/templateImgs.js maps id -> public/templates/<id>.jpg (230 images, 600x750, 4:5).
 - Templates with `isNew: true` show a NEW badge. The 9 added on 2026-10-05 copy formats seen in the Meta Ad Library for Spacegoods, Primal Queen, Norse Organics and Rosabella (callout labels, sticky-note UGC, thermal visual, starter-kit flat lay, handheld offer, reverse hook, process shot).
-- 26 more were added later the same day (night-out-edit replaces the removed Night-Out Lookbook). All 35 carry isNew.
+- 40 more were added later the same day (night-out-edit replaces the removed Night-Out Lookbook). All 49 carry isNew.
 - Gallery has quick filters (New, Trending, Favourites), a sort menu, favourites saved in localStorage (addoctor.favs.v1), "/" to focus search and a back-to-top button.
 - Tailwind is compiled (tailwind.config.js, postcss.config.js), no CDN script.
 - The view is kept in the URL hash (#static, #pack, #spy, #vault, #lab).
