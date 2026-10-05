@@ -45,3 +45,14 @@ With a META_TOKEN the Worker also opens the preview page of the 12 most-used ads
 and shows them to Claude, so the slide can describe how the ads look. Meta may refuse those reads. The /analyze reply has a
 "vision" field (tried, pages, found, images, note) that says what happened; the text analysis works either way.
 This path was tested against a mock of the API only. Run one real analysis after adding the token.
+
+## Limits that protect the bill
+worker.js limits itself. Set these in Cloudflare > addoctor-api > Settings > Variables and Secrets:
+- ALLOW_ORIGIN = https://nisado999.github.io   (add ", http://localhost:5173" while developing). Any other site, and
+  any script that sends no Origin, gets a 403. Leave it as * and the Worker is open to everyone.
+- RATE_PER_HOUR (optional, default 60): paid calls one visitor may make per hour. A 30-post Social Pack needs about 35.
+- DAILY_CAP (optional, default 300): paid calls per day across all visitors.
+- MAX_ADS (optional, default 200, never above 800): ads read per Competitor Spy analysis.
+The counters use Cloudflare's edge cache, so they are approximate. The hard stop for money is a spending cap at each
+provider: Apify (Settings > Billing > usage limit), Anthropic (Console > Limits) and Google AI Studio / Cloud billing budget.
+On Cloudflare's free plan the Worker itself cannot run up a charge: it stops at 100,000 requests a day.

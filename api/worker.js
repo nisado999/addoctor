@@ -6,7 +6,9 @@
 //   ANTHROPIC_KEY    secret   your Anthropic API key
 //   ALLOW_ORIGIN     text     your site, e.g. https://app.addoctor.com  (use * only while testing)
 //   APP_KEY          secret   optional: if set, the page must send it as header X-App-Key
-//   MAX_ADS          text     optional cap per analysis, default 800 (Apify bills per ad)
+//   MAX_ADS          text     optional cap per analysis, default 200, never above 800 (Apify bills per ad)
+//   RATE_PER_HOUR    text     optional, paid calls one visitor may make per hour, default 60
+//   DAILY_CAP        text     optional, paid calls allowed per day across all visitors, default 300
 //   MODEL            text     optional, default claude-sonnet-5-5
 //   META_TOKEN       secret   optional: Meta Ad Library API access token. When set, Competitor Spy reads the
 //                             official (free) API and Apify is not used. Covers ads shown in the EU and UK.
@@ -92,7 +94,7 @@ function normalizeMeta(it, format) {
 
 // Two passes: videos first (so they can be labelled), then everything else.
 async function metaAds(env, q) {
-  const cap = Number(env.MAX_ADS) || 800;
+  const cap = Math.min(Number(env.MAX_ADS) || 200, 800);
   const byId = new Map();
   const pass = async (mediaType, format) => {
     const p = new URLSearchParams({
@@ -479,11 +481,48 @@ Never invent facts about the product.`;
   };
 }
 
+/* ------------------------------ Abuse limits ------------------------------ */
+// Every paid call (Apify, Anthropic, Gemini) goes through here, so these limits are what protect the bill.
+//   ALLOW_ORIGIN   comma-separated sites allowed to call the Worker, e.g. https://nisado999.github.io
+//                  When set to anything but *, requests from other sites (or with no Origin) are refused.
+//   RATE_PER_HOUR  paid calls one visitor (IP address) may make per hour, default 60
+//   DAILY_CAP      paid calls allowed per day across all visitors, default 300
+// Counters live in Cloudflare's edge cache, which is per data centre, so the numbers are approximate:
+// good enough to stop a script hammering the API, not an exact meter.
+const PAID = /^\/(start|analyze|pack\/)/;
+
+async function bump(key, ttl) {
+  if (typeof caches === "undefined") return 0;
+  const url = "https://limits.addoctor.internal/" + key;
+  const hit = await caches.default.match(url);
+  const n = (hit ? parseInt(await hit.text(), 10) || 0 : 0) + 1;
+  await caches.default.put(url, new Response(String(n), { headers: { "Cache-Control": `max-age=${ttl}` } }));
+  return n;
+}
+
+function allowedOrigin(req, env) {
+  const list = String(env.ALLOW_ORIGIN || "*").split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean);
+  if (list.includes("*")) return "*";
+  const origin = (req.headers.get("Origin") || "").replace(/\/+$/, "");
+  return list.includes(origin) ? origin : null;
+}
+
 export default {
-  async fetch(req, env) {
+  async fetch(req, rawEnv) {
+    const origin = allowedOrigin(req, rawEnv);
+    // json() reads ALLOW_ORIGIN for the CORS header; give it the one origin that matched.
+    const env = Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
     if (req.method === "OPTIONS") return json(env, {});
+    if (!origin) return json(env, { error: "This site is not allowed to use the AdDoctor API." }, 403);
     if (env.APP_KEY && req.headers.get("X-App-Key") !== env.APP_KEY) return json(env, { error: "unauthorized" }, 401);
     const u = new URL(req.url);
+    if (PAID.test(u.pathname)) {
+      const ip = req.headers.get("CF-Connecting-IP") || "unknown";
+      const now = Date.now();
+      const perHour = Number(env.RATE_PER_HOUR) || 60, perDay = Number(env.DAILY_CAP) || 300;
+      if ((await bump(`ip/${ip}/${Math.floor(now / 3600000)}`, 3600)) > perHour) return json(env, { error: "Too many requests from this connection. Try again in an hour." }, 429);
+      if ((await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > perDay) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow." }, 429);
+    }
     const apify = (path) => `https://api.apify.com/v2/${path}${path.includes("?") ? "&" : "?"}token=${env.APIFY_TOKEN}`;
     try {
       // 1. start a crawl
@@ -495,7 +534,7 @@ export default {
         const okDate = (d) => (/^\d{4}-\d\d-\d\d$/.test(d || "") ? d : "");
         if (env.META_TOKEN) return json(env, { run: hexEnc({ id, country, from: okDate(b.from), to: okDate(b.to) }) });
         const url = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&is_targeted_country=false&media_type=all&search_type=page&view_all_page_id=${id}`;
-        const input = { startUrls: [{ url }], resultsLimit: Number(env.MAX_ADS) || 800 };
+        const input = { startUrls: [{ url }], resultsLimit: Math.min(Number(env.MAX_ADS) || 200, 800) };
         if (/^\d{4}-\d\d-\d\d$/.test(b.from || "")) input.onlyAdsNewerThan = b.from;
         if (/^\d{4}-\d\d-\d\d$/.test(b.to || "")) input.onlyAdsOlderThan = b.to;
         const r = await fetch(apify(`acts/${ACTOR}/runs`), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
