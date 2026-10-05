@@ -2,11 +2,13 @@
 
 ## What this is
 React + Vite app (src/, public/templates). Bright healthcare-SaaS look: white, slate, sapphire #2563EB, emerald #10B981. No dark mode, no icon packages (inline SVG only).
-Audits ad creatives, analyses competitor ads, generates new creatives. 190 gallery templates.
+Audits ad creatives, analyses competitor ads, generates new creatives. 216 gallery templates.
 
 ## State
-- src/data.jsx = TEMPLATES (190), src/templateImgs.js maps id -> public/templates/<id>.jpg (190 images, 600x750, 4:5).
+- src/data.jsx = TEMPLATES (216), src/templateImgs.js maps id -> public/templates/<id>.jpg (216 images, 600x750, 4:5).
 - Templates with `isNew: true` show a NEW badge. The 9 added on 2026-10-05 copy formats seen in the Meta Ad Library for Spacegoods, Primal Queen, Norse Organics and Rosabella (callout labels, sticky-note UGC, thermal visual, starter-kit flat lay, handheld offer, reverse hook, process shot).
+- 26 more were added later the same day (night-out-edit replaces the removed Night-Out Lookbook). All 35 carry isNew.
+- Gallery has quick filters (New, Trending, Favourites), a sort menu, favourites saved in localStorage (addoctor.favs.v1), "/" to focus search and a back-to-top button.
 - Tailwind is compiled (tailwind.config.js, postcss.config.js), no CDN script.
 - The view is kept in the URL hash (#static, #pack, #spy, #vault, #lab).
 - Every template image has its headline + caption BAKED INTO the photo (made in Gemini). Creative() renders only the photo when an image exists.
@@ -16,11 +18,12 @@ Audits ad creatives, analyses competitor ads, generates new creatives. 190 galle
 ## Open tasks
 1. 3 Gemini videos (plan allows 3/day) for templates; suggested: greek bay sailing, steel bottle summit, Dolomites lake. Text-to-video prompts, no baked text, 9:16.
 2. "Place my product in scene" feature (unanswered offer).
-3. Replace the removed Night-Out Lookbook template.
-4. More templates only if quality is high. Rules: plain products (no prints/logos/lettering), no lookalikes of known brands, no "adroast" text, reject bad images.
+3. More templates only if quality is high. Rules: plain products (no prints/logos/lettering), no lookalikes of known brands, no "adroast" text, reject bad images.
 
 ## Template image recipe (Gemini image gen, 3:4)
 "3:4 vertical advertising photograph. <scene>. Big bold clean sans-serif headline text across the top reading exactly: '<HEAD>'. Smaller caption under it reading exactly: '<caption>'. The <product> has no logos or lettering and is a plain original design. Text perfectly spelled, sharp, at least 10 percent below the top edge. High-end advertising photograph, 85mm lens at f/2, subtle film grain, no logos, no watermarks."
 Center-crop to 4:5, resize 600x750, save jpg quality ~84, add to templateImgs.js and TEMPLATES.
 Don't automate Gemini heavily: it triggered a Google robot check.
 Chrome saves downloads to E:/Save shit here. Gemini shows each result as a same-origin blob image, so it can be cropped to 4:5 and saved as a 600x750 JPEG from the page itself.
+Dev only: saving a source file can set off a burst of Vite page reloads, because most modules export constants next to components and import each other in a circle. The build is not affected.
+Publish: build, then copy dist/ into a checkout of the gh-pages branch and push. Live at https://nisado999.github.io/addoctor/

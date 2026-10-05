@@ -1,5 +1,18 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "half-clean-oven": B + "templates/half-clean-oven.jpg",
+  "no-white-cast": B + "templates/no-white-cast.jpg",
+  "weekend-power-bank": B + "templates/weekend-power-bank.jpg",
+  "discovery-set-five": B + "templates/discovery-set-five.jpg",
+  "cook-once-eat-all-week": B + "templates/cook-once-eat-all-week.jpg",
+  "hot-yoga-grip": B + "templates/hot-yoga-grip.jpg",
+  "one-scoop-replaces": B + "templates/one-scoop-replaces.jpg",
+  "breakfast-view": B + "templates/breakfast-view.jpg",
+  "sixty-hour-candle": B + "templates/sixty-hour-candle.jpg",
+  "rain-run-earbuds": B + "templates/rain-run-earbuds.jpg",
+  "barber-no-wait": B + "templates/barber-no-wait.jpg",
+  "three-step-shelfie": B + "templates/three-step-shelfie.jpg",
+  "twenty-gram-dessert": B + "templates/twenty-gram-dessert.jpg",
   "scent-notes-map": B + "templates/scent-notes-map.jpg",
   "mile-twenty-shoe": B + "templates/mile-twenty-shoe.jpg",
   "fridge-magnet-plumber": B + "templates/fridge-magnet-plumber.jpg",
