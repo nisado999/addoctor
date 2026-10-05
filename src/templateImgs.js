@@ -1,5 +1,12 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "latte-art-pour": B + "templates/latte-art-pour.jpg",
+  "barber-fade-closeup": B + "templates/barber-fade-closeup.jpg",
+  "apartment-walkthrough": B + "templates/apartment-walkthrough.jpg",
+  "smash-burger-pass": B + "templates/smash-burger-pass.jpg",
+  "florist-bouquet-wrap": B + "templates/florist-bouquet-wrap.jpg",
+  "kettlebell-swing-gym": B + "templates/kettlebell-swing-gym.jpg",
+  "dog-bowl-kitchen": B + "templates/dog-bowl-kitchen.jpg",
   "faith-apparel-athens": B + "templates/faith-apparel-athens.jpg",
   "croissant-box-chocolate": B + "templates/croissant-box-chocolate.jpg",
   "sneaker-studio-orbit": B + "templates/sneaker-studio-orbit.jpg",
@@ -247,6 +254,13 @@ const TEMPLATE_IMGS = {
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
+  "latte-art-pour": B + "templates/latte-art-pour.mp4",
+  "barber-fade-closeup": B + "templates/barber-fade-closeup.mp4",
+  "apartment-walkthrough": B + "templates/apartment-walkthrough.mp4",
+  "smash-burger-pass": B + "templates/smash-burger-pass.mp4",
+  "florist-bouquet-wrap": B + "templates/florist-bouquet-wrap.mp4",
+  "kettlebell-swing-gym": B + "templates/kettlebell-swing-gym.mp4",
+  "dog-bowl-kitchen": B + "templates/dog-bowl-kitchen.mp4",
   "faith-apparel-athens": B + "templates/faith-apparel-athens.mp4",
   "croissant-box-chocolate": B + "templates/croissant-box-chocolate.mp4",
   "sneaker-studio-orbit": B + "templates/sneaker-studio-orbit.mp4",
@@ -265,6 +279,13 @@ const TEMPLATE_VIDS = {
 /* Reference frames for a video template, in playing order. */
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
+  "latte-art-pour": refs("latte-art-pour"),
+  "barber-fade-closeup": refs("barber-fade-closeup"),
+  "apartment-walkthrough": refs("apartment-walkthrough"),
+  "smash-burger-pass": refs("smash-burger-pass"),
+  "florist-bouquet-wrap": refs("florist-bouquet-wrap"),
+  "kettlebell-swing-gym": refs("kettlebell-swing-gym"),
+  "dog-bowl-kitchen": refs("dog-bowl-kitchen"),
   "faith-apparel-athens": refs("faith-apparel-athens"),
   "croissant-box-chocolate": refs("croissant-box-chocolate"),
   "sneaker-studio-orbit": refs("sneaker-studio-orbit"),
