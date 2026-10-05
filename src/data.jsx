@@ -24,21 +24,6 @@ const TEMPLATES = [
     primary: "A darker, deeper scent. Add the size, the concentration and where to buy it.",
   },
   {
-    id: "faith-overcast-athens", type: "video", trending: true, isNew: true, dur: "0:09", focus: "50% 0%",
-    category: "Fashion", label: "Fashion", title: "Faith Apparel, Head Raised",
-    format: "9:16 · Video · One still figure, one gesture", framework: "Identity",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#334155 0%,#020617 100%)", hl: "#e2e8f0", hook: "Built on *faith*", text: "Your design goes here.", sign: "Christian streetwear", tag: "Christian wear" },
-    why: [
-      "One simple gesture, a bowed head lifting to meet the camera, carries the whole message of resolve.",
-      "Cool overcast light and a real street keep it looking like documentary footage, not a staged advert.",
-      "The black hoodie is left completely blank so your own design can be added. Pair it with one short line of scripture or a brand statement.",
-    ],
-    desc: "A dark, documentary-style clip for Christian and Orthodox streetwear brands. A muscular man in a blank black hoodie stands in front of a Byzantine church on a wet Athens street, head bowed, then looks up at the camera.",
-    tags: ["Christian wear", "Dark aesthetic", "Motivational", "Blank hoodie"],
-    headline: "Built on faith",
-    primary: "A blank hoodie ready for your design. Say what the piece stands for and which sizes you stock.",
-  },
-  {
     id: "burger-pass-pushin", type: "video", trending: true, isNew: true, dur: "0:08",
     category: "Food & Bev", label: "Restaurant", title: "Burger At The Pass",
     format: "9:16 · Video · Slow push-in on the finished plate", framework: "Craving",

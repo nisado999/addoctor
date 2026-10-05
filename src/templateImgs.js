@@ -1,7 +1,6 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
   "fragrance-front-solo": B + "templates/fragrance-front-solo.jpg",
-  "faith-overcast-athens": B + "templates/faith-overcast-athens.jpg",
   "burger-pass-pushin": B + "templates/burger-pass-pushin.jpg",
   "bakery-counter-box": B + "templates/bakery-counter-box.jpg",
   "necklace-collarbone": B + "templates/necklace-collarbone.jpg",
@@ -256,7 +255,6 @@ const TEMPLATE_IMGS = {
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
-  "faith-overcast-athens": B + "templates/faith-overcast-athens.mp4",
   "burger-pass-pushin": B + "templates/burger-pass-pushin.mp4",
   "bakery-counter-box": B + "templates/bakery-counter-box.mp4",
   "necklace-collarbone": B + "templates/necklace-collarbone.mp4",
@@ -282,7 +280,6 @@ const TEMPLATE_VIDS = {
 /* Reference frames for a video template, in playing order. */
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
-  "faith-overcast-athens": refs("faith-overcast-athens"),
   "burger-pass-pushin": refs("burger-pass-pushin"),
   "bakery-counter-box": refs("bakery-counter-box"),
   "necklace-collarbone": refs("necklace-collarbone"),
