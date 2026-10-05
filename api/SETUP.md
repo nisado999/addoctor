@@ -22,7 +22,7 @@ Pieces: (1) the page (addoctor.html), (2) the backend (worker.js), (3) two paid 
 1. Open addoctor.html in a text editor and replace:
      __ADDOCTOR_API__  with your Worker URL (no trailing slash)
      __ADDOCTOR_KEY__  with the APP_KEY you chose (or leave the line as is if you skipped APP_KEY)
-2. Upload the file to any static host (Cloudflare Pages, Netlify, Vercel: drag and drop, rename it index.html).
+2. Upload the file to any static host (Cloudflare Pages, Vercel: drag and drop, rename it index.html).
 3. Open it, go to Competitor Spy, paste an Ad Library link, press Analyze.
 
 ## Before real customers use it

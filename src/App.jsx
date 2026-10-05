@@ -71,8 +71,14 @@ function loadVault() {
   }
 }
 
+/* The view lives in the URL hash, so reload and the back button keep your place. */
+function viewFromHash() {
+  const id = typeof location !== "undefined" ? location.hash.slice(1) : "";
+  return VIEWS[id] && id !== "video" ? id : "explore";
+}
+
 function App() {
-  const [view, setView] = useState(() => (typeof location !== "undefined" && location.hash === "#lab" ? "lab" : "explore"));
+  const [view, setView] = useState(viewFromHash);
   const [exam, setExam] = useState(null); // null = closed, else init object
   const [examKey, setExamKey] = useState(0);
   const [cat, setCat] = useState("All");
@@ -92,6 +98,12 @@ function App() {
     return () => clearTimeout(id);
   }, [toast]);
 
+  useEffect(() => {
+    const onHash = () => { setExam(null); setStudio(null); setView(viewFromHash()); };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
   const notify = useCallback((msg, ms = 2000) => setToast({ msg, ms, id: Date.now() }), []);
   const openExam = useCallback((init) => { setExamKey((k) => k + 1); setExam(init || {}); }, []);
   const closeExam = useCallback(() => setExam(null), []);
@@ -104,6 +116,7 @@ function App() {
     setExam(null);
     setStudio(null);
     setView(id);
+    try { history.pushState(null, "", id === "explore" ? location.pathname + location.search : "#" + id); } catch (e) {}
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -131,6 +144,15 @@ function App() {
         (!s || [t.title, t.label, t.category, t.framework, t.format, t.type === "video" ? "video" : "static"].join(" ").toLowerCase().includes(s))
     );
   }, [view, cat, s]);
+  const catCounts = useMemo(() => {
+    const m = { All: 0 };
+    TEMPLATES.forEach((t) => {
+      if (view !== "explore" && t.type !== view) return;
+      m.All += 1;
+      m[t.category] = (m[t.category] || 0) + 1;
+    });
+    return m;
+  }, [view]);
   const vaultList = useMemo(
     () => vault.filter((v) => !s || [v.brand, v.headline, v.copy, v.status].join(" ").toLowerCase().includes(s)),
     [vault, s]
@@ -154,11 +176,11 @@ function App() {
             <button onClick={() => setMenu(true)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
               <Icon.Menu className="h-5 w-5" />
             </button>
-            <div className="relative min-w-0 flex-1 md:max-w-md">
+            <div className={`relative min-w-0 flex-1 md:max-w-md ${isGrid || view === "vault" ? "" : "invisible"}`}>
               <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 id="search" type="search" value={q} onChange={(e) => setQ(e.target.value)}
-                placeholder="Search templates, niches, formats..." aria-label="Search templates, niches, formats"
+                placeholder={view === "vault" ? "Search saved reports..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search saved reports" : "Search templates, niches, formats"}
                 className="h-10 w-full rounded-full border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
             </div>
@@ -202,6 +224,7 @@ function App() {
                       className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-slate-100/70 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900"}`}
                     >
                       {c}
+                      <span className={`ml-1.5 text-[11px] tabular-nums ${on ? "text-white/60" : "text-slate-400"}`}>{catCounts[c] || 0}</span>
                     </button>
                   );
                 })}

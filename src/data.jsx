@@ -11,8 +11,125 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "ingredient-callouts", type: "static", trending: true, isNew: true,
+    category: "Supplements", label: "Supplements", title: "Ingredient Callouts",
+    format: "4:5 · Static · Floating product with labelled callouts", framework: "Transparency",
+    art: { kind: "ingredients", bg: "linear-gradient(160deg,#0f766e 0%,#134e4a 100%)", hl: "#bef264", hook: "Five things. *One scoop.*", items: ["Lion's mane", "Cordyceps", "Ashwagandha", "Vitamin B12"], tag: "Blend" },
+    why: [
+      "Naming every ingredient on the image answers the first question a sceptical buyer asks.",
+      "Pointer labels pull the eye around the product, so the pack stays in view the whole time.",
+      "Only list what is on your label, in the same order and wording.",
+    ],
+    headline: "Five things. One scoop.",
+    primary: "Every ingredient, named on the pack. Add your doses and what each one is in there for.",
+  },
+  {
+    id: "sticky-note-verdict", type: "static", trending: true, isNew: true,
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Sticky Note Verdict",
+    format: "4:5 · Static · Lo-fi desk photo with hand-drawn notes", framework: "Native UGC",
+    art: { kind: "marker", light: true, bg: "linear-gradient(160deg,#f8fafc 0%,#e2e8f0 100%)", hl: "#facc15", hook: "The *honest* verdict", note: "3 weeks in. Still using it.", tag: "Balm" },
+    why: [
+      "Hand-drawn notes look like a customer's post, not an ad, so it gets read instead of skipped.",
+      "The sad face and happy face tell the before and after without a medical claim.",
+      "Use a real customer's words and time frame. Do not promise a result or a number of days.",
+    ],
+    headline: "The honest verdict",
+    primary: "One balm, three weeks, and a customer who is still using it. Swap in a real review and your own time frame.",
+  },
+  {
+    id: "thermal-recovery", type: "static", trending: true, isNew: true,
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Thermal Map Hook",
+    format: "4:5 · Static · Thermal-camera visual with product", framework: "Pattern interrupt",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#0f172a 0%,#172554 100%)", hl: "#fb923c", hook: "Where *leg day* lands", text: "Cooling recovery gel", sign: "After training", tag: "Recovery" },
+    why: [
+      "Thermal colours are rare in the feed, so the image stops the scroll before the headline is read.",
+      "The warm spot shows where the product goes without a single word of explanation.",
+      "Keep the claim to how it feels. Do not suggest it treats an injury or a condition.",
+    ],
+    headline: "Where leg day lands",
+    primary: "A cooling gel for after training. Say how it feels and when to use it, and keep to what your label allows.",
+  },
+  {
+    id: "starter-kit-flatlay", type: "static", trending: true, isNew: true,
+    category: "Food & Bev", label: "Food & Bev", title: "Starter Kit Flat Lay",
+    format: "4:5 · Static · Overhead flat lay with item labels", framework: "Value stack",
+    art: { kind: "checklist", bg: "linear-gradient(160deg,#4c1d95 0%,#1e1b4b 100%)", hl: "#ddd6fe", hook: "The *starter kit*", items: ["Pouch", "Tumbler", "Frother", "Scoop"], chip: "Everything in one box", tag: "Starter kit" },
+    why: [
+      "Laying out every item shows the buyer exactly what arrives, which removes a reason to hesitate.",
+      "Four labelled items read as more value than one product at the same price.",
+      "Show only what is really in the box, and state the price next to it in your caption.",
+    ],
+    headline: "The starter kit",
+    primary: "Everything you need in one box: the pouch, a tumbler, a frother and a scoop. Add the price and what a single order costs on its own.",
+  },
+  {
+    id: "handheld-today-only", type: "static", trending: true, isNew: true,
+    category: "Supplements", label: "Supplements", title: "Handheld Today-Only Offer",
+    format: "4:5 · Static · Phone photo with offer sticker", framework: "Urgency",
+    art: { kind: "offer", bg: "linear-gradient(160deg,#9a3412 0%,#431407 100%)", hl: "#fdba74", hook: "*Double* discount", big: "2X", sub: "today only · ends at midnight", pills: ["Ends at midnight", "One per customer"], cta: "Get the offer", tag: "Offer" },
+    why: [
+      "A pack held up in a normal kitchen looks like a friend's story, so the offer feels like a tip.",
+      "One sticker and one deadline give a single reason to act now.",
+      "Only run it when the deadline is real, and take it down when the offer ends.",
+    ],
+    headline: "Double discount, today only",
+    primary: "Two discounts stacked, until midnight tonight. Say exactly what the two discounts are and when the offer ends.",
+  },
+  {
+    id: "dont-buy-lamp", type: "static", trending: true, isNew: true,
+    category: "Home & Decor", label: "Home & Decor", title: "Don't Buy This",
+    format: "4:5 · Static · Product lifestyle with reverse hook", framework: "Reverse psychology",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#292524 0%,#0c0a09 100%)", hl: "#fcd34d", hook: "*Don't buy* this lamp", text: "Unless you like soft evenings", sign: "Ceramic table lamp", tag: "Lighting" },
+    why: [
+      "Telling people not to buy is the opposite of what an ad says, so they read the next line to find out why.",
+      "The caption turns the warning into the benefit in five words.",
+      "The reason not to buy must be a real benefit, never a put-down of the customer.",
+    ],
+    headline: "Don't buy this lamp",
+    primary: "Unless you like soft evenings. A ceramic table lamp with a warm linen shade. Add size, bulb type and price.",
+  },
+  {
+    id: "tidy-drawer", type: "static", trending: true, isNew: true,
+    category: "Home & Decor", label: "Home & Decor", title: "The Drawer Reveal",
+    format: "4:5 · Static · Top-down phone photo, after state", framework: "Before / after",
+    art: { kind: "beforeafter", bg: "linear-gradient(160deg,#78350f 0%,#1c1917 100%)", hl: "#fcd34d", hook: "This drawer was a *mess*", before: { label: "Before", metric: "Chaos" }, after: { label: "After", metric: "5 minutes" }, tag: "Organisers" },
+    why: [
+      "Everyone has this drawer, so the headline is about the viewer before it is about the product.",
+      "Showing only the tidy result lets the headline supply the before picture.",
+      "Give a fitting time and sizes you can stand behind.",
+    ],
+    headline: "This drawer was a mess",
+    primary: "Bamboo dividers that fit in about five minutes. Add the drawer sizes they fit and what is in the set.",
+  },
+  {
+    id: "poured-by-hand", type: "static", trending: true, isNew: true,
+    category: "Home & Decor", label: "Home & Decor", title: "Made In Small Batches",
+    format: "4:5 · Static · Workshop process photo", framework: "Craft proof",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#78350f 0%,#292524 100%)", hl: "#fde68a", hook: "Poured *by hand*", text: "40 candles at a time", sign: "Small-batch studio", tag: "Candles" },
+    why: [
+      "A real workshop and a real hand are proof that a studio photo cannot give.",
+      "A batch number makes small scale a reason to buy, not a weakness.",
+      "Use your true batch size and show your actual workspace.",
+    ],
+    headline: "Poured by hand",
+    primary: "Made 40 at a time in our own studio. Add the scent, burn time and where you make them.",
+  },
+  {
+    id: "mirror-note-fragrance", type: "static", trending: true, isNew: true,
+    category: "Fragrances", label: "Fragrances", title: "The Compliment Note",
+    format: "4:5 · Static · Mirror note with product still life", framework: "Social proof",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#9f1239 0%,#1c1917 100%)", hl: "#fecdd3", hook: "The one they *ask about*", text: "What are you wearing??", sign: "Eau de parfum, 50 ml", tag: "Fragrance" },
+    why: [
+      "You cannot smell an ad, so the compliment stands in for the scent.",
+      "A handwritten note reads as something a real person said.",
+      "Add the main notes of the scent in your caption so the buyer knows what to expect.",
+    ],
+    headline: "The one they ask about",
+    primary: "The scent that gets you asked what you are wearing. Add the main notes, the size and the price.",
+  },
+  {
     id: "myth-fact", type: "static", trending: true,
-    category: "Beauty & Skincare", label: "Beauty & Cosmetics", title: "Myth vs Fact Debunk",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Myth vs Fact Debunk",
     format: "4:5 · Static · Myth and fact split", framework: "Contrarian angle",
     art: { kind: "myth", bg: "linear-gradient(155deg,#0f172a 0%,#1e293b 100%)", hl: "#7dd3fc", hook: "*Myth* vs. *Fact*", myth: "More steps means clearer skin", fact: "The right 2 beat any 5", tag: "Skincare" },
     why: [
@@ -38,7 +155,7 @@ const TEMPLATES = [
   },
   {
     id: "split-proof", type: "static", trending: false,
-    category: "Beauty & Skincare", label: "Beauty & Cosmetics", title: "Split-Screen Proof",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Split-Screen Proof",
     format: "4:5 · Static · Before / after split", framework: "Comparison",
     art: { kind: "split", bg: "linear-gradient(160deg,#172554 0%,#0f172a 100%)", hl: "#93c5fd", hook: "Same face. *28 days.*", left: { label: "Day 1", metric: "14", note: "breakouts" }, right: { label: "Day 28", metric: "3", note: "breakouts" }, tag: "Skincare" },
     why: [
@@ -116,7 +233,7 @@ const TEMPLATES = [
   },
   {
     id: "pour-shot", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverage", title: "Pour Shot Pattern Interrupt",
+    category: "Food & Bev", label: "Food & Bev", title: "Pour Shot Pattern Interrupt",
     format: "4:5 · Static · Frozen pour shot", framework: "Sensory hook",
     art: { kind: "stat", bg: "linear-gradient(160deg,#78350f 0%,#1c1917 100%)", hl: "#fcd34d", hook: "Your *7am* just got better", big: "20", unit: "minutes to your door", chips: ["Single origin", "First order free"], tag: "Coffee" },
     why: [
@@ -142,7 +259,7 @@ const TEMPLATES = [
   },
   {
     id: "mirror-pas", type: "static", trending: false,
-    category: "Beauty & Skincare", label: "Beauty & Cosmetics", title: "Mirror Problem-Agitate",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Mirror Problem-Agitate",
     format: "4:5 · Static · Problem close-up", framework: "Pain point",
     art: { kind: "timeline", bg: "linear-gradient(155deg,#500724 0%,#0f172a 100%)", hl: "#fda4af", hook: "Concealer that *creases by noon*?", points: [["8am", "ok", "Fresh"], ["12pm", "bad", "Creased"]], foot: "Weightless. Stays put.", tag: "Makeup" },
     why: [
@@ -194,7 +311,7 @@ const TEMPLATES = [
   },
   {
     id: "ugly-marker", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverage", title: "The Ugly Marker Ad",
+    category: "Food & Bev", label: "Food & Bev", title: "The Ugly Marker Ad",
     format: "4:5 · Static · Handwritten pattern interrupt", framework: "Pattern interrupt",
     art: { kind: "marker", light: true, bg: "linear-gradient(160deg,#fffdf0 0%,#fef3c7 100%)", hl: "#facc15", hook: "Ok so *this* is why it's better", note: "no fillers, ever", tag: "Snacks" },
     why: [
@@ -207,7 +324,7 @@ const TEMPLATES = [
   },
   {
     id: "price-receipt", type: "static", trending: false,
-    category: "Food & Bev", label: "Food & Beverage", title: "Competitor Receipt Breakdown",
+    category: "Food & Bev", label: "Food & Bev", title: "Competitor Receipt Breakdown",
     format: "4:5 · Static · Checkout receipt", framework: "Price anchoring",
     art: { kind: "receipt", bg: "linear-gradient(160deg,#14532d 0%,#052e16 100%)", hl: "#86efac", hook: "The *real* cost of your daily coffee", rows: [["Coffee shop, 30 days", "$120", "$38"], ["Delivery fees", "$45", "$0"]], totals: ["$165", "$38"], tag: "Coffee" },
     why: [
@@ -220,7 +337,7 @@ const TEMPLATES = [
   },
   {
     id: "tweet-reaction", type: "static", trending: true,
-    category: "Beauty & Skincare", label: "Beauty & Cosmetics", title: "Tweet Reaction Screenshot",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Tweet Reaction Screenshot",
     format: "4:5 · Static · Social post screenshot", framework: "Social proof",
     art: { kind: "tweet", bg: "linear-gradient(160deg,#0f172a 0%,#1e3a8a 100%)", hl: "#7dd3fc", hook: "Someone *said it better* than us", text: "did not expect a $30 serum to fix my dry patches. ordering a second one.", name: "Sam", handle: "@skincare_sam", tag: "Skincare" },
     why: [
@@ -311,7 +428,7 @@ const TEMPLATES = [
   },
   {
     id: "review-static", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverage", title: "Review Headline Static",
+    category: "Food & Bev", label: "Food & Bev", title: "Review Headline Static",
     format: "4:5 · Static · Review as the headline", framework: "Social proof",
     art: { kind: "review", bg: "linear-gradient(160deg,#7c2d12 0%,#1c1917 100%)", hl: "#fdba74", hook: "Say it like a *customer* would", quote: "Zero prep time. Hunger fully satisfied.", who: "Verified buyer", initial: "J", tag: "Snacks" },
     why: [
@@ -350,7 +467,7 @@ const TEMPLATES = [
   },
   {
     id: "old-me-new-me", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverage", title: "Old Me vs New Me",
+    category: "Food & Bev", label: "Food & Bev", title: "Old Me vs New Me",
     format: "4:5 · Static · Problem and solution split", framework: "Transformation",
     art: { kind: "beforeafter", bg: "linear-gradient(160deg,#78350f 0%,#1c1917 100%)", hl: "#fcd34d", hook: "Old me. *New me.*", before: { label: "Old me", metric: "No time to cook" }, after: { label: "New me", metric: "Dinner in 20 min" }, tag: "Meal kits" },
     why: [
@@ -857,7 +974,7 @@ const TEMPLATES = [
   },
   {
     id: "bakery-window", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverages", title: "Bakery Window After Dark",
+    category: "Food & Bev", label: "Food & Bev", title: "Bakery Window After Dark",
     format: "4:5 · Static · Night shop window", framework: "Anticipation",
     art: { kind: "quote", bg: "linear-gradient(160deg,#451a03 0%,#0c0a09 100%)", hl: "#fcd34d", hook: "Worth *waiting* for", text: "open at 6am", sign: "Fresh every morning", tag: "Bakery" },
     why: [
@@ -883,7 +1000,7 @@ const TEMPLATES = [
   },
   {
     id: "dawn-voice-note", type: "static", trending: true,
-    category: "Beauty & Skincare", label: "Beauty & Cosmetics", title: "Dawn Voice Note",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Dawn Voice Note",
     format: "4:5 · Static · Hand-held product, voice message", framework: "Social proof",
     art: { kind: "quote", bg: "linear-gradient(160deg,#9f1239 0%,#1e1b4b 100%)", hl: "#fecdd3", hook: "Heard it from a *friend*", text: "wear it daily", sign: "voice note · 0:07", tag: "Sunscreen" },
     why: [
@@ -896,7 +1013,7 @@ const TEMPLATES = [
   },
   {
     id: "chrome-type-stage", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverages", title: "Chrome Type Stage",
+    category: "Food & Bev", label: "Food & Bev", title: "Chrome Type Stage",
     format: "4:5 · Static · Giant 3D type behind a can", framework: "Pattern interrupt",
     art: { kind: "offer", bg: "linear-gradient(160deg,#c2410c 0%,#431407 100%)", hl: "#fed7aa", hook: "Skip the *rest*", big: "ONE", unit: "can", sub: "the only one you need", pills: ["Zero sugar", "Cold-ready"], cta: "Grab a can", tag: "Energy drink" },
     why: [
@@ -922,7 +1039,7 @@ const TEMPLATES = [
   },
   {
     id: "toggle-card", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverages", title: "Settings Toggle Card",
+    category: "Food & Bev", label: "Food & Bev", title: "Settings Toggle Card",
     format: "4:5 · Static · Jar with a settings card", framework: "Clarity",
     art: { kind: "checklist", bg: "linear-gradient(160deg,#166534 0%,#14532d 100%)", hl: "#bbf7d0", hook: "Your *breakfast* settings", items: ["Crunchy", "Oat based", "Zero fuss"], chip: "Ready to eat", tag: "Granola" },
     why: [
@@ -935,7 +1052,7 @@ const TEMPLATES = [
   },
   {
     id: "order-alert-stack", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverages", title: "Order Alert Stack",
+    category: "Food & Bev", label: "Food & Bev", title: "Order Alert Stack",
     format: "4:5 · Static · Phone alerts over a coffee bag", framework: "Anticipation",
     art: { kind: "checklist", bg: "linear-gradient(160deg,#78350f 0%,#1c1917 100%)", hl: "#fde68a", hook: "Your coffee is *on its way*", items: ["Your order has shipped", "Fresh roasted Monday", "Arrives tomorrow"], chip: "Roasted to order", tag: "Coffee" },
     why: [
@@ -1091,7 +1208,7 @@ const TEMPLATES = [
   },
   {
     id: "berry-splash", type: "static", trending: true,
-    category: "Food & Bev", label: "Food & Beverages", title: "Berry Purple Splash",
+    category: "Food & Bev", label: "Food & Bev", title: "Berry Purple Splash",
     format: "4:5 · Static · Product splash hero", framework: "Stop-rate",
     art: { kind: "offer", bg: "linear-gradient(160deg,#581c87 0%,#2e1065 100%)", hl: "#e9d5ff", hook: "Taste the *splash*", big: "BERRY", sub: "sparkling juice · 330ml", pills: ["Naturally flavoured","Zero fuss"], cta: "Shop now", tag: "Drinks" },
     why: [

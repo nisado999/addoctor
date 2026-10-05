@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* AdDoctor: light clinical dashboard. Single deliberate light look. */
 :root {
   color-scheme: light;

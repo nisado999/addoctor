@@ -397,7 +397,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
                 <aside className="flex flex-col gap-5">
                   <div className="relative mx-auto aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm">
                     <Creative t={tpl} />
-                    <div className="pointer-events-none absolute left-2.5 top-2.5 z-[2]">
+                    <div className="pointer-events-none absolute bottom-2.5 left-2.5 z-[2]">
                       <span className={pill}>{tpl.type === "video" ? "VIDEO" : "STATIC"}</span>
                     </div>
                   </div>

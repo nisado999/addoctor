@@ -2,7 +2,7 @@
 
 Diagnostic paid-media tool: audits ad creatives for conversion leaks (stop rate, copy hierarchy, offer friction) and generates direct-response ad copy and visual concepts.
 
-React 18 + Vite. No backend needed except for Competitor Spy.
+React 18 + Vite + Tailwind CSS (compiled with PostCSS). No backend needed except for Competitor Spy.
 
 ## Run it
 
@@ -42,9 +42,8 @@ Deploy `api/worker.js` (steps in `api/SETUP.md`), then copy `.env.example` to `.
 
 ## Deploy (free)
 
-Cloudflare Pages, Netlify or Vercel: connect the GitHub repo, build command `npm run build`, output directory `dist`. Set the `VITE_*` variables in the host's settings.
+Cloudflare Pages or Vercel: connect the GitHub repo, build command `npm run build`, output directory `dist`. Set the `VITE_*` variables in the host's settings.
 
 ## Next steps
 
-- Tailwind currently loads from the CDN in `index.html`. Install `tailwindcss` + `postcss` + `autoprefixer` and compile it to remove the runtime script.
 - Add sign-in and per-user limits before exposing Competitor Spy publicly (every analysis costs money).

@@ -318,7 +318,7 @@ function Creative({ t }) {
   if (photo) {
     return (
       <div className={`cr cr-photo ${t.type === "video" ? "cr-vid" : ""}`}>
-        <img src={photo} alt={t.title} draggable="false" className="cr-photo-img" />
+        <img src={photo} alt={t.title} draggable="false" loading="lazy" decoding="async" className="cr-photo-img" />
         {t.type === "video" && <span className="cr-prog"><i /></span>}
       </div>
     );
@@ -342,7 +342,7 @@ function Creative({ t }) {
 
 /* ------------------------------- Card ---------------------------------- */
 
-const pill = "inline-flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-md";
+const pill = "inline-flex items-center gap-1 rounded-full bg-slate-950/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white";
 
 function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "Inspect" }) {
   return (
@@ -357,19 +357,16 @@ function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "I
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10 group-focus-visible:ring-4 group-focus-visible:ring-blue-600/25">
         <Creative t={t} />
 
-        <div className="pointer-events-none absolute left-2.5 top-2.5 z-[2]">
-          <span className={pill}>
-            {t.type === "video" ? <Icon.Video className="h-3.5 w-3.5" /> : <Icon.Image className="h-3.5 w-3.5" />}
-            {t.type === "video" ? "VIDEO" : "STATIC"}
-          </span>
+        {/* Badges sit at the bottom: the photos carry their headline at the top. */}
+        <div className="pointer-events-none absolute inset-x-2 bottom-2 z-[2] flex flex-wrap items-center gap-1.5">
+          {t.type === "video" && (
+            <span className={pill}><Icon.Video className="h-3 w-3" /> VIDEO</span>
+          )}
+          {t.isNew && <span className={`${pill} !bg-emerald-600/90`}>NEW</span>}
+          {t.trending && (
+            <span className={pill}><Icon.Flame className="h-3 w-3 text-blue-300" /> TRENDING</span>
+          )}
         </div>
-        {t.trending && (
-          <div className="pointer-events-none absolute right-2.5 top-2.5 z-[2]">
-            <span className={pill}>
-              <Icon.Flame className="h-3.5 w-3.5 text-blue-300" /> TRENDING
-            </span>
-          </div>
-        )}
 
         <div className="absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
           <span className="inline-flex translate-y-1.5 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-950/40 transition duration-300 group-hover:translate-y-0">

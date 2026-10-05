@@ -3,6 +3,7 @@ import { Icon, hl, Creative, pill } from "./ui";
 import { rrect } from "./asset";
 import { copyText, field } from "./modal";
 import { detectCategory } from "./analysis.js";
+import { TEMPLATE_IMGS } from "./templateImgs.js";
 
 /* ======================= Creative Synthesizer =======================
    A canvas ad renderer. The same drawing code paints the live preview,
@@ -1359,6 +1360,16 @@ function StudioModal({ tpl, onClose, notify }) {
                 className={`block h-auto max-h-[58vh] w-auto max-w-full select-none ${dragging ? "cursor-grabbing" : grab ? "cursor-grab" : "cursor-default"}`}
               />
             </div>
+            {TEMPLATE_IMGS[tpl.id] && (
+              <div className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5">
+                <img src={TEMPLATE_IMGS[tpl.id]} alt={`${tpl.title} template`} className="h-20 w-16 shrink-0 rounded-lg border border-slate-200 object-cover" />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Template reference</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-900">{tpl.title}</p>
+                  <p className="mt-0.5 text-xs leading-snug text-slate-500">{img ? "Your photo and copy replace the sample scene." : "Upload a product photo shot like this. Your photo and copy replace the sample scene."}</p>
+                </div>
+              </div>
+            )}
             {seed >= 0 && (
               <div className="w-full">
                 <div className="flex items-center justify-between">
