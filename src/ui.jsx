@@ -314,7 +314,7 @@ function CreativeBody({ a }) {
 }
 
 /* A silent looping clip that only plays while it is on screen, so a long gallery does not decode every video at once. */
-function LoopVideo({ src, poster, title }) {
+function LoopVideo({ src, poster, title, focus }) {
   const ref = useRef(null);
   useEffect(() => {
     const v = ref.current;
@@ -326,7 +326,7 @@ function LoopVideo({ src, poster, title }) {
     io.observe(v);
     return () => io.disconnect();
   }, [src]);
-  return <video ref={ref} src={src} poster={poster} aria-label={title} muted loop playsInline preload="none" disablePictureInPicture className="cr-photo-img" />;
+  return <video ref={ref} src={src} poster={poster} aria-label={title} muted loop playsInline preload="none" disablePictureInPicture className="cr-photo-img" style={focus ? { objectPosition: focus } : undefined} />;
 }
 
 function Creative({ t }) {
@@ -336,7 +336,7 @@ function Creative({ t }) {
   if (clip) {
     return (
       <div className="cr cr-photo">
-        <LoopVideo src={clip} poster={photo} title={t.title} />
+        <LoopVideo src={clip} poster={photo} title={t.title} focus={t.focus} />
       </div>
     );
   }

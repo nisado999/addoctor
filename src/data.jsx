@@ -11,7 +11,7 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
-    id: "tennis-court-walk", type: "video", trending: true, isNew: true, dur: "0:08",
+    id: "tennis-court-walk", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
     category: "Fashion", label: "Fashion", title: "Tennis Court Walk",
     format: "9:16 · Video · Rising shot from shoes to full length", framework: "Aspiration",
     art: { kind: "quote", bg: "linear-gradient(160deg,#1d4ed8 0%,#0c4a6e 100%)", hl: "#fef08a", hook: "Made for *match point*", text: "The court set. Dress, shoes, done.", sign: "New season", tag: "Tennis" },
@@ -26,7 +26,7 @@ const TEMPLATES = [
     primary: "The court set: dress, shoes, done. Add the pieces, the sizes and the price of the set.",
   },
   {
-    id: "studio-hoodie-push", type: "video", trending: true, isNew: true, dur: "0:08",
+    id: "studio-hoodie-push", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
     category: "Fashion", label: "Fashion", title: "Minimal Studio Lookbook",
     format: "9:16 · Video · Slow full turn on a plain backdrop", framework: "Simplicity",
     art: { kind: "quote", light: true, bg: "linear-gradient(160deg,#f4f4f5 0%,#d4d4d8 100%)", hl: "#18181b", hook: "The hoodie, *nothing else*", text: "Heavyweight cotton. Oversized fit.", sign: "Essentials", tag: "Studio" },
