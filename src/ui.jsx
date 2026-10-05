@@ -369,7 +369,7 @@ function Creative({ t }) {
 
 const pill = "inline-flex items-center gap-1 rounded-full bg-slate-950/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white";
 
-function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "Inspect", fav = false, onFav }) {
+function TemplateCard({ t, onInspect, action = "Use this template", verb = "Use", fav = false, onFav }) {
   return (
     <div
       role="button"
@@ -406,7 +406,7 @@ function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "I
 
         <div className="absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
           <span className="inline-flex translate-y-1.5 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-950/40 transition duration-300 group-hover:translate-y-0">
-            {verb === "Inspect" ? <Icon.Stethoscope className="h-4 w-4" /> : <Icon.Wand className="h-4 w-4" />} {action}
+            <Icon.Wand className="h-4 w-4" /> {action}
           </span>
         </div>
       </div>
@@ -415,7 +415,7 @@ function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "I
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t.label}</p>
         <h3 className="mt-1 text-[14px] font-semibold leading-snug tracking-tight text-slate-900">{t.title}</h3>
         <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-blue-600">
-          {verb === "Inspect" ? "Preview" : "Open Studio"} <Icon.Arrow className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+          {verb === "Use" ? "Use template" : "Open Studio"} <Icon.Arrow className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
         </span>
       </div>
     </div>

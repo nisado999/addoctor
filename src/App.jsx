@@ -7,6 +7,7 @@ import { SPY_ANGLE, SpyView } from "./spy";
 import { PackView } from "./pack";
 import { LabView } from "./lab";
 import { LookModal } from "./look";
+import { BrandModal, InspireModal } from "./use";
 import { TEMPLATE_VIDS } from "./templateImgs.js";
 import { clamp } from "./analysis.js";
 
@@ -54,7 +55,7 @@ function VaultView({ items, onOpen, onRemove, onExamine }) {
 /* --------------------------------- App --------------------------------- */
 
 const VIEWS = {
-  explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one, add your product, and get a prescription." },
+  explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one, add your logo, or make a new one in its style." },
   video: { title: "Video Generator", studio: true },
   static: { title: "Static Ads", studio: true },
   pack: { title: "Social Pack", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
@@ -101,7 +102,9 @@ function App() {
   const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState(null);
   const [studio, setStudio] = useState(null);
-  const [look, setLook] = useState(null); // video template whose detail view is open
+  const [look, setLook] = useState(null); // template whose "use this template" view is open
+  const [brand, setBrand] = useState(null); // template getting the user's logo
+  const [inspire, setInspire] = useState(null); // video template being briefed as a new version
   const [favs, setFavs] = useState(loadFavs);
   const [sort, setSort] = useState("featured");
   const [quick, setQuick] = useState(null); // null | "new" | "trending" | "video" | "favs"
@@ -136,7 +139,7 @@ function App() {
   }, [toast]);
 
   useEffect(() => {
-    const onHash = () => { setExam(null); setStudio(null); setLook(null); setView(viewFromHash()); };
+    const onHash = () => { setExam(null); setStudio(null); setLook(null); setBrand(null); setInspire(null); setView(viewFromHash()); };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -146,6 +149,8 @@ function App() {
   const closeExam = useCallback(() => setExam(null), []);
   const closeStudio = useCallback(() => setStudio(null), []);
   const closeLook = useCallback(() => setLook(null), []);
+  const closeBrand = useCallback(() => setBrand(null), []);
+  const closeInspire = useCallback(() => setInspire(null), []);
   const spend = useCallback((n) => setCredits((c) => Math.max(0, c - (Number.isFinite(n) ? n : 1))), []);
 
   const goto = (id) => {
@@ -154,6 +159,8 @@ function App() {
     setExam(null);
     setStudio(null);
     setLook(null);
+    setBrand(null);
+    setInspire(null);
     setView(id);
     try { history.pushState(null, "", id === "explore" ? location.pathname + location.search : "#" + id); } catch (e) {}
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -325,7 +332,7 @@ function App() {
                 {list.map((t) => <TemplateCard
                     key={t.id} t={t} fav={favs.includes(t.id)} onFav={toggleFav}
                     {...(inStudio ? { verb: "Open Studio:", action: "Open Studio" } : {})}
-                    onInspect={(tp) => (inStudio ? setStudio(tp) : TEMPLATE_VIDS[tp.id] ? setLook(tp) : openExam({ template: tp }))}
+                    onInspect={(tp) => (inStudio ? setStudio(tp) : setLook(tp))}
                   />)}
               </div>
             ) : (
@@ -363,14 +370,18 @@ function App() {
       {look && (
         <LookModal
           tpl={look} onClose={closeLook}
-          onUse={(tp) => { setLook(null); setStudio(tp); }}
+          onBrand={(tp) => { setLook(null); setBrand(tp); }}
+          onInspire={(tp) => { setLook(null); if (TEMPLATE_VIDS[tp.id]) setInspire(tp); else setStudio(tp); }}
           onExamine={(tp) => { setLook(null); openExam({ template: tp }); }}
         />
       )}
 
+      {brand && <BrandModal key={brand.id} tpl={brand} onClose={closeBrand} notify={notify} />}
+      {inspire && <InspireModal key={inspire.id} tpl={inspire} onClose={closeInspire} notify={notify} />}
+
       {studio && <StudioModal key={studio.id} tpl={studio} onClose={closeStudio} notify={notify} />}
 
-      {toTop && isGrid && !exam && !studio && !look && (
+      {toTop && isGrid && !exam && !studio && !look && !brand && !inspire && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top"
           className="fixed bottom-6 right-5 z-20 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-900/10 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
