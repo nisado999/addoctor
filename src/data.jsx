@@ -56,7 +56,7 @@ const TEMPLATES = [
     primary: "Leather trainers, hand finished. Add the sizes, the materials and your returns policy.",
   },
   {
-    id: "street-walk-men", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
+    id: "plaza-walk-men", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
     category: "Fashion", label: "Fashion", title: "City Plaza Walk",
     format: "9:16 · Video · Walk towards camera, tracking shot", framework: "Identity",
     art: { kind: "quote", light: true, bg: "linear-gradient(160deg,#f4f4f5 0%,#d4d4d8 100%)", hl: "#18181b", hook: "The everyday *uniform*", text: "Heavyweight tee. Relaxed denim.", sign: "New drop", tag: "Streetwear" },
