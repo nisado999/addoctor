@@ -1,12 +1,13 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
-  "faith-dusk-athens": B + "templates/faith-dusk-athens.jpg",
+  "noir-absolu-hands": B + "templates/noir-absolu-hands.jpg",
+  "faith-overcast-athens": B + "templates/faith-overcast-athens.jpg",
+  "burger-pass-pushin": B + "templates/burger-pass-pushin.jpg",
   "bakery-counter-box": B + "templates/bakery-counter-box.jpg",
   "necklace-collarbone": B + "templates/necklace-collarbone.jpg",
   "latte-art-pour": B + "templates/latte-art-pour.jpg",
   "barber-fade-closeup": B + "templates/barber-fade-closeup.jpg",
   "apartment-walkthrough": B + "templates/apartment-walkthrough.jpg",
-  "smash-burger-pass": B + "templates/smash-burger-pass.jpg",
   "florist-bouquet-wrap": B + "templates/florist-bouquet-wrap.jpg",
   "kettlebell-swing-gym": B + "templates/kettlebell-swing-gym.jpg",
   "dog-bowl-kitchen": B + "templates/dog-bowl-kitchen.jpg",
@@ -255,13 +256,13 @@ const TEMPLATE_IMGS = {
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
-  "faith-dusk-athens": B + "templates/faith-dusk-athens.mp4",
+  "faith-overcast-athens": B + "templates/faith-overcast-athens.mp4",
+  "burger-pass-pushin": B + "templates/burger-pass-pushin.mp4",
   "bakery-counter-box": B + "templates/bakery-counter-box.mp4",
   "necklace-collarbone": B + "templates/necklace-collarbone.mp4",
   "latte-art-pour": B + "templates/latte-art-pour.mp4",
   "barber-fade-closeup": B + "templates/barber-fade-closeup.mp4",
   "apartment-walkthrough": B + "templates/apartment-walkthrough.mp4",
-  "smash-burger-pass": B + "templates/smash-burger-pass.mp4",
   "florist-bouquet-wrap": B + "templates/florist-bouquet-wrap.mp4",
   "kettlebell-swing-gym": B + "templates/kettlebell-swing-gym.mp4",
   "dog-bowl-kitchen": B + "templates/dog-bowl-kitchen.mp4",
@@ -281,13 +282,13 @@ const TEMPLATE_VIDS = {
 /* Reference frames for a video template, in playing order. */
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
-  "faith-dusk-athens": refs("faith-dusk-athens"),
+  "faith-overcast-athens": refs("faith-overcast-athens"),
+  "burger-pass-pushin": refs("burger-pass-pushin"),
   "bakery-counter-box": refs("bakery-counter-box"),
   "necklace-collarbone": refs("necklace-collarbone"),
   "latte-art-pour": refs("latte-art-pour"),
   "barber-fade-closeup": refs("barber-fade-closeup"),
   "apartment-walkthrough": refs("apartment-walkthrough"),
-  "smash-burger-pass": refs("smash-burger-pass"),
   "florist-bouquet-wrap": refs("florist-bouquet-wrap"),
   "kettlebell-swing-gym": refs("kettlebell-swing-gym"),
   "dog-bowl-kitchen": refs("dog-bowl-kitchen"),
