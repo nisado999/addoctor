@@ -2,14 +2,14 @@
 
 ## What this is
 React + Vite app (src/, public/templates). Bright healthcare-SaaS look: white, slate, sapphire #2563EB, emerald #10B981. No dark mode, no icon packages (inline SVG only).
-Audits ad creatives, analyses competitor ads, generates new creatives. 244 gallery templates (14 of them video).
+Audits ad creatives, analyses competitor ads, generates new creatives. 252 gallery templates (22 of them video).
 
 ## State
-- src/data.jsx = TEMPLATES (244), src/templateImgs.js maps id -> public/templates/<id>.jpg (244 images, 600x750, 4:5).
+- src/data.jsx = TEMPLATES (252), src/templateImgs.js maps id -> public/templates/<id>.jpg (252 images, 600x750, 4:5).
 - Templates with `isNew: true` show a NEW badge. The 9 added on 2026-10-05 copy formats seen in the Meta Ad Library for Spacegoods, Primal Queen, Norse Organics and Rosabella (callout labels, sticky-note UGC, thermal visual, starter-kit flat lay, handheld offer, reverse hook, process shot).
 - 40 more were added later the same day (night-out-edit replaces the removed Night-Out Lookbook). All 49 carry isNew.
 - Gallery has quick filters (New, Trending, Favourites), a sort menu, favourites saved in localStorage (addoctor.favs.v1), "/" to focus search and a back-to-top button.
-- Video templates: type "video" plus an entry in TEMPLATE_VIDS (templateImgs.js) pointing at public/templates/<id>.mp4 (540x960, no audio, about 0.5 to 1.5 MB). The .jpg with the same id is the first frame and is used as the poster. Cards play them muted on a loop while on screen. A card is 4:5, so it shows only 70% of a 9:16 clip: set focus: "50% 0%" on templates with a standing person so the head is kept, and leave about 10% empty space above the head in the clip itself. Fourteen exist (see TEMPLATE_VIDS). Clicking one in Explore opens LookModal (src/look.jsx): the clip, desc, tags, and four reference frames from TEMPLATE_REFS (public/templates/refs/<id>-1..4.jpg, 450x800).
+- Video templates: type "video" plus an entry in TEMPLATE_VIDS (templateImgs.js) pointing at public/templates/<id>.mp4 (540x960, no audio, about 0.5 to 1.5 MB). The .jpg with the same id is the first frame and is used as the poster. Cards play them muted on a loop while on screen. A card is 4:5, so it shows only 70% of a 9:16 clip: set focus: "50% 0%" on templates with a standing person so the head is kept, and leave about 10% empty space above the head in the clip itself. 22 exist (see TEMPLATE_VIDS). Clicking one in Explore opens LookModal (src/look.jsx): the clip, desc, tags, and four reference frames from TEMPLATE_REFS (public/templates/refs/<id>-1..4.jpg, 450x800).
 - Tailwind is compiled (tailwind.config.js, postcss.config.js), no CDN script.
 - The view is kept in the URL hash (#static, #pack, #spy, #vault, #lab).
 - Every template image has its headline + caption BAKED INTO the photo (made in Gemini). Creative() renders only the photo when an image exists.
