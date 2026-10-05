@@ -11,6 +11,21 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "faith-blue-hour", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
+    category: "Fashion", label: "Fashion", title: "Faith Apparel, Blue Hour",
+    format: "9:16 · Video · Camera circles a still figure at dusk", framework: "Identity",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e3a8a 0%,#020617 100%)", hl: "#fbbf24", hook: "Built on *faith*", text: "Your design goes here.", sign: "Christian streetwear", tag: "Christian wear" },
+    why: [
+      "The dark blue-hour look and the lit church behind him read as strength and conviction, the tone of motivational content.",
+      "He stands still while the camera moves, which feels deliberate and powerful, and ends with his head raised.",
+      "The black hoodie is left completely blank so your own design can be added. Pair it with one short line of scripture or a brand statement.",
+    ],
+    desc: "A dark, cinematic clip for Christian and Orthodox streetwear brands. A muscular man in a blank black hoodie stands in front of a lit Byzantine church at dusk while the camera circles him.",
+    tags: ["Christian wear", "Dark aesthetic", "Motivational", "Blank hoodie"],
+    headline: "Built on faith",
+    primary: "A blank hoodie ready for your design. Say what the piece stands for and which sizes you stock.",
+  },
+  {
     id: "sunglasses-island-ledge", type: "video", trending: true, isNew: true, dur: "0:08",
     category: "Fashion", label: "Eyewear", title: "Sunglasses In The Sun",
     format: "9:16 · Video · Product on location, slow push-in", framework: "Aspiration",
@@ -54,21 +69,6 @@ const TEMPLATES = [
     tags: ["Candles", "Cosy", "Dusk", "Blank jar"],
     headline: "60 hours of quiet evenings",
     primary: "Hand poured, cotton wick. Add the scent, the size and the price.",
-  },
-  {
-    id: "faith-night-campaign", type: "video", trending: true, isNew: true, dur: "0:07", focus: "50% 0%",
-    category: "Fashion", label: "Fashion", title: "Faith Apparel, Night Campaign",
-    format: "9:16 · Video · Held pose, slow dolly push-in", framework: "Identity",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#18181b 0%,#000000 100%)", hl: "#e4e4e7", hook: "Built on *faith*", text: "Your design goes here.", sign: "Christian streetwear", tag: "Christian wear" },
-    why: [
-      "A held pose with a slow camera move is how real campaign films are shot. It looks expensive and deliberate.",
-      "Night, one soft key light and a church out of focus behind him give a dark, serious tone without saying a word.",
-      "The black hoodie is left completely blank so your own design can be added. Pair it with one short line of scripture or a brand statement.",
-    ],
-    desc: "A night-time fashion campaign clip for Christian and Orthodox streetwear brands. A muscular model in a blank black hoodie holds a still pose in front of a Byzantine church while the camera moves slowly in.",
-    tags: ["Christian wear", "Night shoot", "Editorial", "Blank hoodie"],
-    headline: "Built on faith",
-    primary: "A blank hoodie ready for your design. Say what the piece stands for and which sizes you stock.",
   },
   {
     id: "fragrance-light-sweep", type: "video", trending: true, isNew: true, dur: "0:08",
