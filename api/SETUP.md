@@ -41,4 +41,7 @@ It covers ads shown in the EU and UK. It returns the ad text, dates and advertis
    Tokens from the Explorer last about an hour; extend one in Tools > Access Token Debugger > Extend (about 60 days).
 3. Cloudflare > addoctor-api > Settings > Variables and Secrets > add META_TOKEN (secret).
 4. Cloudflare > addoctor-api > Edit code > replace everything with the current api/worker.js > Deploy.
+With a META_TOKEN the Worker also opens the preview page of the 12 most-used ads, takes the image (or a video's cover frame)
+and shows them to Claude, so the slide can describe how the ads look. Meta may refuse those reads. The /analyze reply has a
+"vision" field (tried, pages, found, images, note) that says what happened; the text analysis works either way.
 This path was tested against a mock of the API only. Run one real analysis after adding the token.

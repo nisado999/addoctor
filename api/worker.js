@@ -85,7 +85,7 @@ function normalizeMeta(it, format) {
     libId: String(it.id || ""), advertiser,
     headline: wf((title || lines[0] || "").slice(0, 110)),
     body: wf((title ? lines : lines.slice(1)).join(" ").slice(0, 400)),
-    cta: "", format: format === "Video" ? "Video" : new Set(titles).size > 1 ? "Carousel" : "Static",
+    cta: "", format: format === "Video" ? "Video" : new Set(titles).size > 1 ? "Carousel" : "Static", snap: String(it.ad_snapshot_url || ""),
     startMs, endMs, days, creator: partner && partner.toLowerCase() !== advertiser.toLowerCase() ? partner : "",
   };
 }
@@ -98,12 +98,12 @@ async function metaAds(env, q) {
     const p = new URLSearchParams({
       search_page_ids: q.id, ad_reached_countries: JSON.stringify([q.country || "ALL"]), ad_active_status: "ALL", ad_type: "ALL",
       media_type: mediaType, limit: "100", access_token: env.META_TOKEN,
-      fields: "id,page_name,bylines,ad_creative_bodies,ad_creative_link_titles,ad_delivery_start_time,ad_delivery_stop_time,publisher_platforms",
+      fields: "id,page_name,bylines,ad_creative_bodies,ad_creative_link_titles,ad_delivery_start_time,ad_delivery_stop_time,publisher_platforms,ad_snapshot_url",
     });
     if (q.from) p.set("ad_delivery_date_min", q.from);
     if (q.to) p.set("ad_delivery_date_max", q.to);
     let url = "https://graph.facebook.com/v21.0/ads_archive?" + p;
-    for (let page = 0; url && page < 10 && byId.size < cap; page++) {
+    for (let page = 0; url && page < 8 && byId.size < cap; page++) {   // 8 pages x 2 passes keeps room for the creative reads below
       const r = await fetch(url);
       const j = await r.json();
       if (!r.ok || j.error) throw new Error("Meta Ad Library: " + ((j.error && j.error.message) || r.status));
@@ -114,6 +114,48 @@ async function metaAds(env, q) {
   await pass("VIDEO", "Video");
   await pass("ALL", "");
   return [...byId.values()];
+}
+
+// Creative reading. Each ad has a preview page (ad_snapshot_url) whose HTML carries the image, or a video's cover
+// frame. Read it for the most-used creatives only, so Claude can describe what the ads look like.
+// Meta may refuse these reads; every failure is counted in "vision" and the text analysis carries on without it.
+const VISION_MAX = 12;
+const IMG_KEYS = ["original_image_url", "resized_image_url", "video_preview_image_url"];
+function snapImage(html) {
+  for (const k of IMG_KEYS) {
+    const m = html.match(new RegExp('"' + k + '"\\s*:\\s*("(?:[^"\\\\]|\\\\.)+")'));
+    if (m) { try { const u = JSON.parse(m[1]); if (/^https:\/\//.test(u)) return u; } catch (e) {} }
+  }
+  return "";
+}
+async function readCreatives(ads) {
+  const groups = new Map();
+  ads.forEach((a) => {
+    if (!a.snap) return;
+    const k = (a.headline + " " + a.body).toLowerCase().replace(/\s+/g, " ").slice(0, 70);
+    const g = groups.get(k) || { n: 0, a };
+    g.n++; groups.set(k, g);
+  });
+  const top = [...groups.values()].sort((x, y) => y.n - x.n || (y.a.days || 0) - (x.a.days || 0)).slice(0, VISION_MAX);
+  const vision = { tried: top.length, pages: 0, found: 0, images: 0, note: "" };
+  const out = await Promise.all(top.map(async (g) => {
+    try {
+      const r = await fetch(g.a.snap, { headers: { "user-agent": "Mozilla/5.0", accept: "text/html" } });
+      if (!r.ok) { vision.note = vision.note || "preview page " + r.status; return null; }
+      vision.pages++;
+      const src = snapImage(await r.text());
+      if (!src) { vision.note = vision.note || "no image in preview page"; return null; }
+      vision.found++;
+      const ir = await fetch(src);
+      const type = (ir.headers.get("content-type") || "").split(";")[0];
+      if (!ir.ok || !/^image\/(jpeg|png|webp|gif)$/.test(type)) { vision.note = vision.note || "image " + ir.status + " " + type; return null; }
+      const buf = await ir.arrayBuffer();
+      if (buf.byteLength > 3000000) { vision.note = vision.note || "image too large"; return null; }
+      vision.images++;
+      return { n: g.n, format: g.a.format, headline: g.a.headline, type, data: b64(buf) };
+    } catch (e) { vision.note = vision.note || String(e.message || e).slice(0, 80); return null; }
+  }));
+  return { images: out.filter(Boolean), vision };
 }
 
 // Slicing text can cut an emoji in half (a lone surrogate), which makes the request invalid JSON. Remove any such halves.
@@ -138,18 +180,24 @@ function compact(ads, cap = 13000) {
   return out;
 }
 
-async function writeSlide(env, ads, brand, from, to) {
+async function writeSlide(env, ads, brand, from, to, images = []) {
   const prompt = `You are a direct-response paid media analyst summarizing a competitor's Meta ads for an agency slide. Today is ${new Date().toISOString().slice(0, 10)}. Advertiser: ${brand || "unknown"}. Period: ${from || "?"} to ${to || "?"}. Total distinct ads read: ${ads.length}.
 Each line below is a group of near-identical ads: x<count> | format | start to end (or "running") | advertiser or creator | ad text.
 Return ONLY JSON: {"slide":[5 to 7 short bullets in the style of an agency competitor slide],"insights":[3 to 5 short bullets a media buyer can act on]}
 ${SLIDE_RULES}
 
+${images.length ? `After the ad list you are shown the creative of the ${images.length} most-used ads (for a video, its cover frame). Use them: add one or two slide bullets on how the ads look (product shot or lifestyle, text and discount badges on the image, polished or user-made style, recurring colours or layouts) and base at least one insight on them. Describe only what is visible.\n` : ""}
 ADS:
 ${compact(ads)}`;
+  const content = [{ type: "text", text: wf(prompt) }];
+  images.forEach((im, i) => {
+    content.push({ type: "text", text: wf(`Creative ${i + 1}: used by ${im.n} ad${im.n === 1 ? "" : "s"}, ${im.format}, headline "${im.headline}"`) });
+    content.push({ type: "image", source: { type: "base64", media_type: im.type, data: im.data } });
+  });
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: 1500, messages: [{ role: "user", content: wf(prompt) }] }),
+    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: 1500, messages: [{ role: "user", content }] }),
   });
   const j = await r.json();
   if (!r.ok) throw new Error((j.error && j.error.message) || "Anthropic error " + r.status);
@@ -486,8 +534,11 @@ export default {
         ads.filter((a) => !/ with /i.test(a.advertiser)).forEach((a) => { counts[a.advertiser] = (counts[a.advertiser] || 0) + 1; });
         const brand = String(b.brand || "").trim() || (Object.entries(counts).sort((x, y) => y[1] - x[1])[0] || [""])[0];
         let slide = [], insights = [], aiError = "";
-        try { ({ slide, insights } = await writeSlide(env, ads, brand, b.from, b.to)); } catch (e) { aiError = String(e.message || e).slice(0, 200); }
-        return json(env, { count: ads.length, brand, ads, slide, insights, aiError });
+        let images = [], vision = null;
+        if (run.startsWith("meta")) ({ images, vision } = await readCreatives(ads));
+        ads.forEach((a) => { delete a.snap; });   // the preview link carries the access token, so it never leaves the Worker
+        try { ({ slide, insights } = await writeSlide(env, ads, brand, b.from, b.to, images)); } catch (e) { aiError = String(e.message || e).slice(0, 200); }
+        return json(env, { count: ads.length, brand, ads, slide, insights, aiError, vision });
       }
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
