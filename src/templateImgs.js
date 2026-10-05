@@ -1,5 +1,14 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "faith-night-campaign": B + "templates/faith-night-campaign.jpg",
+  "fragrance-light-sweep": B + "templates/fragrance-light-sweep.jpg",
+  "activewear-rooftop-pose": B + "templates/activewear-rooftop-pose.jpg",
+  "watch-light-sweep": B + "templates/watch-light-sweep.jpg",
+  "sneaker-side-profile": B + "templates/sneaker-side-profile.jpg",
+  "hotel-room-sea-breeze": B + "templates/hotel-room-sea-breeze.jpg",
+  "beach-bar-spritz": B + "templates/beach-bar-spritz.jpg",
+  "olive-oil-grove": B + "templates/olive-oil-grove.jpg",
+  "wooden-toys-nursery": B + "templates/wooden-toys-nursery.jpg",
   "fragrance-front-solo": B + "templates/fragrance-front-solo.jpg",
   "burger-pass-pushin": B + "templates/burger-pass-pushin.jpg",
   "bakery-counter-box": B + "templates/bakery-counter-box.jpg",
@@ -10,7 +19,6 @@ const TEMPLATE_IMGS = {
   "florist-bouquet-wrap": B + "templates/florist-bouquet-wrap.jpg",
   "kettlebell-swing-gym": B + "templates/kettlebell-swing-gym.jpg",
   "dog-bowl-kitchen": B + "templates/dog-bowl-kitchen.jpg",
-  "sneaker-studio-orbit": B + "templates/sneaker-studio-orbit.jpg",
   "plaza-walk-men": B + "templates/plaza-walk-men.jpg",
   "supplement-swirl": B + "templates/supplement-swirl.jpg",
   "mug-rainy-window": B + "templates/mug-rainy-window.jpg",
@@ -255,6 +263,15 @@ const TEMPLATE_IMGS = {
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
+  "faith-night-campaign": B + "templates/faith-night-campaign.mp4",
+  "fragrance-light-sweep": B + "templates/fragrance-light-sweep.mp4",
+  "activewear-rooftop-pose": B + "templates/activewear-rooftop-pose.mp4",
+  "watch-light-sweep": B + "templates/watch-light-sweep.mp4",
+  "sneaker-side-profile": B + "templates/sneaker-side-profile.mp4",
+  "hotel-room-sea-breeze": B + "templates/hotel-room-sea-breeze.mp4",
+  "beach-bar-spritz": B + "templates/beach-bar-spritz.mp4",
+  "olive-oil-grove": B + "templates/olive-oil-grove.mp4",
+  "wooden-toys-nursery": B + "templates/wooden-toys-nursery.mp4",
   "burger-pass-pushin": B + "templates/burger-pass-pushin.mp4",
   "bakery-counter-box": B + "templates/bakery-counter-box.mp4",
   "necklace-collarbone": B + "templates/necklace-collarbone.mp4",
@@ -264,7 +281,6 @@ const TEMPLATE_VIDS = {
   "florist-bouquet-wrap": B + "templates/florist-bouquet-wrap.mp4",
   "kettlebell-swing-gym": B + "templates/kettlebell-swing-gym.mp4",
   "dog-bowl-kitchen": B + "templates/dog-bowl-kitchen.mp4",
-  "sneaker-studio-orbit": B + "templates/sneaker-studio-orbit.mp4",
   "plaza-walk-men": B + "templates/plaza-walk-men.mp4",
   "supplement-swirl": B + "templates/supplement-swirl.mp4",
   "mug-rainy-window": B + "templates/mug-rainy-window.mp4",
@@ -280,6 +296,15 @@ const TEMPLATE_VIDS = {
 /* Reference frames for a video template, in playing order. */
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
+  "faith-night-campaign": refs("faith-night-campaign"),
+  "fragrance-light-sweep": refs("fragrance-light-sweep"),
+  "activewear-rooftop-pose": refs("activewear-rooftop-pose"),
+  "watch-light-sweep": refs("watch-light-sweep"),
+  "sneaker-side-profile": refs("sneaker-side-profile"),
+  "hotel-room-sea-breeze": refs("hotel-room-sea-breeze"),
+  "beach-bar-spritz": refs("beach-bar-spritz"),
+  "olive-oil-grove": refs("olive-oil-grove"),
+  "wooden-toys-nursery": refs("wooden-toys-nursery"),
   "burger-pass-pushin": refs("burger-pass-pushin"),
   "bakery-counter-box": refs("bakery-counter-box"),
   "necklace-collarbone": refs("necklace-collarbone"),
@@ -289,7 +314,6 @@ const TEMPLATE_REFS = {
   "florist-bouquet-wrap": refs("florist-bouquet-wrap"),
   "kettlebell-swing-gym": refs("kettlebell-swing-gym"),
   "dog-bowl-kitchen": refs("dog-bowl-kitchen"),
-  "sneaker-studio-orbit": refs("sneaker-studio-orbit"),
   "plaza-walk-men": refs("plaza-walk-men"),
   "supplement-swirl": refs("supplement-swirl"),
   "mug-rainy-window": refs("mug-rainy-window"),
