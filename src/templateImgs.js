@@ -1,13 +1,10 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
   "street-walk-men": B + "templates/street-walk-men.jpg",
-  "faith-apparel-cloister": B + "templates/faith-apparel-cloister.jpg",
-  "croissant-tear": B + "templates/croissant-tear.jpg",
   "supplement-swirl": B + "templates/supplement-swirl.jpg",
   "mug-rainy-window": B + "templates/mug-rainy-window.jpg",
   "serum-still-light": B + "templates/serum-still-light.jpg",
   "streetwear-duo": B + "templates/streetwear-duo.jpg",
-  "sneaker-steps": B + "templates/sneaker-steps.jpg",
   "perfume-leaf-shadows": B + "templates/perfume-leaf-shadows.jpg",
   "alpine-lake-push": B + "templates/alpine-lake-push.jpg",
   "tennis-court-walk": B + "templates/tennis-court-walk.jpg",
@@ -248,13 +245,10 @@ const TEMPLATE_IMGS = {
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
   "street-walk-men": B + "templates/street-walk-men.mp4",
-  "faith-apparel-cloister": B + "templates/faith-apparel-cloister.mp4",
-  "croissant-tear": B + "templates/croissant-tear.mp4",
   "supplement-swirl": B + "templates/supplement-swirl.mp4",
   "mug-rainy-window": B + "templates/mug-rainy-window.mp4",
   "serum-still-light": B + "templates/serum-still-light.mp4",
   "streetwear-duo": B + "templates/streetwear-duo.mp4",
-  "sneaker-steps": B + "templates/sneaker-steps.mp4",
   "perfume-leaf-shadows": B + "templates/perfume-leaf-shadows.mp4",
   "alpine-lake-push": B + "templates/alpine-lake-push.mp4",
   "tennis-court-walk": B + "templates/tennis-court-walk.mp4",
@@ -266,13 +260,10 @@ const TEMPLATE_VIDS = {
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
   "street-walk-men": refs("street-walk-men"),
-  "faith-apparel-cloister": refs("faith-apparel-cloister"),
-  "croissant-tear": refs("croissant-tear"),
   "supplement-swirl": refs("supplement-swirl"),
   "mug-rainy-window": refs("mug-rainy-window"),
   "serum-still-light": refs("serum-still-light"),
   "streetwear-duo": refs("streetwear-duo"),
-  "sneaker-steps": refs("sneaker-steps"),
   "perfume-leaf-shadows": refs("perfume-leaf-shadows"),
   "alpine-lake-push": refs("alpine-lake-push"),
   "tennis-court-walk": refs("tennis-court-walk"),
