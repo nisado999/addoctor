@@ -11,6 +11,21 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "faith-dusk-athens", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
+    category: "Fashion", label: "Fashion", title: "Faith Apparel, Blue Hour",
+    format: "9:16 · Video · Camera circles a still figure at dusk", framework: "Identity",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e3a8a 0%,#020617 100%)", hl: "#fbbf24", hook: "Built on *faith*", text: "Your design goes here.", sign: "Christian streetwear", tag: "Christian wear" },
+    why: [
+      "The dark blue-hour look and the lit church behind him read as strength and conviction, the tone of motivational content.",
+      "He stands still while the camera moves, which feels deliberate and powerful, and ends with his head raised.",
+      "The black hoodie is left completely blank so your own design can be added. Pair it with one short line of scripture or a brand statement.",
+    ],
+    desc: "A dark, cinematic clip for Christian and Orthodox streetwear brands. A muscular man in a blank black hoodie stands in front of a lit Byzantine church at dusk while the camera circles him.",
+    tags: ["Christian wear", "Dark aesthetic", "Motivational", "Blank hoodie"],
+    headline: "Built on faith",
+    primary: "A blank hoodie ready for your design. Say what the piece stands for and which sizes you stock.",
+  },
+  {
     id: "bakery-counter-box", type: "video", trending: true, isNew: true, dur: "0:08",
     category: "Food & Bev", label: "Food & Bev", title: "Bakery Counter Box",
     format: "9:16 · Video · Phone-style shot of a pastry box being filled", framework: "Native UGC",
