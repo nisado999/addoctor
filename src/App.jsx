@@ -72,7 +72,7 @@ function loadFavs() {
   }
 }
 const SORTS = [["featured", "Featured"], ["trending", "Trending first"], ["az", "A to Z"]];
-const QUICK = [["new", "New"], ["trending", "Trending"], ["favs", "Favourites"]];
+const QUICK = [["new", "New"], ["trending", "Trending"], ["video", "Video"], ["favs", "Favourites"]];
 function loadVault() {
   try {
     const v = JSON.parse(localStorage.getItem(VAULT_KEY) || "[]");
@@ -101,7 +101,7 @@ function App() {
   const [studio, setStudio] = useState(null);
   const [favs, setFavs] = useState(loadFavs);
   const [sort, setSort] = useState("featured");
-  const [quick, setQuick] = useState(null); // null | "new" | "trending" | "favs"
+  const [quick, setQuick] = useState(null); // null | "new" | "trending" | "video" | "favs"
   const [toTop, setToTop] = useState(false);
   const searchRef = useRef(null);
 
@@ -173,7 +173,7 @@ function App() {
   const s = q.trim().toLowerCase();
   const words = useMemo(() => s.split(/\s+/).filter(Boolean), [s]);
   const passQuick = useCallback(
-    (t) => !quick || (quick === "new" ? !!t.isNew : quick === "trending" ? !!t.trending : favs.includes(t.id)),
+    (t) => !quick || (quick === "new" ? !!t.isNew : quick === "trending" ? !!t.trending : quick === "video" ? t.type === "video" : favs.includes(t.id)),
     [quick, favs]
   );
   const list = useMemo(() => {
@@ -292,7 +292,7 @@ function App() {
                       key={id} onClick={() => setQuick(on ? null : id)} aria-pressed={on}
                       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}
                     >
-                      {id === "new" ? <Icon.Sparkle className="h-3.5 w-3.5" /> : id === "trending" ? <Icon.Flame className="h-3.5 w-3.5" /> : <Icon.Heart className="h-3.5 w-3.5" />}
+                      {id === "new" ? <Icon.Sparkle className="h-3.5 w-3.5" /> : id === "trending" ? <Icon.Flame className="h-3.5 w-3.5" /> : id === "video" ? <Icon.Video className="h-3.5 w-3.5" /> : <Icon.Heart className="h-3.5 w-3.5" />}
                       {label}
                       {id === "favs" && favs.length > 0 && <span className="tabular-nums text-slate-400">{favs.length}</span>}
                     </button>

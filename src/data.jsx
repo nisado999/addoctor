@@ -11,6 +11,32 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "hidden-bay-drone", type: "video", trending: true, isNew: true, dur: "0:08",
+    category: "Travel", label: "Travel", title: "Slow Drone Reveal",
+    format: "9:16 · Video · One slow aerial move, no cuts", framework: "Aspiration",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#0891b2 0%,#164e63 100%)", hl: "#fef3c7", hook: "The bay *nobody told you about*", text: "Seven days, one boat, no crowds.", sign: "Sailing week", tag: "Travel" },
+    why: [
+      "One slow, steady move holds attention longer than fast cuts, because the viewer waits to see where it goes.",
+      "It needs no sound, so it works in a feed where most videos play muted.",
+      "Add your headline as on-screen text in the first second, and keep the offer for the caption.",
+    ],
+    headline: "The bay nobody told you about",
+    primary: "Seven days, one boat, no crowds. Add your dates, the price per person and what is included.",
+  },
+  {
+    id: "summit-bottle-orbit", type: "video", trending: true, isNew: true, dur: "0:08",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Product Orbit On Location",
+    format: "9:16 · Video · Camera circles the product outdoors", framework: "Show, don't tell",
+    art: { kind: "stat", bg: "linear-gradient(160deg,#1e3a8a 0%,#0f172a 100%)", hl: "#7dd3fc", hook: "Still cold *at the top*", big: "24h", unit: "cold", chips: ["Steel", "Leak proof"], tag: "Outdoor" },
+    why: [
+      "Circling the product shows it from every side, which answers what it looks like better than a still.",
+      "The summit behind it says where it belongs without a word of copy.",
+      "Keep the product in the centre of the frame the whole time, and put one claim on screen.",
+    ],
+    headline: "Still cold at the top",
+    primary: "A steel bottle built for long days out. Add how long it keeps drinks cold and the sizes you sell.",
+  },
+  {
     id: "founder-holding-jar", type: "static", trending: true, isNew: true,
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Founder Holding It",
     format: "4:5 · Static · Founder portrait with the product", framework: "Story",

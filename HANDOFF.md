@@ -2,13 +2,14 @@
 
 ## What this is
 React + Vite app (src/, public/templates). Bright healthcare-SaaS look: white, slate, sapphire #2563EB, emerald #10B981. No dark mode, no icon packages (inline SVG only).
-Audits ad creatives, analyses competitor ads, generates new creatives. 230 gallery templates.
+Audits ad creatives, analyses competitor ads, generates new creatives. 232 gallery templates (2 of them video).
 
 ## State
-- src/data.jsx = TEMPLATES (230), src/templateImgs.js maps id -> public/templates/<id>.jpg (230 images, 600x750, 4:5).
+- src/data.jsx = TEMPLATES (232), src/templateImgs.js maps id -> public/templates/<id>.jpg (232 images, 600x750, 4:5).
 - Templates with `isNew: true` show a NEW badge. The 9 added on 2026-10-05 copy formats seen in the Meta Ad Library for Spacegoods, Primal Queen, Norse Organics and Rosabella (callout labels, sticky-note UGC, thermal visual, starter-kit flat lay, handheld offer, reverse hook, process shot).
 - 40 more were added later the same day (night-out-edit replaces the removed Night-Out Lookbook). All 49 carry isNew.
 - Gallery has quick filters (New, Trending, Favourites), a sort menu, favourites saved in localStorage (addoctor.favs.v1), "/" to focus search and a back-to-top button.
+- Video templates: type "video" plus an entry in TEMPLATE_VIDS (templateImgs.js) pointing at public/templates/<id>.mp4 (540x960, no audio, about 0.5 to 1.5 MB). The .jpg with the same id is the first frame and is used as the poster. Cards play them muted on a loop while on screen. Two exist: hidden-bay-drone, summit-bottle-orbit.
 - Tailwind is compiled (tailwind.config.js, postcss.config.js), no CDN script.
 - The view is kept in the URL hash (#static, #pack, #spy, #vault, #lab).
 - Every template image has its headline + caption BAKED INTO the photo (made in Gemini). Creative() renders only the photo when an image exists.
@@ -17,7 +18,7 @@ Audits ad creatives, analyses competitor ads, generates new creatives. 230 galle
 - Live claude.ai artifact (single-file build) is separate: https://claude.ai/artifact/6zaErcBJFD19YcHV9Q18K5
 
 ## Open tasks
-1. 3 Gemini videos (plan allows 3/day) for templates; suggested: greek bay sailing, steel bottle summit, Dolomites lake. Text-to-video prompts, no baked text, 9:16.
+1. Third video: Gemini refused a third on 2026-10-05 (daily limit). Planned: id "alpine-lake-push", Travel, prompt: calm Dolomites lake at dawn, slow push-in along a jetty, 9:16, no text. Generate, compress with ffmpeg (scale 540 wide, crf 27, no audio, faststart), add to TEMPLATE_VIDS.
 2. "Place my product in scene" feature (unanswered offer).
 3. More templates only if quality is high. Rules: plain products (no prints/logos/lettering), no lookalikes of known brands, no "adroast" text, reject bad images.
 

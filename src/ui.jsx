@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { LOGO_SRC } from "./data";
 import { rgba } from "./studio";
-import { TEMPLATE_IMGS } from "./templateImgs.js";
+import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 
 /* ------------------------------- Icons --------------------------------- */
 
@@ -313,9 +313,33 @@ function CreativeBody({ a }) {
   }
 }
 
+/* A silent looping clip that only plays while it is on screen, so a long gallery does not decode every video at once. */
+function LoopVideo({ src, poster, title }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || typeof IntersectionObserver === "undefined") return;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause();
+    }, { threshold: 0.35 });
+    io.observe(v);
+    return () => io.disconnect();
+  }, [src]);
+  return <video ref={ref} src={src} poster={poster} aria-label={title} muted loop playsInline preload="none" disablePictureInPicture className="cr-photo-img" />;
+}
+
 function Creative({ t }) {
   const a = t.art;
   const photo = TEMPLATE_IMGS[t.id];
+  const clip = TEMPLATE_VIDS[t.id];
+  if (clip) {
+    return (
+      <div className="cr cr-photo">
+        <LoopVideo src={clip} poster={photo} title={t.title} />
+      </div>
+    );
+  }
   if (photo) {
     return (
       <div className={`cr cr-photo ${t.type === "video" ? "cr-vid" : ""}`}>

@@ -1,5 +1,7 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "hidden-bay-drone": B + "templates/hidden-bay-drone.jpg",
+  "summit-bottle-orbit": B + "templates/summit-bottle-orbit.jpg",
   "founder-holding-jar": B + "templates/founder-holding-jar.jpg",
   "swap-this-for-that": B + "templates/swap-this-for-that.jpg",
   "smaller-than-keys": B + "templates/smaller-than-keys.jpg",
@@ -231,4 +233,9 @@ const TEMPLATE_IMGS = {
   "greek-salad-sea": B + "templates/greek-salad-sea.jpg",
   "cycling-helmet-bench": B + "templates/cycling-helmet-bench.jpg",
 };
-export { TEMPLATE_IMGS };
+/* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
+const TEMPLATE_VIDS = {
+  "hidden-bay-drone": B + "templates/hidden-bay-drone.mp4",
+  "summit-bottle-orbit": B + "templates/summit-bottle-orbit.mp4",
+};
+export { TEMPLATE_IMGS, TEMPLATE_VIDS };
