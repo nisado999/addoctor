@@ -2,14 +2,14 @@
 
 ## What this is
 React + Vite app (src/, public/templates). Bright healthcare-SaaS look: white, slate, sapphire #2563EB, emerald #10B981. No dark mode, no icon packages (inline SVG only).
-Audits ad creatives, analyses competitor ads, generates new creatives. 234 gallery templates (4 of them video).
+Audits ad creatives, analyses competitor ads, generates new creatives. 244 gallery templates (14 of them video).
 
 ## State
-- src/data.jsx = TEMPLATES (234), src/templateImgs.js maps id -> public/templates/<id>.jpg (234 images, 600x750, 4:5).
+- src/data.jsx = TEMPLATES (244), src/templateImgs.js maps id -> public/templates/<id>.jpg (244 images, 600x750, 4:5).
 - Templates with `isNew: true` show a NEW badge. The 9 added on 2026-10-05 copy formats seen in the Meta Ad Library for Spacegoods, Primal Queen, Norse Organics and Rosabella (callout labels, sticky-note UGC, thermal visual, starter-kit flat lay, handheld offer, reverse hook, process shot).
 - 40 more were added later the same day (night-out-edit replaces the removed Night-Out Lookbook). All 49 carry isNew.
 - Gallery has quick filters (New, Trending, Favourites), a sort menu, favourites saved in localStorage (addoctor.favs.v1), "/" to focus search and a back-to-top button.
-- Video templates: type "video" plus an entry in TEMPLATE_VIDS (templateImgs.js) pointing at public/templates/<id>.mp4 (540x960, no audio, about 0.5 to 1.5 MB). The .jpg with the same id is the first frame and is used as the poster. Cards play them muted on a loop while on screen. A card is 4:5, so it shows only 70% of a 9:16 clip: set focus: "50% 0%" on templates with a standing person so the head is kept, and leave about 10% empty space above the head in the clip itself. Four exist: hidden-bay-drone, summit-bottle-orbit, tennis-court-walk, studio-hoodie-push. Clicking one in Explore opens LookModal (src/look.jsx): the clip, desc, tags, and four reference frames from TEMPLATE_REFS (public/templates/refs/<id>-1..4.jpg, 450x800).
+- Video templates: type "video" plus an entry in TEMPLATE_VIDS (templateImgs.js) pointing at public/templates/<id>.mp4 (540x960, no audio, about 0.5 to 1.5 MB). The .jpg with the same id is the first frame and is used as the poster. Cards play them muted on a loop while on screen. A card is 4:5, so it shows only 70% of a 9:16 clip: set focus: "50% 0%" on templates with a standing person so the head is kept, and leave about 10% empty space above the head in the clip itself. Fourteen exist (see TEMPLATE_VIDS). Clicking one in Explore opens LookModal (src/look.jsx): the clip, desc, tags, and four reference frames from TEMPLATE_REFS (public/templates/refs/<id>-1..4.jpg, 450x800).
 - Tailwind is compiled (tailwind.config.js, postcss.config.js), no CDN script.
 - The view is kept in the URL hash (#static, #pack, #spy, #vault, #lab).
 - Every template image has its headline + caption BAKED INTO the photo (made in Gemini). Creative() renders only the photo when an image exists.
@@ -18,9 +18,8 @@ Audits ad creatives, analyses competitor ads, generates new creatives. 234 galle
 - Live claude.ai artifact (single-file build) is separate: https://claude.ai/artifact/6zaErcBJFD19YcHV9Q18K5
 
 ## Open tasks
-1. Third video: Gemini refused a third on 2026-10-05 (daily limit). Planned: id "alpine-lake-push", Travel, prompt: calm Dolomites lake at dawn, slow push-in along a jetty, 9:16, no text. Generate, compress with ffmpeg (scale 540 wide, crf 27, no audio, faststart), add to TEMPLATE_VIDS.
-2. "Place my product in scene" feature (unanswered offer).
-3. More templates only if quality is high. Rules: plain products (no prints/logos/lettering), no lookalikes of known brands, no "adroast" text, reject bad images.
+1. "Place my product in scene" feature (unanswered offer).
+2. More templates only if quality is high. Rules: plain products (no prints/logos/lettering), no lookalikes of known brands, no "adroast" text, reject bad images.
 
 ## Template image recipe (Gemini image gen, 3:4)
 "3:4 vertical advertising photograph. <scene>. Big bold clean sans-serif headline text across the top reading exactly: '<HEAD>'. Smaller caption under it reading exactly: '<caption>'. The <product> has no logos or lettering and is a plain original design. Text perfectly spelled, sharp, at least 10 percent below the top edge. High-end advertising photograph, 85mm lens at f/2, subtle film grain, no logos, no watermarks."
