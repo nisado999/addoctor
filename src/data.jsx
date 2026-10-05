@@ -11,19 +11,6 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
-    id: "noir-absolu-hands", type: "static", trending: true, isNew: true,
-    category: "Fragrances", label: "Fragrances", title: "Hands On The Bottle",
-    format: "4:5 · Static · Dark studio shot, hands framing the product", framework: "Desire",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#18181b 0%,#000000 100%)", hl: "#e4e4e7", hook: "*Noir* absolu", text: "The new intense.", sign: "Eau de parfum", tag: "Fragrance" },
-    why: [
-      "Hands on the bottle add scale, weight and a sense of ownership that a bottle alone on a table cannot.",
-      "A black background and one light make the glass and the rings the only things to look at, which reads as luxury.",
-      "Keep the copy to a name and one line. The less a fragrance ad says, the more expensive it feels.",
-    ],
-    headline: "Noir absolu",
-    primary: "The new intense. Add the size, the concentration and where to buy it.",
-  },
-  {
     id: "faith-overcast-athens", type: "video", trending: true, isNew: true, dur: "0:09", focus: "50% 0%",
     category: "Fashion", label: "Fashion", title: "Faith Apparel, Head Raised",
     format: "9:16 · Video · One still figure, one gesture", framework: "Identity",
