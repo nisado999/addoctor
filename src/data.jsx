@@ -176,7 +176,7 @@ const TEMPLATES = [
     primary: "The court set: dress, shoes, done. Add the pieces, the sizes and the price of the set.",
   },
   {
-    id: "studio-hoodie-push", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
+    id: "studio-lookbook-turn", type: "video", trending: true, isNew: true, dur: "0:08", focus: "50% 0%",
     category: "Fashion", label: "Fashion", title: "Minimal Studio Lookbook",
     format: "9:16 · Video · Slow full turn on a plain backdrop", framework: "Simplicity",
     art: { kind: "quote", light: true, bg: "linear-gradient(160deg,#f4f4f5 0%,#d4d4d8 100%)", hl: "#18181b", hook: "The hoodie, *nothing else*", text: "Heavyweight cotton. Oversized fit.", sign: "Essentials", tag: "Studio" },

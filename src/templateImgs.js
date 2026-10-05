@@ -11,7 +11,7 @@ const TEMPLATE_IMGS = {
   "perfume-leaf-shadows": B + "templates/perfume-leaf-shadows.jpg",
   "alpine-lake-push": B + "templates/alpine-lake-push.jpg",
   "tennis-court-walk": B + "templates/tennis-court-walk.jpg",
-  "studio-hoodie-push": B + "templates/studio-hoodie-push.jpg",
+  "studio-lookbook-turn": B + "templates/studio-lookbook-turn.jpg",
   "hidden-bay-drone": B + "templates/hidden-bay-drone.jpg",
   "summit-bottle-orbit": B + "templates/summit-bottle-orbit.jpg",
   "founder-holding-jar": B + "templates/founder-holding-jar.jpg",
@@ -258,7 +258,7 @@ const TEMPLATE_VIDS = {
   "perfume-leaf-shadows": B + "templates/perfume-leaf-shadows.mp4",
   "alpine-lake-push": B + "templates/alpine-lake-push.mp4",
   "tennis-court-walk": B + "templates/tennis-court-walk.mp4",
-  "studio-hoodie-push": B + "templates/studio-hoodie-push.mp4",
+  "studio-lookbook-turn": B + "templates/studio-lookbook-turn.mp4",
   "hidden-bay-drone": B + "templates/hidden-bay-drone.mp4",
   "summit-bottle-orbit": B + "templates/summit-bottle-orbit.mp4",
 };
@@ -276,7 +276,7 @@ const TEMPLATE_REFS = {
   "perfume-leaf-shadows": refs("perfume-leaf-shadows"),
   "alpine-lake-push": refs("alpine-lake-push"),
   "tennis-court-walk": refs("tennis-court-walk"),
-  "studio-hoodie-push": refs("studio-hoodie-push"),
+  "studio-lookbook-turn": refs("studio-lookbook-turn"),
   "hidden-bay-drone": refs("hidden-bay-drone"),
   "summit-bottle-orbit": refs("summit-bottle-orbit"),
 };

@@ -29,3 +29,4 @@ Chrome saves downloads to E:/Save shit here. Gemini shows each result as a same-
 Dev only: saving a source file can set off a burst of Vite page reloads, because most modules export constants next to components and import each other in a circle. The build is not affected.
 Publish: build, then copy dist/ into a checkout of the gh-pages branch and push. Live at https://nisado999.github.io/addoctor/
 More videos: Google Flow (flow.google.com, same Google account) is set to 9:16, Veo 3.1 Fast, confirm before generating. A clip costs 20 credits; 1,010 of the monthly credits were left on 2026-10-05. Download at 720p from the card menu. The Gemini app itself allows only 2 to 3 videos a day.
+When a video or image is replaced, give it a new file name (new id). GitHub Pages and browsers cache the old file under the same name, so visitors keep seeing the old clip.
