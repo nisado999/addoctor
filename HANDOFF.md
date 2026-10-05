@@ -13,6 +13,7 @@ Audits ad creatives, analyses competitor ads, generates new creatives. 230 galle
 - The view is kept in the URL hash (#static, #pack, #spy, #vault, #lab).
 - Every template image has its headline + caption BAKED INTO the photo (made in Gemini). Creative() renders only the photo when an image exists.
 - Installs, runs and builds cleanly (`npm run dev`, `npm run build`). Repo: https://github.com/nisado999/addoctor
+- Backend is deployed: Cloudflare Worker https://addoctor-api.nisado9999.workers.dev (api/worker.js; Apify, Anthropic and Gemini keys set in the dashboard; no APP_KEY; ALLOW_ORIGIN is *). The local .env (git-ignored) sets VITE_ADDOCTOR_API to it, and the build needs that file or Competitor Spy and Social Pack are disabled.
 - Live claude.ai artifact (single-file build) is separate: https://claude.ai/artifact/6zaErcBJFD19YcHV9Q18K5
 
 ## Open tasks
