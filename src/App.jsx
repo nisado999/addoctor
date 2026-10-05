@@ -62,6 +62,17 @@ const VIEWS = {
 };
 
 const VAULT_KEY = "addoctor.vault.v1";
+const FAVS_KEY = "addoctor.favs.v1";
+function loadFavs() {
+  try {
+    const v = JSON.parse(localStorage.getItem(FAVS_KEY) || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch (e) {
+    return [];
+  }
+}
+const SORTS = [["featured", "Featured"], ["trending", "Trending first"], ["az", "A to Z"]];
+const QUICK = [["new", "New"], ["trending", "Trending"], ["favs", "Favourites"]];
 function loadVault() {
   try {
     const v = JSON.parse(localStorage.getItem(VAULT_KEY) || "[]");
@@ -88,10 +99,33 @@ function App() {
   const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState(null);
   const [studio, setStudio] = useState(null);
+  const [favs, setFavs] = useState(loadFavs);
+  const [sort, setSort] = useState("featured");
+  const [quick, setQuick] = useState(null); // null | "new" | "trending" | "favs"
+  const [toTop, setToTop] = useState(false);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     try { localStorage.setItem(VAULT_KEY, JSON.stringify(vault)); } catch (e) {}
   }, [vault]);
+  useEffect(() => {
+    try { localStorage.setItem(FAVS_KEY, JSON.stringify(favs)); } catch (e) {}
+  }, [favs]);
+  /* "/" jumps to search, like most galleries. Ignored while typing or when a modal is open. */
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = document.activeElement;
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      if (document.querySelector('[role="dialog"]') || !searchRef.current) return;
+      e.preventDefault();
+      searchRef.current.focus();
+    };
+    const onScroll = () => setToTop(window.scrollY > 900);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("scroll", onScroll); };
+  }, []);
   useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(null), toast.ms);
@@ -133,26 +167,40 @@ function App() {
     ]);
     notify("Saved to Vault");
   };
+  const toggleFav = useCallback((id) => setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : [id, ...f])), []);
   const removeSaved = (id) => { setVault((v) => v.filter((x) => x.id !== id)); notify("Removed from Vault"); };
 
   const s = q.trim().toLowerCase();
+  const words = useMemo(() => s.split(/\s+/).filter(Boolean), [s]);
+  const passQuick = useCallback(
+    (t) => !quick || (quick === "new" ? !!t.isNew : quick === "trending" ? !!t.trending : favs.includes(t.id)),
+    [quick, favs]
+  );
   const list = useMemo(() => {
-    return TEMPLATES.filter(
-      (t) =>
-        (view === "explore" || t.type === view) &&
-        (cat === "All" || t.category === cat) &&
-        (!s || [t.title, t.label, t.category, t.framework, t.format, t.type === "video" ? "video" : "static"].join(" ").toLowerCase().includes(s))
-    );
-  }, [view, cat, s]);
+    const out = TEMPLATES.filter((t) => {
+      if (view !== "explore" && t.type !== view) return false;
+      if (cat !== "All" && t.category !== cat) return false;
+      if (!passQuick(t)) return false;
+      if (!words.length) return true;
+      const hay = [t.title, t.label, t.category, t.framework, t.format, t.headline, t.type === "video" ? "video" : "static"].join(" ").toLowerCase();
+      return words.every((w) => hay.includes(w));
+    });
+    if (sort === "az") return [...out].sort((x, y) => x.title.localeCompare(y.title));
+    if (sort === "trending") return [...out].sort((x, y) => (y.trending ? 1 : 0) - (x.trending ? 1 : 0));
+    return out;
+  }, [view, cat, words, sort, passQuick]);
   const catCounts = useMemo(() => {
     const m = { All: 0 };
     TEMPLATES.forEach((t) => {
       if (view !== "explore" && t.type !== view) return;
+      if (!passQuick(t)) return;
       m.All += 1;
       m[t.category] = (m[t.category] || 0) + 1;
     });
     return m;
-  }, [view]);
+  }, [view, passQuick]);
+  const filtered = cat !== "All" || !!quick || !!s;
+  const clearFilters = () => { setQ(""); setCat("All"); setQuick(null); };
   const vaultList = useMemo(
     () => vault.filter((v) => !s || [v.brand, v.headline, v.copy, v.status].join(" ").toLowerCase().includes(s)),
     [vault, s]
@@ -179,10 +227,12 @@ function App() {
             <div className={`relative min-w-0 flex-1 md:max-w-md ${isGrid || view === "vault" ? "" : "invisible"}`}>
               <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
-                id="search" type="search" value={q} onChange={(e) => setQ(e.target.value)}
+                id="search" ref={searchRef} type="search" value={q} onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
                 placeholder={view === "vault" ? "Search saved reports..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search saved reports" : "Search templates, niches, formats"}
                 className="h-10 w-full rounded-full border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
+              {!q && <kbd className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 md:block">/</kbd>}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <span className="hidden items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 xl:inline-flex">
@@ -232,11 +282,43 @@ function App() {
             </div>
           )}
 
+          {isGrid && (
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Quick filters">
+                {QUICK.map(([id, label]) => {
+                  const on = quick === id;
+                  return (
+                    <button
+                      key={id} onClick={() => setQuick(on ? null : id)} aria-pressed={on}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}
+                    >
+                      {id === "new" ? <Icon.Sparkle className="h-3.5 w-3.5" /> : id === "trending" ? <Icon.Flame className="h-3.5 w-3.5" /> : <Icon.Heart className="h-3.5 w-3.5" />}
+                      {label}
+                      {id === "favs" && favs.length > 0 && <span className="tabular-nums text-slate-400">{favs.length}</span>}
+                    </button>
+                  );
+                })}
+                {filtered && (
+                  <button onClick={clearFilters} className="rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Clear filters</button>
+                )}
+              </div>
+              <label className="ml-auto flex items-center gap-2 text-xs font-medium text-slate-500">
+                Sort
+                <select
+                  value={sort} onChange={(e) => setSort(e.target.value)}
+                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                >
+                  {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+                </select>
+              </label>
+            </div>
+          )}
+
           {isGrid ? (
             list.length ? (
               <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-x-5">
                 {list.map((t) => <TemplateCard
-                    key={t.id} t={t}
+                    key={t.id} t={t} fav={favs.includes(t.id)} onFav={toggleFav}
                     {...(inStudio ? { verb: "Open Studio:", action: "Open Studio" } : {})}
                     onInspect={(tp) => (inStudio ? setStudio(tp) : openExam({ template: tp }))}
                   />)}
@@ -244,9 +326,9 @@ function App() {
             ) : (
               <div className="mt-16 flex flex-col items-center text-center">
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-400"><Icon.Search className="h-5 w-5" /></div>
-                <p className="mt-4 text-sm font-semibold text-slate-900">No templates match{q.trim() ? ` "${q.trim()}"` : " these filters"}</p>
-                <p className="mt-1 text-sm text-slate-500">Try a niche like "skincare" or a format like "static".</p>
-                <button onClick={() => { setQ(""); setCat("All"); }} className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700">Clear filters</button>
+                <p className="mt-4 text-sm font-semibold text-slate-900">{quick === "favs" && !favs.length ? "No favourites yet" : `No templates match${q.trim() ? ` "${q.trim()}"` : " these filters"}`}</p>
+                <p className="mt-1 text-sm text-slate-500">{quick === "favs" && !favs.length ? "Tap the heart on any template to keep it here." : 'Try a niche like "skincare" or a format like "static".'}</p>
+                <button onClick={clearFilters} className="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-700">Clear filters</button>
               </div>
             )
           ) : view === "lab" ? (
@@ -274,6 +356,15 @@ function App() {
       )}
 
       {studio && <StudioModal key={studio.id} tpl={studio} onClose={closeStudio} notify={notify} />}
+
+      {toTop && isGrid && !exam && !studio && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top"
+          className="fixed bottom-6 right-5 z-20 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-900/10 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+        >
+          <Icon.Arrow className="h-4 w-4 -rotate-90" />
+        </button>
+      )}
 
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>

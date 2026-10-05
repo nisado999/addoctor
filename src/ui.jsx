@@ -38,6 +38,7 @@ const Icon = {
   Target: (p) => (<svg {...svgBase} {...p}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="1" /></svg>),
   Upload: (p) => (<svg {...svgBase} {...p}><path d="M12 15.5v-11M7.5 8.5 12 4l4.5 4.5" /><path d="M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2" /></svg>),
   Gap: (p) => (<svg {...svgBase} {...p}><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4" /><circle cx="12" cy="12" r="2.2" /></svg>),
+  Heart: (p) => (<svg {...svgBase} strokeWidth="2" {...p}><path d="M12 20.3s-7.5-4.4-7.5-10a4.3 4.3 0 0 1 7.5-2.9 4.3 4.3 0 0 1 7.5 2.9c0 5.6-7.5 10-7.5 10z" /></svg>),
   Layout: (p) => (<svg {...svgBase} {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M3.5 9.5h17M10 9.5v11" /></svg>),
 };
 
@@ -344,7 +345,7 @@ function Creative({ t }) {
 
 const pill = "inline-flex items-center gap-1 rounded-full bg-slate-950/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white";
 
-function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "Inspect" }) {
+function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "Inspect", fav = false, onFav }) {
   return (
     <div
       role="button"
@@ -358,7 +359,7 @@ function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "I
         <Creative t={t} />
 
         {/* Badges sit at the bottom: the photos carry their headline at the top. */}
-        <div className="pointer-events-none absolute inset-x-2 bottom-2 z-[2] flex flex-wrap items-center gap-1.5">
+        <div className="pointer-events-none absolute bottom-2 left-2 right-11 z-[2] flex flex-wrap items-center gap-1.5">
           {t.type === "video" && (
             <span className={pill}><Icon.Video className="h-3 w-3" /> VIDEO</span>
           )}
@@ -367,6 +368,17 @@ function TemplateCard({ t, onInspect, action = "Inspect Prescription", verb = "I
             <span className={pill}><Icon.Flame className="h-3 w-3 text-blue-300" /> TRENDING</span>
           )}
         </div>
+
+        {onFav && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onFav(t.id); }}
+            onKeyDown={(e) => e.stopPropagation()}
+            aria-pressed={fav} aria-label={`${fav ? "Remove" : "Add"} ${t.title} ${fav ? "from" : "to"} favourites`}
+            className={`absolute bottom-1.5 right-1.5 z-[4] grid h-8 w-8 place-items-center rounded-full shadow-sm backdrop-blur transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/30 ${fav ? "bg-white text-rose-500 opacity-100" : "bg-white/85 text-slate-600 opacity-0 hover:text-rose-500 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"}`}
+          >
+            <Icon.Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
+          </button>
+        )}
 
         <div className="absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
           <span className="inline-flex translate-y-1.5 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-950/40 transition duration-300 group-hover:translate-y-0">
