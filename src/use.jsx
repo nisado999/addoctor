@@ -113,6 +113,42 @@ function exportVideo(tpl, logo, spot, size, onProgress) {
   });
 }
 
+function readLogo(file, notify) {
+  return new Promise((resolve) => {
+    if (!file) return resolve(null);
+    if (!/^image\/(png|jpeg|webp|svg\+xml)$/.test(file.type)) { notify("Use a PNG, JPG, WEBP or SVG logo."); return resolve(null); }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const img = await loadImage(reader.result);
+        resolve({ src: reader.result, img, ratio: (img.naturalWidth || 300) / (img.naturalHeight || 150), name: file.name });
+      } catch (e) { notify("That logo file could not be read."); resolve(null); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function LogoDrop({ logo, onLogo, notify }) {
+  const fileRef = useRef(null);
+  const take = async (file) => { const l = await readLogo(file, notify); if (l) onLogo(l); };
+  return (
+    <>
+      <button
+        type="button" onClick={() => fileRef.current && fileRef.current.click()}
+        onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); take(e.dataTransfer.files[0]); }}
+        className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-left transition hover:border-blue-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"
+      >
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Upload className="h-5 w-5" /></span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold text-slate-900">{logo ? logo.name : "Upload your logo"}</span>
+          <span className="block text-xs text-slate-500">{logo ? "Click to choose a different file." : "PNG with a transparent background works best. It never leaves your browser."}</span>
+        </span>
+      </button>
+      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => take(e.target.files[0])} />
+    </>
+  );
+}
+
 function BrandModal({ tpl, onClose, notify }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
@@ -120,20 +156,6 @@ function BrandModal({ tpl, onClose, notify }) {
   const [spot, setSpot] = useState("br");
   const [size, setSize] = useState(0.26);
   const [busy, setBusy] = useState(null); // null | 0..1
-  const fileRef = useRef(null);
-
-  const onFile = (file) => {
-    if (!file) return;
-    if (!/^image\/(png|jpeg|webp|svg\+xml)$/.test(file.type)) { notify("Use a PNG, JPG, WEBP or SVG logo."); return; }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const img = await loadImage(reader.result);
-        setLogo({ src: reader.result, img, ratio: (img.naturalWidth || 300) / (img.naturalHeight || 150), name: file.name });
-      } catch (e) { notify("That logo file could not be read."); }
-    };
-    reader.readAsDataURL(file);
-  };
 
   const download = async () => {
     if (!logo || busy !== null) return;
@@ -179,18 +201,7 @@ function BrandModal({ tpl, onClose, notify }) {
         <div className="flex flex-col gap-5">
           <div>
             <span className={lab}>1. Your logo</span>
-            <button
-              onClick={() => fileRef.current && fileRef.current.click()}
-              onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); onFile(e.dataTransfer.files[0]); }}
-              className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-left transition hover:border-blue-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Upload className="h-5 w-5" /></span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-slate-900">{logo ? logo.name : "Upload your logo"}</span>
-                <span className="block text-xs text-slate-500">{logo ? "Click to choose a different file." : "PNG with a transparent background works best. It never leaves your browser."}</span>
-              </span>
-            </button>
-            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={(e) => onFile(e.target.files[0])} />
+<LogoDrop logo={logo} onLogo={setLogo} notify={notify} />
           </div>
 
           <div>
@@ -218,79 +229,174 @@ function BrandModal({ tpl, onClose, notify }) {
 
 /* ----------------------- Make a new one inspired by it ----------------------- */
 
-const PLACEMENTS = ["on the product or packaging", "on the clothing, small, on the chest", "as a small corner mark in the last two seconds", "on a sign or surface in the scene"];
+const GEN_COST = 5;
+const GEN_STEPS = ["Reading the reference clip…", "Building the scene around your product…", "Rendering 8 seconds of video…", "Placing your logo…", "Final checks…"];
+const GEN_MS = 7500;
 
-function inspirePrompt(tpl, f) {
-  const brand = f.brand.trim() || "[your brand]";
-  const product = f.product.trim() || "[your product]";
-  const scene = (tpl.desc || tpl.primary || "").replace(/^A[n]? [^.]*? clip for [^.]*\.\s*/i, "");
-  return [
-    "Vertical 9:16 video, 8 seconds, no on-screen text, no captions, no music.",
-    `Scene and style to follow: ${scene}`,
-    `Make it for ${brand}. The product shown is ${product}.`,
-    `Show the ${brand} logo ${f.place}, exactly as in the attached logo file, sharp and correctly spelled. No other logos or lettering anywhere.`,
-    "Keep the same lighting, mood, framing and camera movement as the reference. It must look like real footage: natural light, true-to-life colours, realistic physics.",
-    f.notes.trim() ? `Also: ${f.notes.trim()}` : "",
-  ].filter(Boolean).join("\n");
-}
-
-function InspireModal({ tpl, onClose, notify }) {
+/* The video engine is not connected yet, so the result is the reference clip carrying the user's logo.
+   Everything around it (form, credits, progress, result, download, caption) is the finished flow. */
+function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
   useModal(onClose);
-  const [f, setF] = useState({ brand: "", product: "", place: PLACEMENTS[0], notes: "" });
+  const [f, setF] = useState({ brand: "", product: "", notes: "" });
+  const [logo, setLogo] = useState(null);
+  const [spot, setSpot] = useState("br");
+  const [stage, setStage] = useState("form"); // form | working | done
+  const [p, setP] = useState(0);
+  const [busy, setBusy] = useState(null);
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
-  const prompt = inspirePrompt(tpl, f);
-  const ready = f.brand.trim().length > 1 && f.product.trim().length > 1;
+  const brand = f.brand.trim();
+  const ready = brand.length > 1 && f.product.trim().length > 1;
 
-  const copy = async () => {
-    const ok = await copyText(prompt);
-    notify(ok ? "Brief copied" : "Copy failed. Select the text and copy it by hand.", 2400);
+  useEffect(() => {
+    if (stage !== "working") return;
+    const t0 = Date.now();
+    const id = setInterval(() => {
+      const x = Math.min(1, (Date.now() - t0) / GEN_MS);
+      setP(x);
+      if (x >= 1) { clearInterval(id); setStage("done"); }
+    }, 120);
+    return () => clearInterval(id);
+  }, [stage]);
+
+  const generate = () => {
+    if (!ready) return;
+    if (credits < GEN_COST) { notify("Not enough credits for a video. Each one uses " + GEN_COST + "."); return; }
+    if (onSpend) onSpend(GEN_COST);
+    setP(0);
+    setStage("working");
   };
+
+  const download = async () => {
+    if (busy !== null) return;
+    setBusy(0);
+    try {
+      if (logo) await exportVideo(tpl, logo, spot, 0.24, setBusy);
+      else { const blob = await (await fetch(TEMPLATE_VIDS[tpl.id])).blob(); saveBlob(blob, tpl.id + ".mp4"); }
+      notify("Video downloaded");
+    } catch (e) {
+      notify(e.message === "unsupported" ? "This browser cannot export video. Try Chrome or Edge on a computer." : "The download failed. Please try again.", 3200);
+    }
+    setBusy(null);
+  };
+
+  const caption = `${tpl.headline}. ${tpl.primary.split(". ")[0]}.`.replace(/\.\./g, ".") + (brand ? ` ${brand}.` : "");
+  const copyCaption = async () => { const ok = await copyText(caption); notify(ok ? "Caption copied" : "Copy failed. Select the text and copy it by hand.", 2400); };
+  const pv = logo ? logoBox(spot, 100, (100 * 16) / 9, logo.ratio, 0.24) : null;
+  const step = Math.min(GEN_STEPS.length - 1, Math.floor(p * GEN_STEPS.length));
+
+  const preview = (
+    <div className="mx-auto w-full max-w-[220px]">
+      <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-200 shadow-sm">
+        <video src={TEMPLATE_VIDS[tpl.id]} poster={TEMPLATE_IMGS[tpl.id]} muted loop autoPlay playsInline disablePictureInPicture className={`absolute inset-0 h-full w-full object-cover transition duration-500 ${stage === "working" ? "scale-105 blur-md brightness-75" : ""}`} />
+        {logo && stage !== "working" && <img src={logo.src} alt="Your logo" className="absolute" style={{ left: `${pv.x}%`, top: `${(pv.y / ((100 * 16) / 9)) * 100}%`, width: `${pv.lw}%` }} />}
+        {stage === "working" && (
+          <div className="absolute inset-0 grid place-items-center">
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-sm font-semibold tabular-nums text-blue-700 shadow-lg">{Math.round(p * 100)}%</span>
+          </div>
+        )}
+        {stage === "done" && <span className="absolute left-2.5 top-2.5 rounded-full bg-emerald-600/90 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white">READY · 0:08</span>}
+      </div>
+      <p className="mt-2 text-center text-[11px] text-slate-400">{stage === "form" ? "Reference" : stage === "working" ? "Generating" : "Your video"}</p>
+    </div>
+  );
 
   return (
     <Shell
-      title="Make a new one inspired by it" sub={`${tpl.title} · a new video in this style, with your brand, product and logo.`}
+      title={stage === "done" ? "Your video is ready" : "Make a new one inspired by it"}
+      sub={`${tpl.title} · a new video in this style, with your brand, product and logo.`}
       icon={<Icon.Wand className="h-5 w-5" />} onClose={onClose}
-      footer={<button onClick={copy} disabled={!ready} className={primaryBtn}><Icon.Copy className="h-4 w-4" /> Copy the brief</button>}
+      footer={
+        stage === "form" ? (
+          <>
+            <span className="mr-auto text-xs text-slate-500">Uses <b className="font-semibold text-slate-700">{GEN_COST} credits</b> · {credits} left</span>
+            <button onClick={generate} disabled={!ready} className={primaryBtn}><Icon.Sparkle className="h-4 w-4" /> Generate video</button>
+          </>
+        ) : stage === "working" ? (
+          <span className="mr-auto text-xs font-medium text-slate-500">This takes a few seconds. Keep this window open.</span>
+        ) : (
+          <>
+            {busy !== null && logo && <span className="mr-auto text-xs font-medium tabular-nums text-slate-500">Preparing file… {Math.round(busy * 100)}%</span>}
+            <button onClick={() => setStage("form")} className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Change and regenerate</button>
+            <button onClick={download} disabled={busy !== null} className={primaryBtn}><Icon.Download className="h-4 w-4" /> {busy !== null ? "Working…" : "Download video"}</button>
+          </>
+        )
+      }
     >
-      <div className="grid gap-6 md:grid-cols-[minmax(0,200px)_1fr]">
-        <div className="mx-auto w-full max-w-[200px]">
-          <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-200 shadow-sm">
-            <video src={TEMPLATE_VIDS[tpl.id]} poster={TEMPLATE_IMGS[tpl.id]} muted loop autoPlay playsInline disablePictureInPicture className="absolute inset-0 h-full w-full object-cover" />
-          </div>
-          <p className="mt-2 text-center text-[11px] text-slate-400">Reference</p>
-        </div>
+      <div className="grid gap-6 md:grid-cols-[minmax(0,220px)_1fr]">
+        {preview}
 
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="in-brand" className={lab}>Brand name</label>
-              <input id="in-brand" value={f.brand} onChange={set("brand")} maxLength={40} placeholder="e.g. Lumen Glow" className={field} />
+        {stage === "form" && (
+          <div className="flex flex-col gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="in-brand" className={lab}>Brand name</label>
+                <input id="in-brand" value={f.brand} onChange={set("brand")} maxLength={40} placeholder="e.g. Lumen Glow" className={field} />
+              </div>
+              <div>
+                <label htmlFor="in-product" className={lab}>Product to show</label>
+                <input id="in-product" value={f.product} onChange={set("product")} maxLength={80} placeholder="e.g. a black oversized hoodie" className={field} />
+              </div>
             </div>
             <div>
-              <label htmlFor="in-product" className={lab}>Product to show</label>
-              <input id="in-product" value={f.product} onChange={set("product")} maxLength={80} placeholder="e.g. a black oversized hoodie" className={field} />
+              <span className={lab}>Your logo <span className="font-normal text-slate-400">(optional)</span></span>
+              <LogoDrop logo={logo} onLogo={setLogo} notify={notify} />
+            </div>
+            {logo && (
+              <div>
+                <span className={lab}>Logo position</span>
+                <div className="grid grid-cols-3 gap-2" role="group" aria-label="Logo position">
+                  {SPOTS.map(([id, name]) => (
+                    <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${spot === id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <label htmlFor="in-notes" className={lab}>Anything to change <span className="font-normal text-slate-400">(optional)</span></label>
+              <input id="in-notes" value={f.notes} onChange={set("notes")} maxLength={160} placeholder="e.g. shoot it at night, use a female model" className={field} />
             </div>
           </div>
-          <div>
-            <label htmlFor="in-place" className={lab}>Where the logo goes</label>
-            <select id="in-place" value={f.place} onChange={set("place")} className={field}>
-              {PLACEMENTS.map((p) => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="in-notes" className={lab}>Anything to change <span className="font-normal text-slate-400">(optional)</span></label>
-            <input id="in-notes" value={f.notes} onChange={set("notes")} maxLength={160} placeholder="e.g. shoot it at night, use a female model" className={field} />
-          </div>
+        )}
 
-          <div>
-            <span className={lab}>Your brief</span>
-            <pre className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-3.5 text-xs leading-relaxed text-slate-700">{prompt}</pre>
+        {stage === "working" && (
+          <div className="flex flex-col justify-center gap-4" role="status" aria-live="polite">
+            <p className="text-base font-semibold text-slate-900">Generating your video…</p>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-blue-600 transition-all duration-150" style={{ width: `${p * 100}%` }} /></div>
+            <ul className="space-y-2 text-sm">
+              {GEN_STEPS.map((s, i) => (
+                <li key={s} className={`flex items-center gap-2 ${i < step ? "text-slate-400" : i === step ? "font-medium text-slate-900" : "text-slate-300"}`}>
+                  <span className={`grid h-4 w-4 place-items-center rounded-full ${i < step ? "bg-emerald-500 text-white" : i === step ? "bg-blue-600" : "bg-slate-200"}`}>{i < step && <Icon.Check className="h-2.5 w-2.5" />}</span>
+                  {s}
+                </li>
+              ))}
+            </ul>
           </div>
+        )}
 
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-800">
-            Video generation is not built into this preview yet. Copy the brief and paste it into your video generator together with your logo file and a frame from this template.
-          </p>
-        </div>
+        {stage === "done" && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-800"><Icon.Check className="h-4 w-4" /> {brand}: 8-second vertical video, ready to post</p>
+              <p className="mt-1 text-xs leading-relaxed text-emerald-800/80">Made in the style of {tpl.title}, showing {f.product.trim()}{logo ? ", with your logo" : ""}.</p>
+            </div>
+            <div>
+              <span className={lab}>Suggested caption</span>
+              <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3.5">
+                <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700">{caption}</p>
+                <button onClick={copyCaption} aria-label="Copy caption" className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><Icon.Copy className="h-4 w-4" /></button>
+              </div>
+            </div>
+            <div>
+              <span className={lab}>Post it as</span>
+              <div className="flex flex-wrap gap-1.5">
+                {["Instagram Reels", "TikTok", "Facebook Reels", "YouTube Shorts"].map((x) => <span key={x} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">{x}</span>)}
+              </div>
+            </div>
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-800">
+              <b className="font-semibold">Demo result.</b> The video engine is not connected in this build, so this shows the reference clip{logo ? " with your logo" : ""}. The steps, credits and download work as they will in the finished product.
+            </p>
+          </div>
+        )}
       </div>
     </Shell>
   );

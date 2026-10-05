@@ -377,7 +377,7 @@ function App() {
       )}
 
       {brand && <BrandModal key={brand.id} tpl={brand} onClose={closeBrand} notify={notify} />}
-      {inspire && <InspireModal key={inspire.id} tpl={inspire} onClose={closeInspire} notify={notify} />}
+      {inspire && <InspireModal key={inspire.id} tpl={inspire} onClose={closeInspire} notify={notify} credits={credits} onSpend={spend} />}
 
       {studio && <StudioModal key={studio.id} tpl={studio} onClose={closeStudio} notify={notify} />}
 
