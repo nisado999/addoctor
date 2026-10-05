@@ -8,6 +8,8 @@
 //   APP_KEY          secret   optional: if set, the page must send it as header X-App-Key
 //   MAX_ADS          text     optional cap per analysis, default 800 (Apify bills per ad)
 //   MODEL            text     optional, default claude-sonnet-5-5
+//   META_TOKEN       secret   optional: Meta Ad Library API access token. When set, Competitor Spy reads the
+//                             official (free) API and Apify is not used. Covers ads shown in the EU and UK.
 //   GEMINI_KEY       secret   Google AI Studio API key (Social Pack images)
 //   IMAGE_MODEL      text     optional, standard image model, default gemini-3.1-flash-image
 //   IMAGE_MODEL_PREMIUM text  optional, premium image model, default gemini-3-pro-image
@@ -60,6 +62,58 @@ function normalize(it) {
     advertiser, headline, body: rest, cta: clean(pick(snap.ctaText, snap.cta_text, card.ctaText, "")),
     format, startMs, endMs: active === true ? null : (endMs || null), days, creator,
   };
+}
+
+/* ---------------------- Meta Ad Library API (official) ---------------------- */
+// A "run" for this path is just the request packed into a hex string, so /status and /analyze need no storage.
+const hexEnc = (o) => "meta" + [...new TextEncoder().encode(JSON.stringify(o))].map((b) => b.toString(16).padStart(2, "0")).join("");
+const hexDec = (r) => JSON.parse(new TextDecoder().decode(new Uint8Array((r.slice(4).match(/../g) || []).map((h) => parseInt(h, 16)))));
+
+function normalizeMeta(it, format) {
+  const titles = (it.ad_creative_link_titles || []).map(clean).filter(Boolean);
+  const bodies = (it.ad_creative_bodies || []).map(clean).filter(Boolean);
+  const body = bodies[0] || "";
+  const title = titles[0] || "";
+  const advertiser = String(it.page_name || "");
+  const startMs = toMs(it.ad_delivery_start_time);
+  const stop = toMs(it.ad_delivery_stop_time);
+  const endMs = stop && stop < Date.now() ? stop : null;
+  const days = startMs ? Math.max(0, Math.round(((endMs || Date.now()) - startMs) / 86400000)) : null;
+  const partner = String(it.bylines || "").trim();
+  const lines = body.split("\n").map((l) => l.trim()).filter(Boolean);
+  return {
+    libId: String(it.id || ""), advertiser,
+    headline: wf((title || lines[0] || "").slice(0, 110)),
+    body: wf((title ? lines : lines.slice(1)).join(" ").slice(0, 400)),
+    cta: "", format: format === "Video" ? "Video" : new Set(titles).size > 1 ? "Carousel" : "Static",
+    startMs, endMs, days, creator: partner && partner.toLowerCase() !== advertiser.toLowerCase() ? partner : "",
+  };
+}
+
+// Two passes: videos first (so they can be labelled), then everything else.
+async function metaAds(env, q) {
+  const cap = Number(env.MAX_ADS) || 800;
+  const byId = new Map();
+  const pass = async (mediaType, format) => {
+    const p = new URLSearchParams({
+      search_page_ids: q.id, ad_reached_countries: JSON.stringify([q.country || "ALL"]), ad_active_status: "ALL", ad_type: "ALL",
+      media_type: mediaType, limit: "100", access_token: env.META_TOKEN,
+      fields: "id,page_name,bylines,ad_creative_bodies,ad_creative_link_titles,ad_delivery_start_time,ad_delivery_stop_time,publisher_platforms",
+    });
+    if (q.from) p.set("ad_delivery_date_min", q.from);
+    if (q.to) p.set("ad_delivery_date_max", q.to);
+    let url = "https://graph.facebook.com/v21.0/ads_archive?" + p;
+    for (let page = 0; url && page < 10 && byId.size < cap; page++) {
+      const r = await fetch(url);
+      const j = await r.json();
+      if (!r.ok || j.error) throw new Error("Meta Ad Library: " + ((j.error && j.error.message) || r.status));
+      (j.data || []).forEach((it) => { const a = normalizeMeta(it, format); if (a.libId && !byId.has(a.libId) && (a.headline || a.body)) byId.set(a.libId, a); });
+      url = j.paging && j.paging.next;
+    }
+  };
+  await pass("VIDEO", "Video");
+  await pass("ALL", "");
+  return [...byId.values()];
 }
 
 // Slicing text can cut an emoji in half (a lone surrogate), which makes the request invalid JSON. Remove any such halves.
@@ -390,6 +444,8 @@ export default {
         const id = String(b.page_id || "").replace(/\D/g, "");
         if (!id) return json(env, { error: "page_id required" }, 400);
         const country = String(b.country || "ALL").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "ALL";
+        const okDate = (d) => (/^\d{4}-\d\d-\d\d$/.test(d || "") ? d : "");
+        if (env.META_TOKEN) return json(env, { run: hexEnc({ id, country, from: okDate(b.from), to: okDate(b.to) }) });
         const url = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&is_targeted_country=false&media_type=all&search_type=page&view_all_page_id=${id}`;
         const input = { startUrls: [{ url }], resultsLimit: Number(env.MAX_ADS) || 800 };
         if (/^\d{4}-\d\d-\d\d$/.test(b.from || "")) input.onlyAdsNewerThan = b.from;
@@ -402,6 +458,7 @@ export default {
       // 2. poll progress
       if (u.pathname === "/status") {
         const run = (u.searchParams.get("run") || "").replace(/[^A-Za-z0-9]/g, "");
+        if (run.startsWith("meta")) return json(env, { status: "SUCCEEDED", found: 0 });
         const j = await (await fetch(apify(`actor-runs/${run}`))).json();
         if (!j.data) return json(env, { error: "Unknown run" }, 404);
         let found = 0;
@@ -412,13 +469,19 @@ export default {
       if (u.pathname === "/analyze" && req.method === "POST") {
         const b = await req.json();
         const run = String(b.run || "").replace(/[^A-Za-z0-9]/g, "");
-        const rj = await (await fetch(apify(`actor-runs/${run}`))).json();
-        if (!rj.data) return json(env, { error: "Unknown run" }, 404);
-        const items = await (await fetch(apify(`datasets/${rj.data.defaultDatasetId}/items?clean=true&limit=5000`))).json();
-        if (!Array.isArray(items)) return json(env, { error: "Could not read the crawl results" }, 502);
-        const seen = new Set();
-        const ads = items.map(normalize).filter((a) => (a.headline || a.body) && a.libId && !seen.has(a.libId) && seen.add(a.libId));
-        if (!ads.length) return json(env, { error: "No ads found for that advertiser and period.", raw: items.length }, 404);
+        let ads, raw = 0;
+        if (run.startsWith("meta")) {
+          ads = await metaAds(env, hexDec(run));
+        } else {
+          const rj = await (await fetch(apify(`actor-runs/${run}`))).json();
+          if (!rj.data) return json(env, { error: "Unknown run" }, 404);
+          const items = await (await fetch(apify(`datasets/${rj.data.defaultDatasetId}/items?clean=true&limit=5000`))).json();
+          if (!Array.isArray(items)) return json(env, { error: "Could not read the crawl results" }, 502);
+          const seen = new Set();
+          raw = items.length;
+          ads = items.map(normalize).filter((a) => (a.headline || a.body) && a.libId && !seen.has(a.libId) && seen.add(a.libId));
+        }
+        if (!ads.length) return json(env, { error: "No ads found for that advertiser and period.", raw }, 404);
         const counts = {};
         ads.filter((a) => !/ with /i.test(a.advertiser)).forEach((a) => { counts[a.advertiser] = (counts[a.advertiser] || 0) + 1; });
         const brand = String(b.brand || "").trim() || (Object.entries(counts).sort((x, y) => y[1] - x[1])[0] || [""])[0];

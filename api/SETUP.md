@@ -32,3 +32,13 @@ Pieces: (1) the page (addoctor.html), (2) the backend (worker.js), (3) two paid 
   them defensively. If the ads come back empty or without dates, send me one raw item and I will adjust normalize().
 - Scraping Meta's Ad Library is against Meta's terms of service for automated collection; the scraping service carries
   that risk. The official Ad Library API is the lower-risk alternative (EU/UK ads only, no video/static flag).
+
+## Competitor Spy without Apify (free): Meta's official Ad Library API
+worker.js uses the official API whenever a META_TOKEN secret is set, and Apify is then not called at all.
+It covers ads shown in the EU and UK. It returns the ad text, dates and advertiser, not the images or videos.
+1. Confirm your identity with Meta: facebook.com/ID (usually a day or two).
+2. developers.facebook.com > My Apps > Create App. Then Tools > Graph API Explorer > Generate Access Token.
+   Tokens from the Explorer last about an hour; extend one in Tools > Access Token Debugger > Extend (about 60 days).
+3. Cloudflare > addoctor-api > Settings > Variables and Secrets > add META_TOKEN (secret).
+4. Cloudflare > addoctor-api > Edit code > replace everything with the current api/worker.js > Deploy.
+This path was tested against a mock of the API only. Run one real analysis after adding the token.
