@@ -1,5 +1,7 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "tennis-court-walk": B + "templates/tennis-court-walk.jpg",
+  "studio-hoodie-push": B + "templates/studio-hoodie-push.jpg",
   "hidden-bay-drone": B + "templates/hidden-bay-drone.jpg",
   "summit-bottle-orbit": B + "templates/summit-bottle-orbit.jpg",
   "founder-holding-jar": B + "templates/founder-holding-jar.jpg",
@@ -235,12 +237,16 @@ const TEMPLATE_IMGS = {
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
+  "tennis-court-walk": B + "templates/tennis-court-walk.mp4",
+  "studio-hoodie-push": B + "templates/studio-hoodie-push.mp4",
   "hidden-bay-drone": B + "templates/hidden-bay-drone.mp4",
   "summit-bottle-orbit": B + "templates/summit-bottle-orbit.mp4",
 };
 /* Reference frames for a video template, in playing order. */
 const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
 const TEMPLATE_REFS = {
+  "tennis-court-walk": refs("tennis-court-walk"),
+  "studio-hoodie-push": refs("studio-hoodie-push"),
   "hidden-bay-drone": refs("hidden-bay-drone"),
   "summit-bottle-orbit": refs("summit-bottle-orbit"),
 };

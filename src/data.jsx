@@ -11,6 +11,36 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tennis-court-walk", type: "video", trending: true, isNew: true, dur: "0:08",
+    category: "Fashion", label: "Fashion", title: "Tennis Court Walk",
+    format: "9:16 · Video · Rising shot from shoes to full length", framework: "Aspiration",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1d4ed8 0%,#0c4a6e 100%)", hl: "#fef08a", hook: "Made for *match point*", text: "The court set. Dress, shoes, done.", sign: "New season", tag: "Tennis" },
+    why: [
+      "Starting on the shoes and rising to the full outfit shows two products in one shot, with a reason to keep watching.",
+      "A real court in low sun says sport and lifestyle at once, so it suits both activewear and fashion brands.",
+      "Name the pieces in the caption in the order they appear, shoes first.",
+    ],
+    desc: "A golden-hour court clip for tennis wear, trainers, activewear and sporty fashion. The camera rises from the shoes to the full outfit as the model walks to the net.",
+    tags: ["On location", "Sportswear", "Golden hour", "Shoes to outfit"],
+    headline: "Made for match point",
+    primary: "The court set: dress, shoes, done. Add the pieces, the sizes and the price of the set.",
+  },
+  {
+    id: "studio-hoodie-push", type: "video", trending: true, isNew: true, dur: "0:08",
+    category: "Fashion", label: "Fashion", title: "Minimal Studio Lookbook",
+    format: "9:16 · Video · Slow full turn on a plain backdrop", framework: "Simplicity",
+    art: { kind: "quote", light: true, bg: "linear-gradient(160deg,#f4f4f5 0%,#d4d4d8 100%)", hl: "#18181b", hook: "The hoodie, *nothing else*", text: "Heavyweight cotton. Oversized fit.", sign: "Essentials", tag: "Studio" },
+    why: [
+      "A plain backdrop puts all the attention on the fit and fabric, which is what a buyer of basics is judging.",
+      "A slow full turn shows the front, side and back of the outfit in one take, which answers how it fits from every angle.",
+      "Put the fabric weight and the fit in the caption. Those two facts sell a hoodie.",
+    ],
+    desc: "A clean studio fashion clip for streetwear, hoodies, oversized clothing and minimal brands. The model turns a slow full circle with her hands in the pocket, showing the outfit from every side.",
+    tags: ["Studio", "Streetwear", "Minimal", "Editorial"],
+    headline: "The hoodie, nothing else",
+    primary: "Heavyweight cotton, oversized fit. Add the fabric weight, the colours and the sizes you stock.",
+  },
+  {
     id: "hidden-bay-drone", type: "video", trending: true, isNew: true, dur: "0:10",
     category: "Travel", label: "Travel", title: "Slow Drone Reveal",
     format: "9:16 · Video · One slow aerial move, no cuts", framework: "Aspiration",
