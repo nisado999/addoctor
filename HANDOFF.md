@@ -17,9 +17,26 @@ Audits ad creatives, analyses competitor ads, generates new creatives. 263 galle
 - Backend is deployed: Cloudflare Worker https://addoctor-api.nisado9999.workers.dev (api/worker.js; Apify, Anthropic and Gemini keys set in the dashboard; no APP_KEY; ALLOW_ORIGIN is *). The local .env (git-ignored) sets VITE_ADDOCTOR_API to it, and the build needs that file or Competitor Spy and Social Pack are disabled.
 - Live claude.ai artifact (single-file build) is separate: https://claude.ai/artifact/6zaErcBJFD19YcHV9Q18K5
 
+## Where things stand (written 2026-10-06, read this first)
+1. PUBLISH PENDING. The gh-pages branch already holds the newest build (script assets/index-9f2TeQCM.js): the Christian template is now "faith-blue-hour" (blue-hour clip the user picked as the best) and "faith-night-campaign" is removed. GitHub Pages failed to build it twice during a GitHub Actions/Pages incident on 2026-10-05, so the live site still serves assets/index-Yo2K9lep.js with the night clip. To finish: check githubstatus.com, then push an empty commit to gh-pages to re-trigger the build, and confirm the live index.html points at index-9f2TeQCM.js (or a newer build).
+2. BACKEND NOT REDEPLOYED. api/worker.js in the repo is ahead of what runs on Cloudflare. It adds: the free Meta Ad Library path (needs a META_TOKEN secret), reading the top creatives for Claude, and abuse limits (ALLOW_ORIGIN allow-list, RATE_PER_HOUR, DAILY_CAP, MAX_ADS default 200). The user has to paste it into Cloudflare (addoctor-api > Edit code > Deploy) and set ALLOW_ORIGIN to https://nisado999.github.io. Claude cannot reach the Cloudflare dashboard (bot check). All of this was tested against mocks only.
+3. Competitor Spy does not work right now: the Apify account hit its monthly hard limit. The Meta route is blocked on the user's Meta identity check (facebook.com/ID), which kept erroring for them.
+4. Google Flow credits are used up (10 left, refill monthly). Not made: a home-gym equipment clip (failed three times on Google's side). The Gemini app allows 2 to 3 videos a day as a fallback.
+5. Publishing: clone the gh-pages branch somewhere temporary, replace its contents with dist/ plus an empty .nojekyll, commit, push. GitHub allows a limited number of Pages builds per hour, so batch changes instead of publishing each one.
+6. ffmpeg is not installed on this PC. Install a throwaway copy with "npm install ffmpeg-static" in a temp folder when video work is needed. Original (uncompressed) clips were kept only in a session temp folder and are gone; the published 540x960 files are the masters now.
+
+## What the user wants from templates (learned the hard way on 2026-10-05)
+- Videos must look like real footage. Simple, calm motion: a model holding one pose with the camera moving, or a product with moving light. Walking at the camera, hand gestures and anything with fingers get rejected as "awkward" or "obviously AI".
+- No yellow or orange glow in lighting. Natural or cool light.
+- The whole product must be in frame (a cropped shoe and cropped sunglasses were both rejected).
+- No text on an image unless asked. Products and clothing stay blank so a brand can be added; a bottle or pack should face the camera with a clear front.
+- When the user sends a reference ad, follow its composition closely with an unbranded original product. Two looser interpretations were called "trash" before the close one was accepted.
+- Check every clip one frame per second before publishing, and say plainly what is imperfect.
+
 ## Open tasks
 1. "Place my product in scene" feature (unanswered offer).
-2. More templates only if quality is high. Rules: plain products (no prints/logos/lettering), no lookalikes of known brands, no "adroast" text, reject bad images.
+2. Connect a real video generator to InspireModal (it is a demo today).
+3. More templates only if quality is high. Rules: plain products (no prints/logos/lettering), no lookalikes of known brands, no "adroast" text, reject bad images.
 
 ## Template image recipe (Gemini image gen, 3:4)
 "3:4 vertical advertising photograph. <scene>. Big bold clean sans-serif headline text across the top reading exactly: '<HEAD>'. Smaller caption under it reading exactly: '<caption>'. The <product> has no logos or lettering and is a plain original design. Text perfectly spelled, sharp, at least 10 percent below the top edge. High-end advertising photograph, 85mm lens at f/2, subtle film grain, no logos, no watermarks."
