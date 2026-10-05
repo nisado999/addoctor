@@ -238,4 +238,10 @@ const TEMPLATE_VIDS = {
   "hidden-bay-drone": B + "templates/hidden-bay-drone.mp4",
   "summit-bottle-orbit": B + "templates/summit-bottle-orbit.mp4",
 };
-export { TEMPLATE_IMGS, TEMPLATE_VIDS };
+/* Reference frames for a video template, in playing order. */
+const refs = (id, n = 4) => Array.from({ length: n }, (_, k) => B + "templates/refs/" + id + "-" + (k + 1) + ".jpg");
+const TEMPLATE_REFS = {
+  "hidden-bay-drone": refs("hidden-bay-drone"),
+  "summit-bottle-orbit": refs("summit-bottle-orbit"),
+};
+export { TEMPLATE_IMGS, TEMPLATE_VIDS, TEMPLATE_REFS };

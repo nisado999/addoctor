@@ -6,6 +6,8 @@ import { headline, StudioModal } from "./studio";
 import { SPY_ANGLE, SpyView } from "./spy";
 import { PackView } from "./pack";
 import { LabView } from "./lab";
+import { LookModal } from "./look";
+import { TEMPLATE_VIDS } from "./templateImgs.js";
 import { clamp } from "./analysis.js";
 
 /* -------------------------------- Vault -------------------------------- */
@@ -99,6 +101,7 @@ function App() {
   const [menu, setMenu] = useState(false);
   const [toast, setToast] = useState(null);
   const [studio, setStudio] = useState(null);
+  const [look, setLook] = useState(null); // video template whose detail view is open
   const [favs, setFavs] = useState(loadFavs);
   const [sort, setSort] = useState("featured");
   const [quick, setQuick] = useState(null); // null | "new" | "trending" | "video" | "favs"
@@ -133,7 +136,7 @@ function App() {
   }, [toast]);
 
   useEffect(() => {
-    const onHash = () => { setExam(null); setStudio(null); setView(viewFromHash()); };
+    const onHash = () => { setExam(null); setStudio(null); setLook(null); setView(viewFromHash()); };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -142,6 +145,7 @@ function App() {
   const openExam = useCallback((init) => { setExamKey((k) => k + 1); setExam(init || {}); }, []);
   const closeExam = useCallback(() => setExam(null), []);
   const closeStudio = useCallback(() => setStudio(null), []);
+  const closeLook = useCallback(() => setLook(null), []);
   const spend = useCallback((n) => setCredits((c) => Math.max(0, c - (Number.isFinite(n) ? n : 1))), []);
 
   const goto = (id) => {
@@ -149,6 +153,7 @@ function App() {
     if (id === "examine") return openExam({});
     setExam(null);
     setStudio(null);
+    setLook(null);
     setView(id);
     try { history.pushState(null, "", id === "explore" ? location.pathname + location.search : "#" + id); } catch (e) {}
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -320,7 +325,7 @@ function App() {
                 {list.map((t) => <TemplateCard
                     key={t.id} t={t} fav={favs.includes(t.id)} onFav={toggleFav}
                     {...(inStudio ? { verb: "Open Studio:", action: "Open Studio" } : {})}
-                    onInspect={(tp) => (inStudio ? setStudio(tp) : openExam({ template: tp }))}
+                    onInspect={(tp) => (inStudio ? setStudio(tp) : TEMPLATE_VIDS[tp.id] ? setLook(tp) : openExam({ template: tp }))}
                   />)}
               </div>
             ) : (
@@ -355,9 +360,17 @@ function App() {
         />
       )}
 
+      {look && (
+        <LookModal
+          tpl={look} onClose={closeLook}
+          onUse={(tp) => { setLook(null); setStudio(tp); }}
+          onExamine={(tp) => { setLook(null); openExam({ template: tp }); }}
+        />
+      )}
+
       {studio && <StudioModal key={studio.id} tpl={studio} onClose={closeStudio} notify={notify} />}
 
-      {toTop && isGrid && !exam && !studio && (
+      {toTop && isGrid && !exam && !studio && !look && (
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top"
           className="fixed bottom-6 right-5 z-20 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-900/10 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
