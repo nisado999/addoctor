@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TEMPLATES } from "./data";
-import { Icon, pill } from "./ui";
-import { field } from "./modal";
-import { clean, headline, glass } from "./studio";
-import { SPY_API } from "./spy";
+import { Icon } from "./ui";
+import { SPY_API } from "./shared.js";
 import { packCall, packZip, packB64, packExt, packSave } from "./pack";
 
 /* ---------------------------- Template Lab ----------------------------- */

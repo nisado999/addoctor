@@ -1,6 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Creative } from "./ui";
-import { rgba, headline } from "./studio";
+import { useState, useRef } from "react";
 import { nameTokens, ratioInfo } from "./analysis.js";
 
 /* ---------------- Creative asset: read, measure, samples ---------------- */

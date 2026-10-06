@@ -1,5 +1,3 @@
-import { Creative, pill } from "./ui";
-import { txt, headline } from "./studio";
 
 /* AdDoctor diagnostic engine. Rule-based checks grounded in direct-response
    copy principles: hook, value clarity, offer friction, call to action. */

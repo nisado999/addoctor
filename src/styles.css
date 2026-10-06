@@ -184,3 +184,77 @@ body { font-family: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Seg
 
 .cr-photo { background: #e2e8f0; }
 .cr-photo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- Motion and depth ----------
+   Everything here animates transform or opacity only, so the browser can do it off the main thread. */
+html { -webkit-tap-highlight-color: transparent; }
+button, [role="button"], a, select { touch-action: manipulation; }
+:root { --ease: cubic-bezier(.2, .8, .2, 1); }
+
+.hero-title { font-family: "Archivo", "Inter Tight", system-ui, sans-serif; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; }
+.hero {
+  background:
+    radial-gradient(60% 90% at 0% 0%, rgba(37, 99, 235, .13), transparent 70%),
+    radial-gradient(50% 80% at 100% 100%, rgba(16, 185, 129, .13), transparent 70%),
+    radial-gradient(rgba(15, 23, 42, .07) 1px, transparent 1.4px) 0 0 / 22px 22px,
+    #fff;
+}
+.hero-ink { background: linear-gradient(100deg, #2563eb 10%, #10b981 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-pulse { color: rgba(16, 185, 129, .45); }
+.hero-pulse path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: hero-draw 2.4s .3s var(--ease) forwards; }
+.hero-up { animation: rise .6s var(--d, 0ms) var(--ease) backwards; }
+.hero-dot { box-shadow: 0 0 0 4px rgba(16, 185, 129, .18); }
+
+.hero-stage { perspective: 1100px; }
+.hero-fan {
+  transform-style: preserve-3d;
+  transform: rotateX(calc(9deg + var(--hy, 0) * -12deg)) rotateY(calc(-18deg + var(--hx, 0) * 16deg));
+  transition: transform .5s var(--ease);
+}
+.hero-card, .hero-chip {
+  position: absolute; left: 24%; top: 9%;
+  transform: translate3d(var(--x), var(--y), var(--z)) rotateZ(var(--r, 0deg));
+  animation: hero-in .9s calc(var(--n) * 80ms + 150ms) var(--ease) backwards, hero-float 6s calc(var(--n) * -1.3s) ease-in-out infinite alternate;
+}
+.hero-card { width: 39%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #e2e8f0; box-shadow: 0 24px 48px -12px rgba(15, 23, 42, .35), 0 0 0 1px rgba(255, 255, 255, .6) inset; }
+.hero-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-chip {
+  left: var(--x); top: var(--y); transform: translateZ(var(--z)); display: flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px; border-radius: 16px;
+  background: rgba(255, 255, 255, .94); border: 1px solid rgba(226, 232, 240, .9); box-shadow: 0 18px 36px -10px rgba(15, 23, 42, .3);
+  font-size: 11px; font-weight: 500; color: #64748b; line-height: 1.25; white-space: nowrap;
+}
+.hero-chip b { display: block; font-size: 14px; font-weight: 700; color: #0f172a; }
+.hero-ring { stroke-dashoffset: 100; animation: hero-ring 1.4s .9s var(--ease) forwards; }
+.hero:not([data-live]) .hero-card, .hero:not([data-live]) .hero-chip { animation-play-state: paused; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes hero-in { from { opacity: 0; scale: .7; } }
+@keyframes hero-float { to { translate: 0 -10px; } }
+@keyframes hero-draw { to { stroke-dashoffset: 0; } }
+@keyframes hero-ring { to { stroke-dashoffset: 8; } }
+
+/* Cards rise in as they are added, and lean toward the pointer on devices that have one. */
+.rise { animation: rise .5s calc(var(--i, 0) * 40ms) var(--ease) backwards; }
+.tilt-glare { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, .38), transparent 55%); }
+@media (hover: hover) and (pointer: fine) {
+  .tilt { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--lift, 1)); transition: transform .35s var(--ease); }
+  .tilt:hover { --lift: 1.03; z-index: 5; transition-duration: .12s; }
+  .tilt:hover .tilt-glare { opacity: 1; }
+}
+
+.view-in { animation: rise .35s var(--ease) backwards; }
+[role="dialog"] { animation: dialog-in .32s var(--ease) backwards; }
+div:has(> [role="dialog"]) { animation: fade-in .2s ease-out backwards; }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(28px) scale(.97); } }
+@keyframes fade-in { from { opacity: 0; } }
+
+.btn-glow { position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(255, 255, 255, .3) inset, 0 8px 20px -6px rgba(37, 99, 235, .55); }
+.btn-glow::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%); transform: translateX(-120%); transition: transform .7s var(--ease); }
+.btn-glow:hover::after { transform: translateX(120%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-up, .hero-card, .hero-chip, .rise, .view-in, [role="dialog"], div:has(> [role="dialog"]) { animation: none; }
+  .hero-pulse path { animation: none; stroke-dashoffset: 0; }
+  .hero-ring { animation: none; stroke-dashoffset: 8; }
+  .hero-fan, .tilt, .btn-glow::after { transition: none; }
+}

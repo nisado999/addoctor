@@ -1,9 +1,6 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { Icon } from "./ui";
-import { copyText } from "./modal";
-import { glass } from "./studio";
-import { SPY_API, SPY_KEY } from "./spy";
-import { App } from "./App";
+import { copyText, SPY_API, SPY_KEY } from "./shared.js";
 
 /* ------------------------------ Social Pack ------------------------------ */
 

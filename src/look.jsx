@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Icon } from "./ui";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS, TEMPLATE_REFS } from "./templateImgs.js";
 
 /* "Use this template": the template shown large, what it is for, and the two ways to use it. */
-function LookModal({ tpl, onClose, onBrand, onInspire, onExamine }) {
+function LookModal({ tpl, onClose, onBrand, onInspire, onExamine, onProduct }) {
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const refs = TEMPLATE_REFS[tpl.id] || [];
   const [shot, setShot] = useState(-1); // -1 = the video, else a reference frame
@@ -26,11 +26,11 @@ function LookModal({ tpl, onClose, onBrand, onInspire, onExamine }) {
   const option = "group flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/30 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-6" onClick={onClose}>
       <div
         role="dialog" aria-modal="true" aria-labelledby="look-title" onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        className="relative flex max-h-[94vh] w-full max-w-4xl flex-col overflow-y-auto rounded-t-3xl bg-white shadow-2xl shadow-slate-900/20 sm:rounded-3xl md:flex-row md:overflow-hidden"
+        className="relative flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-y-auto rounded-t-3xl bg-white shadow-2xl shadow-slate-900/20 sm:rounded-3xl md:flex-row md:overflow-hidden"
       >
         <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 z-10 rounded-full border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
           <Icon.Close className="h-4 w-4" />
@@ -89,11 +89,18 @@ function LookModal({ tpl, onClose, onBrand, onInspire, onExamine }) {
 
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Use this template</p>
             <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
-              <button onClick={() => onBrand(tpl)} className={`${option} border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700`}>
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/15"><Icon.Image className="h-[18px] w-[18px]" /></span>
+              <button id="look-product" onClick={() => onProduct(tpl)} className={`${option} border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700 sm:col-span-2`}>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/15"><Icon.Sparkle className="h-[18px] w-[18px]" /></span>
+                <span>
+                  <span className="block text-sm font-semibold">Make it with my product</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-blue-100">Upload a product photo and get {isVideo ? "an image ad" : "this ad"} in this style with your real product in it. Then edit it and score it.</span>
+                </span>
+              </button>
+              <button onClick={() => onBrand(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300`}>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Image className="h-[18px] w-[18px]" /></span>
                 <span>
                   <span className="block text-sm font-semibold">Add my logo</span>
-                  <span className="mt-0.5 block text-xs leading-snug text-blue-100">Put your logo straight onto this {isVideo ? "video" : "image"} and download it.</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-slate-500">Put your logo straight onto this {isVideo ? "video" : "image"} and download it.</span>
                 </span>
               </button>
               <button onClick={() => onInspire(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300`}>

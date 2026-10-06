@@ -1,8 +1,3 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { hl } from "./ui";
-import { field } from "./modal";
-import { clean, headline, glass } from "./studio";
-import { matches } from "./analysis.js";
 
 const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
 

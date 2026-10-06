@@ -12,6 +12,11 @@
 //   MODEL            text     optional, default claude-sonnet-5-5
 //   META_TOKEN       secret   optional: Meta Ad Library API access token. When set, Competitor Spy reads the
 //                             official (free) API and Apify is not used. Covers ads shown in the EU and UK.
+//   SCRAPECREATORS_KEY secret optional: scrapecreators.com API key. Used when META_TOKEN is not set, instead of Apify.
+//                             1 credit per page of about 30 ads, images included.
+//   VISION_MAX       text     optional, how many ad creatives Claude looks at per analysis, default 16, never above 20
+//   None of the three sources is needed for ads read by the AdDoctor helper (the bookmark a visitor clicks on the
+//   Ad Library page): those arrive in /analyze as "ads" and only the Claude call costs anything.
 //   GEMINI_KEY       secret   Google AI Studio API key (Social Pack images)
 //   IMAGE_MODEL      text     optional, standard image model, default gemini-3.1-flash-image
 //   IMAGE_MODEL_PREMIUM text  optional, premium image model, default gemini-3-pro-image
@@ -35,36 +40,112 @@ const toMs = (v) => {
 const pick = (...vals) => vals.find((v) => v != null && v !== "");
 const clean = (v) => { const t = String(v == null ? "" : v).trim(); return /\{\{.*\}\}/.test(t) ? "" : t; };   // drop "{{product.name}}" placeholders
 
-// Turn one Apify item into the shape the page uses. Names confirmed from a real run:
-// pageInfo.page.name, snapshot.title, snapshot.displayFormat, isActive, startDateFormatted, endDateFormatted, publisherPlatform.
-// Others (ad id, body text) are read from several likely places.
+// Creative images are only ever fetched from Meta's own image hosts, whoever supplied the link.
+const FB_IMG = /^https:\/\/[a-z0-9.-]+\.(fbcdn\.net|cdninstagram\.com)\//i;
+function adImages(snap, cards) {
+  const out = [];
+  const add = (...u) => { const v = u.find((x) => typeof x === "string" && FB_IMG.test(x)); if (v && !out.includes(v)) out.push(v); };
+  (Array.isArray(snap.images) ? snap.images : []).forEach((i) => add(i.resized_image_url, i.resizedImageUrl, i.original_image_url, i.originalImageUrl));
+  (Array.isArray(snap.videos) ? snap.videos : []).forEach((v) => add(v.video_preview_image_url, v.videoPreviewImageUrl));
+  cards.forEach((c) => add(c.resized_image_url, c.resizedImageUrl, c.original_image_url, c.originalImageUrl, c.video_preview_image_url, c.videoPreviewImageUrl));
+  return out.slice(0, 4);
+}
+const linkOf = (u) => { try { const x = new URL(String(u)); return (x.hostname.replace(/^www\./, "") + x.pathname).replace(/\/+$/, "").slice(0, 70); } catch (e) { return ""; } };
+
+// Turn one Ad Library item into the shape the page uses. The same record comes from three places with two spellings:
+// Apify (camelCase: pageInfo.page.name, snapshot.displayFormat, isActive, startDateFormatted), and ScrapeCreators or
+// the browser helper (Meta's own snake_case: page_name, snapshot.display_format, is_active, start_date in seconds).
 function normalize(it) {
   const snap = it.snapshot || {};
-  const cards = snap.cards || [];
+  const cards = Array.isArray(snap.cards) ? snap.cards : [];
   const card = cards.find((c) => clean(c.body) || clean(c.title)) || cards[0] || {};
   const bodyRaw = snap.body && typeof snap.body === "object" ? snap.body.text : snap.body;
   const body = clean(pick(clean(bodyRaw), clean(card.body), clean(it.adText), ""));
   const title = clean(pick(clean(snap.title), clean(card.title), clean(it.title), ""));
   const df = String(pick(snap.displayFormat, snap.display_format, it.displayFormat, "") || "").toUpperCase();
-  const hasVideo = (snap.videos || []).length > 0 || df === "VIDEO" || cards.some((c) => c.videoHdUrl || c.videoSdUrl || c.video_hd_url);
-  const isCarousel = df === "CAROUSEL" || cards.length > 1;
-  const format = hasVideo ? "Video" : isCarousel ? "Carousel" : "Static";   // DCO = catalog ads; treated as static unless a video is present
+  // DCO (one ad with several versions) and DPA (product catalog) list every version or product as a "card", but the
+  // Ad Library shows them as a single image or video, so only a real CAROUSEL counts as one. Judge them by the first card.
+  const dynamic = df === "DCO" || df === "DPA";
+  const isVid = (c) => !!(c.videoHdUrl || c.videoSdUrl || c.video_hd_url || c.video_sd_url || c.video === true);
+  const hasVideo = (snap.videos || []).length > 0 || df === "VIDEO" || (dynamic ? !!cards[0] && isVid(cards[0]) : cards.some(isVid));
+  const isCarousel = df === "CAROUSEL" || (!df && cards.length > 1);
+  const format = hasVideo ? "Video" : isCarousel ? "Carousel" : "Static";
   const advertiser = String(pick(it.pageInfo && it.pageInfo.page && it.pageInfo.page.name, it.pageName, it.page_name, snap.pageName, snap.page_name, "") || "");
+  const imgs = adImages(snap, cards);
+  const catalog = dynamic && !body && !title;
   const startMs = toMs(pick(it.startDateFormatted, it.startDate, it.start_date));
   const endMs = toMs(pick(it.endDateFormatted, it.endDate, it.end_date));
   const active = pick(it.isActive, it.is_active);
   const days = startMs ? Math.max(0, Math.round((((active === true || !endMs) ? Date.now() : endMs) - startMs) / 86400000)) : null;
   const cm = advertiser.match(/^(.{2,60}?)\s+with\s+(.{2,40})$/i);
-  const creator = cm && cm[1].trim().toLowerCase() !== cm[2].trim().toLowerCase() ? cm[1].trim() : "";
+  // A partnership ad ("Creator with Brand") keeps the brand as the ad's page and the creator as the snapshot's page.
+  const partner = String(pick(snap.page_name, snap.pageName, "") || "").trim();
+  const creator = cm && cm[1].trim().toLowerCase() !== cm[2].trim().toLowerCase() ? cm[1].trim()
+    : partner && it.page_name && partner.toLowerCase() !== String(it.page_name).trim().toLowerCase() ? partner.slice(0, 60) : "";
   const lines = body.split("\n").map((l) => l.trim()).filter(Boolean);
-  const headline = wf((title || lines[0] || "").slice(0, 110));
+  const headline = wf((title || lines[0] || (catalog ? "Catalog ad (text is filled in per product)" : "")).slice(0, 110));
   const rest = wf((title ? lines : lines.slice(1)).join(" ").slice(0, 400));
   return {
     libId: String(pick(it.adArchiveID, it.adArchiveId, it.ad_archive_id, it.adId, it.id, "")),
-    advertiser, headline, body: rest, cta: clean(pick(snap.ctaText, snap.cta_text, card.ctaText, "")),
+    advertiser, headline, body: rest, cta: clean(pick(snap.ctaText, snap.cta_text, card.ctaText, card.cta_text, "")),
     format, startMs, endMs: active === true ? null : (endMs || null), days, creator,
+    img: imgs[0] || "", imgs, versions: Math.max(1, Math.min(Number(pick(it.collationCount, it.collation_count, 1)) || 1, 999)),
+    link: linkOf(pick(snap.linkUrl, snap.link_url, card.linkUrl, card.link_url, "")),
+    kind: df === "DPA" ? "product catalog ad" : df === "DCO" && cards.length > 1 ? "several versions of one ad" : "",
   };
 }
+
+/* ------------------------- ScrapeCreators (paid, cheap) ------------------------- */
+// One request returns one page of an advertiser's ads (about 30) in Meta's own format, images included, for 1 credit.
+// The page reads long advertisers in several calls to /page (a free Worker may make only 50 requests per call), passing
+// back the cursor each time: "from" is where to continue, "pages" how many to read now, "room" how many ads are still wanted.
+const adCap = (env) => Math.min(Number(env.MAX_ADS) || 200, 1000);
+async function scAds(env, q, from = "", pages = 30, room = adCap(env)) {
+  const cap = room;
+  const out = [];
+  let cursor = from;
+  for (let page = 0; page < pages && out.length < cap; page++) {
+    const p = { pageId: q.id, country: q.country || "ALL", status: "ALL", sort_by: "relevancy_monthly_grouped" };
+    if (q.from) p.start_date = q.from;
+    if (q.to) p.end_date = q.to;
+    if (cursor) p.cursor = cursor;
+    const url = "https://api.scrapecreators.com/v1/facebook/adLibrary/company/ads";
+    const big = cursor.length > 4000;   // long cursors do not fit in a URL
+    const r = await fetch(big ? url : url + "?" + new URLSearchParams(p), big
+      ? { method: "POST", headers: { "x-api-key": env.SCRAPECREATORS_KEY, "content-type": "application/json" }, body: JSON.stringify(p) }
+      : { headers: { "x-api-key": env.SCRAPECREATORS_KEY } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.success === false) {
+      if (out.length) break;   // keep what was read
+      throw new Error("ScrapeCreators: " + String(j.message || j.error || r.status).slice(0, 120));
+    }
+    const items = Array.isArray(j.results) ? j.results : Array.isArray(j.ads) ? j.ads : [];
+    out.push(...items);
+    cursor = String(j.cursor || "");
+    if (!cursor || !items.length) { cursor = ""; break; }
+  }
+  return { items: out.slice(0, cap), cursor };
+}
+
+// The parts of one Ad Library record that normalize() reads, so /page can hand ads to the browser without the bulk.
+function slimAd(n) {
+  const s = n.snapshot || {};
+  const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
+  const media = (list, keys) => (Array.isArray(list) ? list : []).slice(0, 4).map((m) => Object.fromEntries(keys.filter((k) => m && m[k]).map((k) => [k, m[k]])));
+  return {
+    ad_archive_id: String(n.ad_archive_id || ""), page_name: str(n.page_name, 120) || str(s.page_name, 120), is_active: n.is_active,
+    start_date: n.start_date, end_date: n.end_date, collation_count: n.collation_count,
+    snapshot: {
+      page_name: str(s.page_name, 120), body: { text: str(s.body && typeof s.body === "object" ? s.body.text : s.body, 900) },
+      title: str(s.title, 200), cta_text: str(s.cta_text, 60), display_format: str(s.display_format, 20), link_url: str(s.link_url, 300),
+      images: media(s.images, ["resized_image_url", "original_image_url"]), videos: media(s.videos, ["video_preview_image_url"]),
+      cards: (Array.isArray(s.cards) ? s.cards : []).slice(0, 6).map((c) => ({ body: str(c.body, 500), title: str(c.title, 200), cta_text: str(c.cta_text, 60), link_url: str(c.link_url, 300), resized_image_url: c.resized_image_url, original_image_url: c.original_image_url, video_preview_image_url: c.video_preview_image_url, video: !!(c.video_hd_url || c.video_sd_url) })),
+    },
+  };
+}
+
+// Which source reads the Ad Library for /start. The free official API wins, then the cheap one, then Apify.
+const spySource = (env) => (env.META_TOKEN ? "meta" : env.SCRAPECREATORS_KEY ? "sc" : env.APIFY_TOKEN ? "apify" : "");
 
 /* ---------------------- Meta Ad Library API (official) ---------------------- */
 // A "run" for this path is just the request packed into a hex string, so /status and /analyze need no storage.
@@ -154,7 +235,43 @@ async function readCreatives(ads) {
       const buf = await ir.arrayBuffer();
       if (buf.byteLength > 3000000) { vision.note = vision.note || "image too large"; return null; }
       vision.images++;
-      return { n: g.n, format: g.a.format, headline: g.a.headline, type, data: b64(buf) };
+      return { n: g.n, format: g.a.format, headline: g.a.headline, libId: g.a.libId, days: g.a.days, type, data: b64(buf) };
+    } catch (e) { vision.note = vision.note || String(e.message || e).slice(0, 80); return null; }
+  }));
+  return { images: out.filter(Boolean), vision };
+}
+
+const PROMO_RE = /\d\s?%|\bsales?\b|offer|discount|black friday|cyber|1\s?\+\s?1|προσφορ|[εέ]κπτ[ωώ]σ|δώρο|κουπόν/i;
+
+// Same job when the ads already carry image links (ScrapeCreators, Apify, the browser helper): load the creatives
+// that the most ads share, and the ones that ran longest, so Claude sees what the advertiser leans on.
+async function readAdImages(env, ads) {
+  const max = Math.max(0, Math.min(Number(env.VISION_MAX) || 16, 20));
+  const groups = new Map();
+  ads.forEach((a) => {
+    if (!a.img) return;
+    const k = a.img.replace(/[?#].*$/, "").split("/").pop();   // the same file is reused across ads
+    const g = groups.get(k) || { n: 0, a };
+    g.n += a.versions || 1;
+    if ((a.days || 0) > (g.a.days || 0)) g.a = a;
+    groups.set(k, g);
+  });
+  const score = (g) => g.n + (g.a.days || 0) / 20;
+  const ranked = [...groups.values()].sort((x, y) => score(y) - score(x));
+  // A third of the places go to the newest ads that talk about an offer: sale artwork is short-lived, so it never
+  // ranks as most-used, and it is where discounts are printed on the image.
+  const promos = ranked.filter((g) => PROMO_RE.test(g.a.headline + " " + g.a.body + " " + g.a.link)).sort((x, y) => (y.a.startMs || 0) - (x.a.startMs || 0)).slice(0, Math.floor(max / 3));
+  const top = [...ranked.filter((g) => !promos.includes(g)).slice(0, max - promos.length), ...promos];
+  const vision = { tried: top.length, pages: top.length, found: top.length, images: 0, note: "" };
+  const out = await Promise.all(top.map(async (g) => {
+    try {
+      const ir = await fetch(g.a.img);
+      const type = (ir.headers.get("content-type") || "").split(";")[0];
+      if (!ir.ok || !/^image\/(jpeg|png|webp|gif)$/.test(type)) { vision.note = vision.note || "image " + ir.status + " " + type; return null; }
+      const buf = await ir.arrayBuffer();
+      if (buf.byteLength > 2500000) { vision.note = vision.note || "image too large"; return null; }
+      vision.images++;
+      return { n: g.n, format: g.a.format, headline: g.a.headline, libId: g.a.libId, days: g.a.days, url: g.a.img, type, data: b64(buf) };
     } catch (e) { vision.note = vision.note || String(e.message || e).slice(0, 80); return null; }
   }));
   return { images: out.filter(Boolean), vision };
@@ -163,7 +280,9 @@ async function readCreatives(ads) {
 // Slicing text can cut an emoji in half (a lone surrogate), which makes the request invalid JSON. Remove any such halves.
 const wf = (t) => String(t).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "");
 
-function compact(ads, cap = 13000) {
+// One line per group of near-identical ads. When there are too many to fit, every line's ad text is shortened
+// rather than dropping the newest groups off the end.
+function compact(ads, cap = 26000, len = 170) {
   const groups = new Map();
   ads.forEach((a) => {
     const k = (a.headline + " " + a.body).toLowerCase().replace(/\s+/g, " ").slice(0, 70);
@@ -172,41 +291,56 @@ function compact(ads, cap = 13000) {
     groups.set(k, g);
   });
   const d = (ms) => new Date(ms).toISOString().slice(0, 10);
-  let out = "";
-  [...groups.values()].sort((x, y) => Math.min(...(x.starts.length ? x.starts : [0])) - Math.min(...(y.starts.length ? y.starts : [0]))).forEach((g) => {
+  const lines = [...groups.values()].sort((x, y) => Math.min(...(x.starts.length ? x.starts : [0])) - Math.min(...(y.starts.length ? y.starts : [0]))).map((g) => {
     const st = g.starts.length ? d(Math.min(...g.starts)) : "?";
     const en = g.ends.length && g.ends.length === g.n ? d(Math.max(...g.ends)) : "running";
-    const line = `x${g.n} | ${[...g.fm].join("/")} | ${st} to ${en} | ${g.a.creator ? "creator " + g.a.creator : g.a.advertiser} | ${(g.a.headline + " " + g.a.body).slice(0, 170)}\n`;
-    if (out.length + line.length < cap) out += wf(line);
+    const a = g.a;
+    return wf(`x${g.n} | ${[...g.fm].join("/")}${a.kind ? " (" + a.kind + ")" : ""} | ${st} to ${en} | ${a.creator ? "creator " + a.creator : a.advertiser} | ${(a.headline + " " + a.body).slice(0, len)}${a.cta ? " | button: " + a.cta : ""}${a.link ? " | goes to: " + a.link : ""}\n`);
   });
-  return out;
+  const full = lines.reduce((s, l) => s + l.length, 0);
+  if (full <= cap) return lines.join("");
+  if (len > 40) return compact(ads, cap, Math.max(40, Math.floor(len * (cap / full) * 0.8)));
+  // Still too long with short lines: keep an even sample across the whole period, not just the oldest ads.
+  const step = Math.ceil(full / cap);
+  return `(only 1 in every ${step} groups is listed, spread evenly over the period)\n` + lines.filter((_, i) => i % step === 0).join("");
 }
 
-async function writeSlide(env, ads, brand, from, to, images = []) {
-  const prompt = `You are a direct-response paid media analyst summarizing a competitor's Meta ads for an agency slide. Today is ${new Date().toISOString().slice(0, 10)}. Advertiser: ${brand || "unknown"}. Period: ${from || "?"} to ${to || "?"}. Total distinct ads read: ${ads.length}.
-Each line below is a group of near-identical ads: x<count> | format | start to end (or "running") | advertiser or creator | ad text.
-Return ONLY JSON: {"slide":[5 to 7 short bullets in the style of an agency competitor slide],"insights":[3 to 5 short bullets a media buyer can act on]}
-${SLIDE_RULES}
+const REPORT_SECTIONS = `"Offers and sales" (every discount, sale, promo code, gift, free shipping or bundle, with the size of the offer and the dates or month it ran; include offers that are only printed on the image), "Products and collections" (what is advertised most, hero products, categories, seasonal drops, where the ads send people), "How the ads look" (only when creatives are shown: product shot or lifestyle, models, settings, text and badges on the image, colours, layouts, polished or user-made), "Messaging and hooks" (recurring angles, phrases, calls to action, tone, language), "Formats and timing" (video, static and carousel mix, how many ads launch and when, bursts around sales, how long ads stay live, long runners), "Creators and partners" (influencers, collaborations, other pages running the ads)`;
 
-${images.length ? `After the ad list you are shown the creative of the ${images.length} most-used ads (for a video, its cover frame). Use them: add one or two slide bullets on how the ads look (product shot or lifestyle, text and discount badges on the image, polished or user-made style, recurring colours or layouts) and base at least one insight on them. Describe only what is visible.\n` : ""}
+async function writeSlide(env, ads, brand, from, to, images = []) {
+  const prompt = `You are a direct-response paid media analyst studying a competitor's Meta ads. Today is ${new Date().toISOString().slice(0, 10)}. Advertiser: ${brand || "unknown"}. Period: ${from || "?"} to ${to || "?"}. Total distinct ads read: ${ads.length}.
+Each line below is a group of near-identical ads: x<count> | format | start to end (or "running") | advertiser or creator | ad text | button | landing page.
+Return ONLY JSON:
+{"slide":[5 to 7 short bullets in the style of an agency competitor slide],
+"report":[{"title":"section name","bullets":["one finding per bullet"]}],
+"creatives":[{"i":1,"sees":"one sentence on what creative 1 shows"}],
+"insights":[3 to 5 short bullets a media buyer can act on]}
+${SLIDE_RULES}
+Rules for "report": this is the full list of everything you noticed. Use these sections, in this order, and leave a section out when the ads give no evidence for it: ${REPORT_SECTIONS}. Up to 6 bullets per section, each one a single concrete finding of at most 30 words that names what you saw: the offer, the product, the phrase, the month, the count of ads. Translate quoted ad text to English. Facts you can read in the ads (an offer, a date, a count) are stated plainly; anything about intent or performance is worded as a guess.
+${images.length ? `After the ad list you are shown the creative of the ${images.length} most-used and longest-running ads (for a video, its cover frame). Look at each one closely and read any text printed on it: prices, discount badges, sale names and dates on an image count as offers even when the ad text does not mention them. Use what you see in "slide", in "report" and in at least one insight. In "creatives" give one entry per creative, numbered as shown: what the image shows and any text or offer printed on it, in at most 25 words. Describe only what is visible.` : `No creatives could be shown, so leave "creatives" empty and leave out "How the ads look".`}
+
 ADS:
-${compact(ads)}`;
+${compact(ads, ads.length > 300 ? 60000 : 26000)}`;
   const content = [{ type: "text", text: wf(prompt) }];
   images.forEach((im, i) => {
-    content.push({ type: "text", text: wf(`Creative ${i + 1}: used by ${im.n} ad${im.n === 1 ? "" : "s"}, ${im.format}, headline "${im.headline}"`) });
+    content.push({ type: "text", text: wf(`Creative ${i + 1}: used by ${im.n} ad${im.n === 1 ? "" : "s"}, ${im.format}${im.days != null ? ", live " + im.days + " days" : ""}, headline "${im.headline}"`) });
     content.push({ type: "image", source: { type: "base64", media_type: im.type, data: im.data } });
   });
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: 1500, messages: [{ role: "user", content }] }),
+    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: 4000, messages: [{ role: "user", content }] }),
   });
   const j = await r.json();
   if (!r.ok) throw new Error((j.error && j.error.message) || "Anthropic error " + r.status);
   const text = ((j.content || []).find((b) => b.type === "text") || {}).text || "";
-  const m = text.match(/\{[\s\S]*\}/);
-  const out = JSON.parse(m ? m[0] : text);
-  return { slide: (out.slide || []).map(String).slice(0, 8), insights: (out.insights || []).map(String).slice(0, 6) };
+  const out = parseJson(text);
+  const list = (v, n, len) => (Array.isArray(v) ? v : []).map((x) => clip(x, len)).filter(Boolean).slice(0, n);
+  return {
+    slide: list(out.slide, 8, 400), insights: list(out.insights, 6, 400),
+    report: (Array.isArray(out.report) ? out.report : []).map((s) => ({ title: clip(s && s.title, 60), bullets: list(s && s.bullets, 8, 400) })).filter((s) => s.title && s.bullets.length).slice(0, 8),
+    creatives: (Array.isArray(out.creatives) ? out.creatives : []).map((c) => { const im = images[Number(c && c.i) - 1]; return im ? { libId: im.libId || "", img: im.url || "", n: im.n, format: im.format, sees: clip(c.sees, 300) } : null; }).filter(Boolean),
+  };
 }
 
 
@@ -230,7 +364,7 @@ const stripFence = (t) => String(t || "").replace(/^```(?:json)?\s*/i, "").repla
 const parseJson = (text) => { const m = stripFence(text).match(/[\[{][\s\S]*[\]}]/); return JSON.parse(m ? m[0] : text); };
 const clip = (v, n) => wf(String(v == null ? "" : v)).slice(0, n);
 
-async function askClaude(env, content, maxTokens = 2000) {
+async function askClaude(env, content, maxTokens = 2000, again = false) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -239,7 +373,11 @@ async function askClaude(env, content, maxTokens = 2000) {
   const j = await r.json();
   if (!r.ok) throw new Error((j.error && j.error.message) || "Anthropic error " + r.status);
   const text = ((j.content || []).find((b) => b.type === "text") || {}).text || "";
-  return parseJson(text);
+  try { return parseJson(text); } catch (e) {
+    // Usually a double quote inside a string. Ask once for the same answer as valid JSON.
+    if (again) throw new Error("The analysis came back in a form that could not be read. Try again.");
+    return askClaude(env, [...(typeof content === "string" ? [{ type: "text", text: content }] : content), { type: "text", text: "Return valid JSON only. Inside strings use single quotes, never double quotes." }], maxTokens, true);
+  }
 }
 
 const PACK_RULES = `Hard rules: never invent discounts, prices, statistics, awards, reviews, testimonials, health claims or guarantees. Never name competitors. Text written ON an image must be very short (max 12 words in total), plain words, no emoji. Captions: a strong first line (the hook), then 1-3 short lines, then 3-5 hashtags. Write captions and on-image text in the language of the product description unless the brief says otherwise.`;
@@ -433,27 +571,86 @@ function imagePromptText(b, br) {
 
 const FIDELITY = (n) => `The ${n > 1 ? n + " attached photos show" : "attached photo shows"} the REAL product${n > 1 ? " from different angles or in different colors" : ""}. They are the only source of truth for its design. Reproduce the product exactly: same shape, fabric, color, fit, logo, artwork and text, in the same position and size as in the photos. Do NOT add, invent, move, duplicate, restyle or crop any print, graphic, logo, text, patch, label, stitching or embroidery that is not visible in the photos. Any area of the product that the photos do not show (for example a back, a sleeve or a pocket) must stay plain and unprinted unless the photos show otherwise. Only the scene, the model, the light and the props are new. `;
 
+const inline = (x) => ({ inlineData: { mimeType: x.mime, data: x.data } });
+
 async function packImage(env, b) {
-  if (!env.GEMINI_KEY) throw new Error("GEMINI_KEY is not set on the server");
   const refs = await loadRefs(b.refs, 4);
-  const model = b.quality === "premium" ? (env.IMAGE_MODEL_PREMIUM || "gemini-3-pro-image") : (env.IMAGE_MODEL || "gemini-3.1-flash-image");
+  return geminiImage(env, [...refs.map(inline), { text: (refs.length ? FIDELITY(refs.length) : "") + imagePromptText(b, b.brief) }], b.quality);
+}
+
+// One 4:5 image from the image model. "parts" are the reference images and the instruction, in order.
+async function geminiImage(env, parts, quality) {
+  if (!env.GEMINI_KEY) throw new Error("GEMINI_KEY is not set on the server");
+  const model = quality === "premium" ? (env.IMAGE_MODEL_PREMIUM || "gemini-3-pro-image") : (env.IMAGE_MODEL || "gemini-3.1-flash-image");
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: "POST",
     headers: { "x-goog-api-key": env.GEMINI_KEY, "content-type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts: [...refs.map((x) => ({ inlineData: { mimeType: x.mime, data: x.data } })), { text: (refs.length ? FIDELITY(refs.length) : "") + imagePromptText(b, b.brief) }] }],
+      contents: [{ parts }],
       generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "4:5" } },
     }),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { const e = new Error((j.error && j.error.message) || "Image model error " + r.status); e.status = r.status; throw e; }
-  const parts = ((j.candidates || [])[0] || {}).content ? (j.candidates[0].content.parts || []) : [];
-  const img = parts.map((p) => p.inlineData || p.inline_data).find((d) => d && d.data);
+  const got = ((j.candidates || [])[0] || {}).content ? (j.candidates[0].content.parts || []) : [];
+  const img = got.map((p) => p.inlineData || p.inline_data).find((d) => d && d.data);
   if (!img) {
     const why = (j.candidates && j.candidates[0] && j.candidates[0].finishReason) || (j.promptFeedback && j.promptFeedback.blockReason) || "no image returned";
     const e = new Error("The image model returned no image (" + why + ")"); e.status = 422; throw e;
   }
   return { mime: img.mimeType || img.mime_type || "image/png", data: img.data, model };
+}
+
+/* ------------------------ An ad from a template and a product photo ------------------------ */
+// "Make it with my product": the template is only a style reference, the visitor's photos are the product.
+// With "base" (an ad made earlier) and "fix", the same call edits that ad instead of starting again.
+const PRODUCT_TRUTH = (n) => `The ${n > 1 ? "other " + n + " images show" : "other image shows"} the REAL product${n > 1 ? " from different angles or in different colours" : ""}. ${n > 1 ? "They are" : "It is"} the only source of truth for the product: reproduce it exactly, with the same shape, material, colour, logo, artwork and text, in the same position and size. Do not add, invent, move, restyle or remove any print, logo, label or detail. A side of the product that the ${n > 1 ? "photos do" : "photo does"} not show stays plain.`;
+
+async function makeAd(env, b) {
+  const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
+  if (!refs.length) throw new Error("Add a photo of your product first");
+  const headline = clip(b.headline, 90).trim(), sub = clip(b.sub, 120).trim();
+  const text = headline
+    ? `Print this headline on the image, spelled exactly as written, in bold clean typography with strong contrast and generous margins: "${headline}".${sub ? ` Under it, smaller, exactly: "${sub}".` : ""} Write nothing else anywhere, apart from what is on the product itself.`
+    : "No headline, caption, watermark or added logo anywhere. The only lettering allowed is what is on the product itself.";
+  if (b.base) {
+    const fix = clip(b.fix, 500).trim();
+    if (!fix) throw new Error("Say what to change");
+    const base = await loadRef({ data: b.base });
+    return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise.\nChange: ${fix}\n${PRODUCT_TRUTH(refs.length)} The product in the advert must stay identical to it. Any text on the image must be spelled exactly and stay sharp.` }], b.quality);
+  }
+  if (!b.template) throw new Error("template required");
+  const style = await loadRef({ data: b.template });
+  const about = clip(b.about, 400).trim(), note = clip(b.note, 300).trim();
+  return geminiImage(env, [inline(style), ...refs.map(inline), { text: `Create a photorealistic 4:5 portrait advert for Facebook and Instagram.
+The FIRST image is a style reference only, an existing advert. Match its composition, camera angle, framing, setting, lighting, colour mood and the place where its text sits. Do not copy its product, its wording, or any logo or brand name in it.${about ? `\nWhat the reference shows: ${about}` : ""}
+${PRODUCT_TRUTH(refs.length)}
+Put the real product where the reference has its product: worn by the model if it is clothing, footwear or an accessory, otherwise held or standing in the scene, at a similar size in the frame. The whole product must be in frame and clearly visible. Anything else the model wears is plain and neutral (black, grey or white) and never matches the product's colour, so only the real product stands out. People must look real, with natural hands and faces. Natural or cool light, never an orange glow.${note ? `\nAbout the product: ${note}` : ""}
+${text}` }], b.quality);
+}
+
+async function makeReview(env, b) {
+  const data = String(b.image || "").replace(/^data:image\/\w+;base64,/, "");
+  if (!data || data.length > 3000000) throw new Error("image missing or too large");
+  const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 2).catch(() => []);
+  const headline = clip(b.headline, 90).trim();
+  const prompt = `You are an elite direct-response creative strategist scoring one static Meta ad (Facebook and Instagram feed, 4:5) before any money is spent on it. Be specific, practical and honest. No filler.
+Headline that was supposed to be printed on the image: ${headline ? '"' + headline + '"' : "none (the image should have no added text)"}
+Judge: (1) does it stop the scroll in the first second, (2) is it clear at a glance what is being sold, (3) text on the image: spelled exactly as intended, legible on a phone, with contrast and margins, (4) does it look like a real photograph, with natural hands, faces and light, (5) one clear idea.${refs.length ? " (6) PRODUCT FIDELITY: compare the product in the ad with the reference photos of the real product. Flag ANY difference in shape, colour, print, logo or text. If you find one, make it the FIRST item in fixes, lower the score by at least 20, and write regen so the image model corrects it." : ""}
+Return ONLY JSON: {"score":0-100,"verdict":"one plain sentence","strengths":["max 2 short items"],"fixes":["max 3 concrete changes, each starting with a verb"],"regen":"one paragraph telling an image model what to change in the image to apply the visual fixes, or empty string if the image needs no change"}
+Inside the JSON strings use single quotes when you quote words, never double quotes.
+Never invent facts about the product, and never suggest adding prices, discounts or claims that are not on the image.`;
+  const blocks = refs.length
+    ? [{ type: "text", text: "Reference photos of the REAL product:" }, ...refs.map((x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } })), { type: "text", text: "The ad to judge:" }]
+    : [];
+  const o = await askClaude(env, [...blocks, { type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }], 900);
+  return {
+    score: Math.max(0, Math.min(100, Math.round(Number(o.score) || 0))),
+    verdict: clip(o.verdict, 240),
+    strengths: (Array.isArray(o.strengths) ? o.strengths : []).map((x) => clip(x, 160)).slice(0, 2),
+    fixes: (Array.isArray(o.fixes) ? o.fixes : []).map((x) => clip(x, 200)).slice(0, 3),
+    regen: clip(o.regen, 500),
+  };
 }
 
 async function packReview(env, b) {
@@ -489,7 +686,7 @@ Never invent facts about the product.`;
 //   DAILY_CAP      paid calls allowed per day across all visitors, default 300
 // Counters live in Cloudflare's edge cache, which is per data centre, so the numbers are approximate:
 // good enough to stop a script hammering the API, not an exact meter.
-const PAID = /^\/(start|analyze|pack\/)/;
+const PAID = /^\/(start|page|analyze|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -532,7 +729,9 @@ export default {
         if (!id) return json(env, { error: "page_id required" }, 400);
         const country = String(b.country || "ALL").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "ALL";
         const okDate = (d) => (/^\d{4}-\d\d-\d\d$/.test(d || "") ? d : "");
-        if (env.META_TOKEN) return json(env, { run: hexEnc({ id, country, from: okDate(b.from), to: okDate(b.to) }) });
+        const src = spySource(env);
+        if (!src) return json(env, { error: "No Ad Library source is set up on the server. Use the AdDoctor helper to read the page in your own browser instead.", code: "no_source" }, 503);
+        if (src !== "apify") return json(env, { run: hexEnc({ id, country, from: okDate(b.from), to: okDate(b.to), src }), paged: src === "sc", max: adCap(env) });
         const url = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&is_targeted_country=false&media_type=all&search_type=page&view_all_page_id=${id}`;
         const input = { startUrls: [{ url }], resultsLimit: Math.min(Number(env.MAX_ADS) || 200, 800) };
         if (/^\d{4}-\d\d-\d\d$/.test(b.from || "")) input.onlyAdsNewerThan = b.from;
@@ -541,6 +740,17 @@ export default {
         const j = await r.json();
         if (!r.ok || !j.data) return json(env, { error: (j.error && j.error.message) || "Could not start the crawl" }, 502);
         return json(env, { run: j.data.id });
+      }
+      // 1b. read the next few pages of a ScrapeCreators run; the page calls this until "cursor" comes back empty
+      if (u.pathname === "/page" && req.method === "POST") {
+        const b = await req.json();
+        const run = String(b.run || "").replace(/[^A-Za-z0-9]/g, "");
+        const q = run.startsWith("meta") ? hexDec(run) : {};
+        if (q.src !== "sc" || !env.SCRAPECREATORS_KEY) return json(env, { error: "This run can't be read in pages" }, 400);
+        const room = adCap(env) - Math.max(0, Number(b.have) || 0);
+        if (room <= 0) return json(env, { ads: [], cursor: "" });
+        const { items, cursor } = await scAds(env, q, String(b.cursor || "").slice(0, 20000), 6, room);
+        return json(env, { ads: items.map(slimAd).filter((a) => a.ad_archive_id), cursor: items.length >= room ? "" : cursor });
       }
       // 2. poll progress
       if (u.pathname === "/status") {
@@ -556,29 +766,41 @@ export default {
       if (u.pathname === "/analyze" && req.method === "POST") {
         const b = await req.json();
         const run = String(b.run || "").replace(/[^A-Za-z0-9]/g, "");
-        let ads, raw = 0;
-        if (run.startsWith("meta")) {
-          ads = await metaAds(env, hexDec(run));
+        let ads, raw = 0, official = false;
+        const dedupe = (items) => { const seen = new Set(); return items.map(normalize).filter((a) => (a.headline || a.body) && a.libId && !seen.has(a.libId) && seen.add(a.libId)); };
+        if (Array.isArray(b.ads)) {
+          // read in the visitor's own browser by the AdDoctor helper and posted here
+          raw = b.ads.length;
+          ads = dedupe(b.ads.slice(0, 1200).filter((x) => x && typeof x === "object")).slice(0, 1000);
+        } else if (run.startsWith("meta")) {
+          const q = hexDec(run);
+          official = q.src !== "sc";
+          if (official) ads = await metaAds(env, q);
+          else { const { items } = await scAds(env, q); raw = items.length; ads = dedupe(items); }
         } else {
           const rj = await (await fetch(apify(`actor-runs/${run}`))).json();
           if (!rj.data) return json(env, { error: "Unknown run" }, 404);
           const items = await (await fetch(apify(`datasets/${rj.data.defaultDatasetId}/items?clean=true&limit=5000`))).json();
           if (!Array.isArray(items)) return json(env, { error: "Could not read the crawl results" }, 502);
-          const seen = new Set();
           raw = items.length;
-          ads = items.map(normalize).filter((a) => (a.headline || a.body) && a.libId && !seen.has(a.libId) && seen.add(a.libId));
+          ads = dedupe(items);
         }
         if (!ads.length) return json(env, { error: "No ads found for that advertiser and period.", raw }, 404);
         const counts = {};
         ads.filter((a) => !/ with /i.test(a.advertiser)).forEach((a) => { counts[a.advertiser] = (counts[a.advertiser] || 0) + 1; });
         const brand = String(b.brand || "").trim() || (Object.entries(counts).sort((x, y) => y[1] - x[1])[0] || [""])[0];
-        let slide = [], insights = [], aiError = "";
-        let images = [], vision = null;
-        if (run.startsWith("meta")) ({ images, vision } = await readCreatives(ads));
-        ads.forEach((a) => { delete a.snap; });   // the preview link carries the access token, so it never leaves the Worker
-        try { ({ slide, insights } = await writeSlide(env, ads, brand, b.from, b.to, images)); } catch (e) { aiError = String(e.message || e).slice(0, 200); }
-        return json(env, { count: ads.length, brand, ads, slide, insights, aiError, vision });
+        let slide = [], insights = [], report = [], creatives = [], aiError = "";
+        const { images, vision } = official ? await readCreatives(ads) : await readAdImages(env, ads);
+        ads.forEach((a) => { delete a.snap; delete a.imgs; });   // the preview link carries the access token, so it never leaves the Worker
+        const okDay = (d) => (/^\d{4}-\d\d-\d\d$/.test(d || "") ? d : "");
+        const starts = ads.map((a) => a.startMs).filter(Boolean);
+        const from = okDay(b.from) || (starts.length ? new Date(Math.min(...starts)).toISOString().slice(0, 10) : "");
+        const to = okDay(b.to) || new Date().toISOString().slice(0, 10);
+        try { ({ slide, insights, report, creatives } = await writeSlide(env, ads, brand, from, to, images)); } catch (e) { aiError = String(e.message || e).slice(0, 200); }
+        return json(env, { count: ads.length, brand, ads, slide, insights, report, creatives, aiError, vision, from, to });
       }
+      // what this server can do, so the page can offer the right way to read the Ad Library
+      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
         const b = await req.json();
@@ -587,6 +809,12 @@ export default {
         if (u.pathname === "/pack/posts") return json(env, { posts: await packPosts(env, b) });
         if (u.pathname === "/pack/image") return json(env, await packImage(env, b));
         if (u.pathname === "/pack/review") return json(env, await packReview(env, b));
+      }
+      // ---- an ad from a template and a product photo ----
+      if (u.pathname.startsWith("/make/") && req.method === "POST") {
+        const b = await req.json();
+        if (u.pathname === "/make/ad") return json(env, await makeAd(env, b));
+        if (u.pathname === "/make/review") return json(env, await makeReview(env, b));
       }
       return json(env, { error: "not found" }, 404);
     } catch (e) {

@@ -1,9 +1,19 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { App } from "./App";
 
 createRoot(document.getElementById("root")).render(<App />);
+
+/* Screens load as separate files. After a publish the old files are gone, so a tab left open would fail to open one:
+   reload once to pick up the new build. */
+window.addEventListener("vite:preloadError", (e) => {
+  try {
+    if (sessionStorage.getItem("addoctor.chunk")) return; // never loop
+    sessionStorage.setItem("addoctor.chunk", "1");
+  } catch (err) { return; }
+  e.preventDefault();
+  location.reload();
+});
 
 /* The host caches index.html for ten minutes, so a visitor can be handed an old build right after a publish.
    Ask for the page fresh, and if it points at a different script than the one running, reload once. */

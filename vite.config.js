@@ -5,4 +5,15 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: "./",
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // React changes rarely and the template list changes often: separate files let browsers keep the unchanged one.
+        manualChunks(id) {
+          if (id.includes("node_modules")) return "vendor";
+          if (/[\/]src[\/](data\.jsx|templateImgs\.js)$/.test(id)) return "templates";
+        },
+      },
+    },
+  },
 });

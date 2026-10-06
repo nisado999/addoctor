@@ -1,6 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, memo } from "react";
 import { LOGO_SRC } from "./data";
-import { rgba } from "./studio";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 
 /* ------------------------------- Icons --------------------------------- */
@@ -313,18 +312,38 @@ function CreativeBody({ a }) {
   }
 }
 
-/* A silent looping clip that only plays while it is on screen, so a long gallery does not decode every video at once. */
+/* Silent looping clips. Decoding video is the most expensive thing the gallery does, so only a few play at once
+   (fewer on phones, none with data saver), and none while a dialog covers the grid or the tab is in the background. */
+const onScreen = new Set();
+let held = false;
+const mq = (q) => typeof window !== "undefined" && !!window.matchMedia && window.matchMedia(q).matches;
+const maxClips = () => {
+  const c = typeof navigator !== "undefined" ? navigator.connection : null;
+  if ((c && c.saveData) || mq("(prefers-reduced-motion: reduce)")) return 0;
+  return mq("(pointer: coarse)") ? 2 : 4;
+};
+function syncClips() {
+  const max = held || document.hidden ? 0 : maxClips();
+  let n = 0;
+  onScreen.forEach((v) => {
+    if (n < max) { n += 1; if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } }
+    else if (!v.paused) v.pause();
+  });
+}
+function holdClips(on) { held = on; syncClips(); }
+if (typeof document !== "undefined") document.addEventListener("visibilitychange", syncClips);
+
 function LoopVideo({ src, poster, title, focus }) {
   const ref = useRef(null);
   useEffect(() => {
     const v = ref.current;
     if (!v || typeof IntersectionObserver === "undefined") return;
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause();
-    }, { threshold: 0.35 });
+      if (e.isIntersecting) onScreen.add(v); else { onScreen.delete(v); v.pause(); }
+      syncClips();
+    }, { threshold: 0.5 });
     io.observe(v);
-    return () => io.disconnect();
+    return () => { io.disconnect(); onScreen.delete(v); syncClips(); };
   }, [src]);
   return <video ref={ref} src={src} poster={poster} aria-label={title} muted loop playsInline preload="none" disablePictureInPicture className="cr-photo-img" style={focus ? { objectPosition: focus } : undefined} />;
 }
@@ -367,20 +386,52 @@ function Creative({ t }) {
 
 /* ------------------------------- Card ---------------------------------- */
 
+/* One listener on the grid leans the card under the pointer. Mouse only, at most one update per frame. */
+let tiltEl = null, tiltRaf = 0, tiltX = 0, tiltY = 0;
+const tiltClear = () => {
+  if (!tiltEl) return;
+  ["--rx", "--ry", "--gx", "--gy"].forEach((k) => tiltEl.style.removeProperty(k));
+  tiltEl = null;
+};
+const tilt = {
+  onPointerMove(e) {
+    if (e.pointerType !== "mouse") return;
+    const el = e.target.closest("[data-tilt]");
+    if (el !== tiltEl) { tiltClear(); tiltEl = el; }
+    if (!el) return;
+    tiltX = e.clientX; tiltY = e.clientY;
+    if (tiltRaf) return;
+    tiltRaf = requestAnimationFrame(() => {
+      tiltRaf = 0;
+      if (!tiltEl) return;
+      const r = tiltEl.getBoundingClientRect();
+      const x = (tiltX - r.left) / r.width, y = (tiltY - r.top) / r.height;
+      const s = tiltEl.style;
+      s.setProperty("--ry", ((x - 0.5) * 12).toFixed(2) + "deg");
+      s.setProperty("--rx", ((0.5 - y) * 9).toFixed(2) + "deg");
+      s.setProperty("--gx", (x * 100).toFixed(0) + "%");
+      s.setProperty("--gy", (y * 80).toFixed(0) + "%");
+    });
+  },
+  onPointerLeave: tiltClear,
+};
+
 const pill = "inline-flex items-center gap-1 rounded-full bg-slate-950/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white";
 
-function TemplateCard({ t, onInspect, action = "Use this template", verb = "Use", fav = false, onFav }) {
+const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use this template", verb = "Use", fav = false, onFav, i = 0 }) {
   return (
+    <div data-tilt className="tilt rise group relative" style={{ "--i": i }}>
     <div
       role="button"
       tabIndex={0}
       aria-label={`${verb} ${t.title}`}
       onClick={() => onInspect(t)}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onInspect(t))}
-      className="group flex cursor-pointer flex-col transition duration-300 ease-out hover:scale-[1.02] focus:outline-none motion-reduce:transition-none motion-reduce:hover:scale-100"
+      className="group/btn flex cursor-pointer flex-col focus:outline-none"
     >
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10 group-focus-visible:ring-4 group-focus-visible:ring-blue-600/25">
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10 group-focus-visible/btn:ring-4 group-focus-visible/btn:ring-blue-600/25">
         <Creative t={t} />
+        <span className="tilt-glare" />
 
         {/* Badges sit at the bottom: the photos carry their headline at the top. */}
         <div className="pointer-events-none absolute bottom-2 left-2 right-11 z-[2] flex flex-wrap items-center gap-1.5">
@@ -393,18 +444,7 @@ function TemplateCard({ t, onInspect, action = "Use this template", verb = "Use"
           )}
         </div>
 
-        {onFav && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onFav(t.id); }}
-            onKeyDown={(e) => e.stopPropagation()}
-            aria-pressed={fav} aria-label={`${fav ? "Remove" : "Add"} ${t.title} ${fav ? "from" : "to"} favourites`}
-            className={`absolute bottom-1.5 right-1.5 z-[4] grid h-8 w-8 place-items-center rounded-full shadow-sm backdrop-blur transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/30 ${fav ? "bg-white text-rose-500 opacity-100" : "bg-white/85 text-slate-600 opacity-0 hover:text-rose-500 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"}`}
-          >
-            <Icon.Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
-          </button>
-        )}
-
-        <div className="absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+        <div className="absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible/btn:opacity-100">
           <span className="inline-flex translate-y-1.5 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-950/40 transition duration-300 group-hover:translate-y-0">
             <Icon.Wand className="h-4 w-4" /> {action}
           </span>
@@ -412,99 +452,186 @@ function TemplateCard({ t, onInspect, action = "Use this template", verb = "Use"
       </div>
 
       <div className="px-1 pt-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t.label}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{t.label}</p>
         <h3 className="mt-1 text-[14px] font-semibold leading-snug tracking-tight text-slate-900">{t.title}</h3>
         <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-blue-600">
           {verb === "Use" ? "Use template" : "Open Studio"} <Icon.Arrow className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
         </span>
       </div>
     </div>
+
+      {/* Laid over the photo, outside the card's own button, so it is a control of its own. */}
+      {onFav && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[4] aspect-[4/5]">
+          <button
+            onClick={() => onFav(t.id)}
+            aria-pressed={fav} aria-label={`${fav ? "Remove" : "Add"} ${t.title} ${fav ? "from" : "to"} favourites`}
+            className={`pointer-events-auto absolute bottom-1.5 right-1.5 grid h-8 w-8 place-items-center rounded-full shadow-sm transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/30 [@media(pointer:coarse)]:h-10 [@media(pointer:coarse)]:w-10 ${fav ? "bg-white text-rose-500 opacity-100" : "bg-white/95 text-slate-600 opacity-0 hover:text-rose-500 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"}`}
+          >
+            <Icon.Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
+          </button>
+        </div>
+      )}
+    </div>
   );
-}
+});
 
 /* ------------------------------- Sidebar ------------------------------- */
 
 const NAV = [
-  { id: "explore", label: "Explore Templates", icon: Icon.Grid },
-  { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope },
-  { id: "video", label: "Video Generator", icon: Icon.Video, badge: "Soon" },
-  { id: "pack", label: "Social Pack", icon: Icon.Image, badge: "New" },
-  { id: "static", label: "Static Ads", icon: Icon.Layout },
-  { id: "spy", label: "Competitor Spy", icon: Icon.Eye, badge: "New" },
-  { id: "vault", label: "Saved Vault", icon: Icon.Bookmark },
+  { head: "Create", items: [
+    { id: "explore", label: "Explore Templates", icon: Icon.Grid },
+    { id: "static", label: "Static Ads", icon: Icon.Layout },
+    { id: "pack", label: "Social Pack", icon: Icon.Image, note: "New" },
+    { id: "video", label: "Video Generator", icon: Icon.Video, note: "Soon", quiet: true },
+  ] },
+  { head: "Analyse", items: [
+    { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope },
+    { id: "spy", label: "Competitor Spy", icon: Icon.Eye, note: "New" },
+  ] },
+  { head: "Library", items: [
+    { id: "vault", label: "Saved Vault", icon: Icon.Bookmark },
+  ] },
 ];
+const navHead = "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400";
 
-function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount, onUpgrade }) {
+function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount, onUpgrade, pinned = [], pinnedTotal = 0, onPick, onShowPinned }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
   return (
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-900/20 lg:hidden" onClick={onClose} />}
       <aside
         style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white transition-[transform,visibility] duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full max-lg:invisible"}`}
       >
         <div className="flex h-16 shrink-0 items-center px-5">
           <img src={LOGO_SRC} alt="ad doctor" className="block h-[26px] w-auto select-none" draggable={false} />
         </div>
 
-        <div className="px-4 pt-2">
+        <div className="px-4 pt-1">
           <button
             onClick={() => { onExamine(); onClose(); }}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+            className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition active:scale-[.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
           >
             <Icon.Plus className="h-4 w-4" />
             Examine / Generate
           </button>
         </div>
 
-        <nav className="mt-6 flex flex-col gap-0.5 px-3">
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Workspace</p>
-          {NAV.map((n) => {
-            const on = active === n.id;
-            const I = n.icon;
-            const count = n.id === "vault" ? vaultCount : 0;
-            return (
-              <button
-                key={n.id}
-                onClick={() => { onNav(n.id); onClose(); }}
-                aria-current={on ? "page" : undefined}
-                className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 ${on ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
-              >
-                <I className={`h-[18px] w-[18px] ${on ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`} />
-                <span className="flex-1">{n.label}</span>
-                {n.badge && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">{n.badge}</span>}
-                {count > 0 && (
-                  <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">{count}</span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
+        <div className="mt-5 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3">
+          <nav aria-label="Workspace" className="flex flex-col gap-5">
+            {NAV.map((g) => (
+              <div key={g.head}>
+                <p className={navHead}>{g.head}</p>
+                <div className="flex flex-col gap-px">
+                  {g.items.map((n) => {
+                    const on = active === n.id;
+                    const I = n.icon;
+                    const count = n.id === "vault" ? vaultCount : 0;
+                    return (
+                      <button
+                        key={n.id}
+                        onClick={() => { onNav(n.id); onClose(); }}
+                        aria-current={on ? "page" : undefined}
+                        className={`group flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-left text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 ${on ? "bg-slate-100 font-semibold text-slate-900" : n.quiet ? "text-slate-400 hover:bg-slate-50 hover:text-slate-600" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                      >
+                        <I className={`h-4 w-4 shrink-0 ${on ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+                        <span className="flex-1 truncate">{n.label}</span>
+                        {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-400" : "text-blue-600"}`}>{n.note}</span>}
+                        {count > 0 && <span className="text-[11px] font-semibold tabular-nums text-slate-500">{count}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
 
-        <div className="mt-auto p-3">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-            <div className="flex items-center gap-3">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-blue-100 text-blue-700 ring-2 ring-white">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-[18px] w-[18px]">
-                  <circle cx="12" cy="8.5" r="3.8" />
-                  <path d="M4.5 20c1.3-3.6 4.1-5.4 7.5-5.4s6.2 1.8 7.5 5.4" />
-                </svg>
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-900">My Workspace</p>
-                <p className={`truncate text-xs font-medium tabular-nums ${credits > 0 ? "text-emerald-600" : "text-rose-600"}`}>{credits} Credits Remaining</p>
-              </div>
+          {/* Favourites, so the templates someone keeps coming back to are one click away. */}
+          <div className="mt-5">
+            <div className="flex items-center justify-between pr-2">
+              <p className={navHead}>Favourites</p>
+              {pinnedTotal > pinned.length && (
+                <button onClick={() => { onShowPinned(); onClose(); }} className="pb-1.5 text-[11px] font-semibold text-blue-600 hover:text-blue-700 focus:outline-none focus-visible:underline">All {pinnedTotal}</button>
+              )}
             </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200">
-              <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, (credits / 50) * 100))}%` }} />
-            </div>
-            <button onClick={onUpgrade} className="mt-3 w-full rounded-lg border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700">
-              Upgrade
-            </button>
+            {pinned.length ? (
+              <div className="flex flex-col gap-px">
+                {pinned.map((t) => (
+                  <button
+                    key={t.id} onClick={() => { onPick(t); onClose(); }}
+                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
+                  >
+                    <img src={TEMPLATE_IMGS[t.id]} alt="" loading="lazy" className="h-8 w-[26px] shrink-0 rounded-[5px] border border-slate-200 object-cover" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-medium text-slate-700 group-hover:text-slate-900">{t.title}</span>
+                      <span className="block truncate text-[11px] text-slate-400">{t.label}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="flex items-start gap-2 px-3 text-xs leading-relaxed text-slate-400">
+                <Icon.Heart className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Tap the heart on a template to keep it here.
+              </p>
+            )}
           </div>
+        </div>
+
+        <div className="shrink-0 border-t border-slate-200/80 px-5 py-4">
+          <div className="flex items-baseline justify-between">
+            <p className="text-xs font-medium text-slate-500">Credits</p>
+            <p className={`text-xs font-semibold tabular-nums ${credits > 0 ? "text-slate-900" : "text-rose-600"}`}>{credits} <span className="font-medium text-slate-400">of 50</span></p>
+          </div>
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, (credits / 50) * 100))}%` }} />
+          </div>
+          <button onClick={onUpgrade} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 transition hover:text-blue-700 focus:outline-none focus-visible:underline">
+            Upgrade plan <Icon.Arrow className="h-3 w-3" />
+          </button>
         </div>
       </aside>
     </>
   );
 }
 
-export { svgBase, Icon, hl, Stars, CreativeBody, Creative, pill, TemplateCard, NAV, Sidebar };
+/* Phones and tablets: the main screens within thumb reach. The full list stays in the menu. */
+const TABS = [
+  { id: "explore", label: "Explore", icon: Icon.Grid },
+  { id: "static", label: "Static", icon: Icon.Layout },
+  { id: "examine", label: "Examine", icon: Icon.Stethoscope, main: true },
+  { id: "spy", label: "Spy", icon: Icon.Eye },
+  { id: "vault", label: "Vault", icon: Icon.Bookmark },
+];
+function BottomNav({ active, onNav, vaultCount }) {
+  return (
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
+        {TABS.map((n) => {
+          const on = active === n.id;
+          const I = n.icon;
+          return n.main ? (
+            <button key={n.id} onClick={() => onNav(n.id)} aria-label="Examine an ad" className="btn-glow mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white ring-4 ring-white transition active:scale-95 focus:outline-none focus-visible:ring-blue-200">
+              <I className="h-6 w-6" />
+            </button>
+          ) : (
+            <button key={n.id} onClick={() => onNav(n.id)} aria-current={on ? "page" : undefined} className={`relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold transition active:scale-95 focus:outline-none focus-visible:text-blue-700 ${on ? "text-blue-700" : "text-slate-500"}`}>
+              <span className={`absolute top-0 h-0.5 w-8 rounded-full bg-blue-600 transition-transform duration-300 ${on ? "scale-x-100" : "scale-x-0"}`} />
+              <I className="h-5 w-5" />
+              {n.label}
+              {n.id === "vault" && vaultCount > 0 && <span className="absolute right-[22%] top-2 grid h-4 min-w-4 place-items-center rounded-full bg-blue-600 px-1 text-[10px] tabular-nums text-white">{vaultCount}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+export { svgBase, Icon, hl, Stars, CreativeBody, Creative, pill, TemplateCard, NAV, Sidebar, BottomNav, tilt, holdClips };

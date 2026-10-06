@@ -1,9 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "./ui";
-import { copyText } from "./modal";
-import { txt, P, headline } from "./studio";
-import { App } from "./App";
-import { clamp, analyze } from "./analysis.js";
+import { copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 
 /* ============================ Competitor Spy ============================ */
 
@@ -366,7 +364,7 @@ function spyParseLibraryText(raw) {
   if (foot > 0) t = t.slice(0, foot);
   return t.split(/Library ID:\s*/).slice(1).map((p) => {
     const libId = (p.match(/^\d+/) || [""])[0];
-    const lines = p.split("\n").map((l) => l.replace(/[\u200b\u200c\u200d\ufeff]/g, "").trim()).filter(Boolean);
+    const lines = p.split("\n").map((l) => l.replace(/\u200b|\u200c|\u200d|\ufeff/g, "").trim()).filter(Boolean);
     const si = lines.findIndex((l) => /^sponsored$/i.test(l));
     const adv = si > 0 ? lines[si - 1] : "";
     const dt = spyDates(p);
@@ -466,6 +464,7 @@ const SPY_TONE = {
   slate: { chip: "bg-slate-100 text-slate-600 ring-slate-200", bar: "bg-slate-500" },
   rose: { chip: "bg-rose-50 text-rose-700 ring-rose-100", bar: "bg-rose-500" },
 };
+const SPY_REPORT_TONE = ["amber", "emerald", "blue", "rose", "slate"];
 const SPY_ICON = { Target: Icon.Target, Layers: Icon.Layout, Tag: Icon.Tag, Clock: Icon.Clock, Trophy: Icon.Trophy, Gap: Icon.Gap };
 
 function Rich({ text }) {
@@ -510,6 +509,7 @@ function SpyAdCard({ ad, onRebuild }) {
   const winner = ad.days !== null && ad.days >= 30;
   return (
     <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      {ad.img && <img src={ad.img} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} className="mb-3 aspect-[4/3] w-full rounded-xl bg-slate-100 object-cover" />}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{ad.format}</span>
         {ad.days !== null && (
@@ -530,7 +530,7 @@ function SpyAdCard({ ad, onRebuild }) {
       )}
       <div className="mt-auto flex items-center justify-between gap-2 pt-4">
         <span className="min-w-0 truncate text-xs text-slate-400">{ad.product || "No product detected"}{ad.cta ? ` · ${ad.cta}` : ""}</span>
-        <button onClick={() => onRebuild(ad)} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+        <button onClick={() => onRebuild(SPY_ANGLE[ad.angle].tpl)} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
           <Icon.Wand className="h-3.5 w-3.5" /> Rebuild
         </button>
       </div>
@@ -545,11 +545,6 @@ const SPY_AI_ERR = {
   image_rejected: "One screenshot couldn't be read. Use a PNG or JPG under the size limit.",
 };
 
-// Set VITE_ADDOCTOR_API (and optionally VITE_ADDOCTOR_KEY) in .env, see README.
-const SPY_API_RAW = import.meta.env.VITE_ADDOCTOR_API || "";
-const SPY_API_KEY_RAW = import.meta.env.VITE_ADDOCTOR_KEY || "";
-const SPY_API = (typeof window !== "undefined" && window.ADDOCTOR_API) || (SPY_API_RAW.indexOf("__") === 0 ? "" : SPY_API_RAW.replace(/\/+$/, ""));
-const SPY_KEY = (typeof window !== "undefined" && window.ADDOCTOR_KEY) || (SPY_API_KEY_RAW.indexOf("__") === 0 ? "" : SPY_API_KEY_RAW);
 
 function spyUrl(id, country, a, b, mt) {
   return `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country || "ALL"}&is_targeted_country=false&media_type=${mt || "all"}&search_type=page&view_all_page_id=${id}&start_date[min]=${a}&start_date[max]=${new Date(Date.parse(b + "T00:00:00Z") + 86400000).toISOString().slice(0, 10)}&sort_data[mode]=relevancy_monthly_grouped&sort_data[direction]=desc`;
@@ -562,6 +557,8 @@ function spyHalves(a, b) {
   const next = new Date(A + (Math.floor(days / 2) + 1) * 86400000).toISOString().slice(0, 10);
   return [[a, mid], [next, b]];
 }
+
+const spySeen = (out) => (out.vision && out.vision.images ? ` and looked at ${spyPlural(out.vision.images, "creative")}` : "");
 
 function SpyView({ onRebuild, notify }) {
   const now = new Date();
@@ -578,6 +575,8 @@ function SpyView({ onRebuild, notify }) {
   const [crawl, setCrawl] = useState({ phase: "idle", i: 0, n: 0, found: 0, msg: "" });
   const [browser, setBrowser] = useState({ ready: false, mcp: null });
   const [state, setState] = useState(null);
+  const [helper, setHelper] = useState(false);
+  const helperLink = useRef(null);
   const crawlCtl = useRef(null);
 
   useEffect(() => {
@@ -605,10 +604,10 @@ function SpyView({ onRebuild, notify }) {
   const libOk = lib && !lib.error;
   useEffect(() => { if (libOk) { setCountry(lib.country || ""); if (lib.name) setBrand(lib.name); if (lib.from) setFrom(lib.from); if (lib.to) setTo(lib.to); } }, [lib]);
 
-  const finish = (source, ads, slide, insights, b) => {
+  const finish = (source, ads, slide, insights, b, more) => {
     const tagged = ads.map(spyTag);
     const sum = spySummarize(tagged, b);
-    setState({ brand: b || "", source, active: "Meta", reports: { Meta: { ads: tagged, slide: slide && slide.length ? slide : spySlide(tagged, b, "Meta"), insights: insights || [], ...sum } } });
+    setState({ brand: b || "", source, active: "Meta", reports: { Meta: { ads: tagged, slide: slide && slide.length ? slide : spySlide(tagged, b, "Meta"), insights: insights || [], report: (more && more.report) || [], creatives: (more && more.creatives) || [], ...sum } } });
     setSort("days");
     setTimeout(() => { const el = document.getElementById("spy-results"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
   };
@@ -626,8 +625,26 @@ function SpyView({ onRebuild, notify }) {
     };
     try {
       setCrawl({ phase: "running", i: 0, n: 1, found: 0, msg: "Finding every ad from this advertiser…" });
-      const { run } = await post("/start", { page_id: lib.id, country: cty, from, to });
+      const { run, paged, max } = await post("/start", { page_id: lib.id, country: cty, from, to });
       let status = "RUNNING", found = 0, tick = 0;
+      // A long advertiser is read a few pages at a time, then every ad is sent for the analysis in one go.
+      let all = null;
+      if (paged) {
+        all = [];
+        let cursor = "";
+        for (let k = 0; k < 40; k++) {
+          if (ctrl.signal.aborted) throw { code: "cancelled" };
+          let pg;
+          try { pg = await post("/page", { run, cursor, have: all.length }); }
+          catch (e) { if (all.length && e && e.code === "api") break; throw e; }   // e.g. out of credits part-way: analyse what was read
+          all = all.concat(pg.ads || []);
+          cursor = pg.cursor || "";
+          setCrawl({ phase: "running", i: Math.min(18, Math.round((all.length / (max || 200)) * 18)), n: 20, found: all.length, plain: true, msg: "Reading the Ad Library" });
+          if (!cursor) break;
+        }
+        if (!all.length) throw { code: "api", message: "No ads found for that advertiser and period." };
+        status = "SUCCEEDED"; found = all.length;
+      }
       while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
         await sleep(3500);
         if (ctrl.signal.aborted) throw { code: "cancelled" };
@@ -638,23 +655,79 @@ function SpyView({ onRebuild, notify }) {
         setCrawl({ phase: "running", i: Math.min(tick, 18), n: 20, found, msg: "Reading the Ad Library" });
       }
       if (status !== "SUCCEEDED") throw { code: "api", message: "The Ad Library read didn't finish (" + status.toLowerCase() + "). Try again." };
-      setCrawl({ phase: "running", i: 19, n: 20, found, msg: "Writing the analysis…" });
-      const out = await post("/analyze", { run, brand: brand.trim(), from, to });
+      setCrawl({ phase: "running", i: 19, n: 20, found, plain: !!all, msg: all ? "Looking at the creatives and writing the analysis…" : "Writing the analysis…" });
+      const out = await post("/analyze", all ? { ads: all, brand: brand.trim(), from, to } : { run, brand: brand.trim(), from, to });
       const name = brand.trim() || out.brand || "";
       if (!brand.trim() && name) setBrand(name);
-      finish(out.slide && out.slide.length ? "crawl-ai" : "crawl", out.ads || [], out.slide, out.insights, name);
-      setCrawl({ phase: "done", i: 20, n: 20, found: out.count || 0, msg: `Done. Read ${out.count || 0} distinct ads.${out.aiError ? " Claude could not write the analysis (" + out.aiError + "), so the bullets come from keyword rules." : ""}` });
+      finish(out.slide && out.slide.length ? "crawl-ai" : "crawl", out.ads || [], out.slide, out.insights, name, out);
+      setCrawl({ phase: "done", i: 20, n: 20, found: out.count || 0, msg: `Done. Read ${out.count || 0} distinct ads${spySeen(out)}.${out.aiError ? " Claude could not write the analysis (" + out.aiError + "), so the bullets come from keyword rules." : ""}` });
     } catch (e) {
       const c = e && e.code;
-      setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: c === "cancelled" ? "Stopped." : c === "api" ? e.message : "Couldn't reach the AdDoctor server. Check your connection and try again." });
+      if (c === "api") setHelper(true);   // the server could not read the Ad Library, so offer the free way
+      setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: c === "cancelled" ? "Stopped." : c === "api" ? e.message + " You can still read this advertiser for free with the AdDoctor button below." : "Couldn't reach the AdDoctor server. Check your connection and try again." });
     } finally { crawlCtl.current = null; }
   };
+
+  // Ads read in the visitor's own browser by the AdDoctor bookmark arrive here from the Ad Library tab.
+  const runPosted = async (data) => {
+    const raw = data.ads.filter((x) => x && typeof x === "object").slice(0, 800);
+    if (!raw.length || crawlCtl.current) return;
+    const ctrl = new AbortController();
+    crawlCtl.current = ctrl;
+    const pl = spyParseLib(String(data.url || ""));
+    if (pl && !pl.error) setLibRaw(String(data.url));
+    setState(null);
+    setCrawl({ phase: "running", i: 12, n: 20, found: raw.length, plain: true, msg: "Looking at the creatives and writing the analysis…" });
+    const local = (why) => {
+      const seen = new Set();
+      const ads = raw.map(spyFromLib).filter((a) => (a.headline || a.body) && a.libId && !seen.has(a.libId) && seen.add(a.libId));
+      const name = (spyCount(ads.filter((a) => !/ with /i.test(a.advertiser)).map((a) => a.advertiser))[0] || [""])[0];
+      setBrand(name);
+      finish("crawl", ads, null, [], name);
+      setCrawl({ phase: "done", i: 20, n: 20, found: ads.length, msg: `Read ${ads.length} distinct ads. ${why} The bullets below come from keyword rules, without the image analysis.` });
+    };
+    try {
+      if (!SPY_API) return local("This copy of AdDoctor has no server set up.");
+      const r = await fetch(SPY_API + "/analyze", { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }, body: JSON.stringify({ ads: raw }) });
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok || !Array.isArray(out.ads)) return local(r.status === 429 ? (out.error || "The server is busy.") : "The AdDoctor server has not been updated to read these yet.");
+      const name = out.brand || "";
+      setBrand(name);
+      if (out.from) setFrom(out.from);
+      if (out.to) setTo(out.to);
+      finish(out.slide && out.slide.length ? "crawl-ai" : "crawl", out.ads, out.slide, out.insights, name, out);
+      setCrawl({ phase: "done", i: 20, n: 20, found: out.count || 0, msg: `Done. Read ${out.count || 0} distinct ads${spySeen(out)}.${out.aiError ? " Claude could not write the analysis (" + out.aiError + "), so the bullets come from keyword rules." : ""}` });
+    } catch (e) {
+      if (ctrl.signal.aborted) setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: "Stopped." });
+      else local("The AdDoctor server could not be reached.");
+    } finally { crawlCtl.current = null; }
+  };
+  const postedRef = useRef(runPosted);
+  postedRef.current = runPosted;
+  useEffect(() => {
+    const onMsg = (ev) => {
+      if (!SPY_FB_ORIGIN.test(ev.origin) || !ev.data || ev.data.type !== "addoctor-ads" || !Array.isArray(ev.data.ads)) return;
+      postedRef.current(ev.data);
+    };
+    window.addEventListener("message", onMsg);
+    // The ads arrive as this tab's window name. Failing that, tell the Ad Library tab that opened this one that
+    // AdDoctor is ready, and it sends them as a message.
+    let named = null;
+    try { if (window.name.indexOf("addoctor:") === 0) { named = JSON.parse(window.name.slice(9)); window.name = "addoctor-done"; } } catch (e) { /* not ours */ }
+    if (named && Array.isArray(named.ads)) postedRef.current(named);
+    else if (window.name !== "addoctor-done") try { if (window.opener) window.opener.postMessage({ type: "addoctor-ready" }, "*"); } catch (e) { /* no opener */ }   // a reload must not ask for the ads again
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+  useEffect(() => {
+    if (helperLink.current) helperLink.current.setAttribute("href", spyBookmarklet(location.origin + location.pathname + "#spy"));
+  });
 
   const runCrawl = async () => {
     if (!libOk) return;
     if (SPY_API) return runApi();
     if (!browser.mcp) {
-      setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: "Analyze reads the Ad Library through the Claude desktop app's browser, so it only runs when this page is opened there." });
+      setHelper(true);
+      setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: "This copy of AdDoctor can't read the Ad Library by itself. Use the AdDoctor button below to read it in your own browser." });
       return;
     }
     const mcp = browser.mcp;
@@ -787,6 +860,7 @@ ${spyCompact(ads)}`;
   const reportText = () => {
     const out = [spyPlatformTitle(state.brand, ["Meta"]), "", "Meta"];
     state.reports.Meta.slide.forEach((b) => out.push("• " + b));
+    state.reports.Meta.report.forEach((s) => { out.push("", s.title); s.bullets.forEach((b) => out.push("• " + b)); });
     out.push("", `Sources: Meta Ad Library, ${new Date().toLocaleString("en", { month: "long", year: "numeric" })}`);
     return out.join("\n");
   };
@@ -816,7 +890,7 @@ ${spyCompact(ads)}`;
             {running && (
               <>
                 <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.round((crawl.i / Math.max(crawl.n, 1)) * 100)}%` }} /></div>
-                <p className="mt-2 text-xs text-slate-600"><span className="font-semibold text-slate-900">{crawl.found} ads found</span> · period {crawl.i} of {crawl.n} · {crawl.msg}</p>
+                <p className="mt-2 text-xs text-slate-600"><span className="font-semibold text-slate-900">{crawl.found} ads found</span>{crawl.plain ? "" : ` · period ${crawl.i} of ${crawl.n}`} · {crawl.msg}</p>
                 <p className="mt-0.5 text-xs text-slate-400">This can take a few minutes. Keep this page open.</p>
               </>
             )}
@@ -824,12 +898,27 @@ ${spyCompact(ads)}`;
             {crawl.phase === "error" && <p role="alert" className="text-sm font-medium text-rose-600">{crawl.msg}</p>}
           </div>
         )}
-        {noDesktop && <p id="spy-desktop" className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-[13px] leading-relaxed text-amber-800">Analyze needs the Claude desktop app. It reads the Ad Library through the app's own browser. Open this page there to run it.</p>}
-
-        <div className="mt-4 border-t border-slate-100 pt-3">
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-100 pt-3">
           <button id="spy-opts" onClick={() => setOpts((v) => !v)} aria-expanded={opts} className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-500 hover:text-slate-800">
             Change dates <Icon.Chevron className={`h-4 w-4 transition ${opts ? "rotate-180" : ""}`} />
           </button>
+          <button id="spy-helper-toggle" onClick={() => setHelper((v) => !v)} aria-expanded={helper || noDesktop} className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-500 hover:text-slate-800">
+            Read it in your own browser (free) <Icon.Chevron className={`h-4 w-4 transition ${helper || noDesktop ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+        <div>
+          {(helper || noDesktop) && (
+            <div id="spy-helper" className="mt-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+              <p className="text-[13px] leading-relaxed text-slate-600">The AdDoctor button reads an advertiser's ads straight from the Ad Library page you have open, images included, and sends them here for the analysis. Set it up once:</p>
+              <ol className="mt-3 space-y-2.5 text-[13px] leading-relaxed text-slate-700">
+                <li className="flex flex-wrap items-center gap-2"><span className="font-semibold text-slate-900">1.</span> Drag this to your bookmarks bar:
+                  <a ref={helperLink} id="spy-bookmark" draggable onClick={(e) => { e.preventDefault(); notify("Drag the button to your bookmarks bar (Ctrl+Shift+B shows the bar)."); }} className="inline-flex cursor-grab items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-blue-600/25"><Icon.Sparkle className="h-3.5 w-3.5" />AdDoctor</a>
+                </li>
+                <li><span className="font-semibold text-slate-900">2.</span> Open the advertiser in the <a href={libOk ? spyUrl(lib.id, country || lib.country, from, to) : "https://www.facebook.com/ads/library/"} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:text-blue-700">Meta Ad Library</a>{libOk ? " (this link opens the one you pasted)" : ""}.</li>
+                <li><span className="font-semibold text-slate-900">3.</span> Click the AdDoctor bookmark on that page. It scrolls through the ads, then opens your analysis here.</li>
+              </ol>
+            </div>
+          )}
           {opts && (
             <div className="mt-3 grid max-w-md gap-3 sm:grid-cols-2">
               <label className="block"><span className="text-xs font-semibold text-slate-700">From</span><input id="spy-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inp} /></label>
@@ -864,6 +953,34 @@ ${spyCompact(ads)}`;
           </section>
         )}
 
+        {res.report.length > 0 && (
+          <div className="mt-8" id="spy-report">
+            <h3 className="text-base font-semibold text-slate-900">Everything we noticed</h3>
+            <p className="text-xs text-slate-500">Written by Claude from the ad text, dates and creatives. Ad libraries show what is running, not spend or results.</p>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {res.report.map((s, i) => <SpySection key={i} s={{ title: s.title, bullets: s.bullets, tone: SPY_REPORT_TONE[i % SPY_REPORT_TONE.length], icon: "Target" }} />)}
+            </div>
+          </div>
+        )}
+
+        {res.creatives.length > 0 && (
+          <div className="mt-8" id="spy-creatives">
+            <h3 className="text-base font-semibold text-slate-900">Creatives Claude looked at</h3>
+            <p className="text-xs text-slate-500">The images used by the most ads and the longest-running ones, with what Claude saw in each.</p>
+            <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+              {res.creatives.map((c, i) => (
+                <figure key={i} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  {c.img && <img src={c.img} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} className="aspect-square w-full bg-slate-100 object-cover" />}
+                  <figcaption className="p-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">{c.format} · {spyPlural(c.n, "ad")}</span>
+                    <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">{c.sees}</p>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-6">
           <button id="spy-detail" onClick={() => setDetail((d) => !d)} aria-expanded={detail} className="inline-flex items-center gap-1 text-[13px] font-semibold text-blue-600 hover:text-blue-700">
             Detailed breakdown <Icon.Chevron className={`h-4 w-4 transition ${detail ? "rotate-180" : ""}`} />
@@ -895,4 +1012,4 @@ ${spyCompact(ads)}`;
   );
 }
 
-export { SPY_ANGLES, SPY_ANGLE, SPY_PROMOS, SPY_PRODUCT_RE, SPY_STRIP, spyClassify, spyPromos, spyProduct, spyTag, SPY_SAMPLE, SPY_MONTHS, SPY_NOISE, SPY_CTA, spyDates, spyDaysFrom, spyParse, spyShare, spyCount, spyPlural, spySummarize, spyReportText, SPY_MONTH, spySlide, SPY_COUNTRIES, spyParseLib, spyWindows, spyBrief, SPY_LIB_NOISE, SPY_LIB_CTA, spyParseLibraryText, spyCrawlText, SPY_SLIDE_RULES, spyWf, spyCompact, spyPlatformTitle, SpySlide, SPY_TONE, SPY_ICON, Rich, SpySection, SpyAdCard, SPY_AI_ERR, SPY_API_RAW, SPY_API_KEY_RAW, SPY_API, SPY_KEY, spyUrl, spyHalves, SpyView };
+export { SPY_ANGLES, SPY_ANGLE, SPY_PROMOS, SPY_PRODUCT_RE, SPY_STRIP, spyClassify, spyPromos, spyProduct, spyTag, SPY_SAMPLE, SPY_MONTHS, SPY_NOISE, SPY_CTA, spyDates, spyDaysFrom, spyParse, spyShare, spyCount, spyPlural, spySummarize, spyReportText, SPY_MONTH, spySlide, SPY_COUNTRIES, spyParseLib, spyWindows, spyBrief, SPY_LIB_NOISE, SPY_LIB_CTA, spyParseLibraryText, spyCrawlText, SPY_SLIDE_RULES, spyWf, spyCompact, spyPlatformTitle, SpySlide, SPY_TONE, SPY_ICON, Rich, SpySection, SpyAdCard, SPY_AI_ERR, spyUrl, spyHalves, SpyView };

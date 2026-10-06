@@ -1,17 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SAMPLES } from "./data";
 import { Icon, Creative, pill } from "./ui";
 import { readAsset, renderSampleAsset, AssetZone } from "./asset";
-import { headline } from "./studio";
-import { alignment, analyze, prescriptionText } from "./analysis.js";
+import { analyze, prescriptionText } from "./analysis.js";
+import { TONE, copyText, inputKey, field } from "./shared.js";
 
 /* --------------------------- Helpers ---------------------------------- */
-
-const TONE = {
-  good: { text: "text-emerald-600", bg: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700", hex: "#10B981" },
-  warn: { text: "text-amber-600", bg: "bg-amber-500", chip: "bg-amber-50 text-amber-700", hex: "#F59E0B" },
-  bad: { text: "text-rose-600", bg: "bg-rose-500", chip: "bg-rose-50 text-rose-700", hex: "#F43F5E" },
-};
 
 function useMounted(delay = 60) {
   const [on, setOn] = useState(false);
@@ -21,29 +15,6 @@ function useMounted(delay = 60) {
   }, [delay]);
   return on;
 }
-
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch (e) {
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.setAttribute("readonly", "");
-      ta.style.cssText = "position:fixed;opacity:0;top:0;left:0";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      return ok;
-    } catch (e2) {
-      return false;
-    }
-  }
-}
-
-const inputKey = (i) => JSON.stringify([i.brand.trim(), i.headline.trim(), i.copy.trim(), i.type, i.asset ? [i.asset.name, i.asset.w, i.asset.h, i.asset.lumMean, i.asset.lumStd] : null]);
 
 function ScoreRing({ score, tone }) {
   const on = useMounted();
@@ -254,9 +225,6 @@ function ScanView({ steps, step, template, asset }) {
 /* ------------------------------- Modal --------------------------------- */
 
 const LIM = { headline: 40 };
-const field =
-  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
-
 function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, notify }) {
   const tpl = init.template || null;
   const start = init.input || null;
@@ -373,11 +341,11 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
     stage === "report" ? "Your diagnostic report is ready." : stage === "scan" ? "Running the scan…" : "Load a sample or enter your ad. The scan takes about two seconds.";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/30 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-6" onClick={onClose}>
       <div
         role="dialog" aria-modal="true" aria-labelledby="ex-title" onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        className="relative flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl shadow-slate-900/20 sm:rounded-3xl"
+        className="relative flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl shadow-slate-900/20 sm:rounded-3xl"
       >
         <header className="flex items-start gap-3.5 border-b border-slate-100 px-6 py-5 md:px-8">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/30"><Icon.Stethoscope className="h-5 w-5" /></span>
@@ -539,4 +507,4 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
   );
 }
 
-export { TONE, useMounted, copyText, inputKey, ScoreRing, HookParts, Report, SCAN_STEPS, SCAN_STEPS_ASSET, ScanView, LIM, field, ExamineModal };
+export { useMounted, ScoreRing, HookParts, Report, SCAN_STEPS, SCAN_STEPS_ASSET, ScanView, LIM, ExamineModal };

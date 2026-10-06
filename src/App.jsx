@@ -1,15 +1,32 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue, lazy, Suspense } from "react";
 import { CATEGORIES, TEMPLATES } from "./data";
-import { Icon, Creative, TemplateCard, Sidebar } from "./ui";
-import { TONE, inputKey, ExamineModal } from "./modal";
-import { headline, StudioModal } from "./studio";
-import { SPY_ANGLE, SpyView } from "./spy";
-import { PackView } from "./pack";
-import { LabView } from "./lab";
+import { Icon, TemplateCard, Sidebar, BottomNav, tilt, holdClips } from "./ui";
+import { Hero } from "./hero";
+import { TONE, inputKey } from "./shared.js";
 import { LookModal } from "./look";
-import { BrandModal, InspireModal } from "./use";
 import { TEMPLATE_VIDS } from "./templateImgs.js";
-import { clamp } from "./analysis.js";
+
+/* The gallery loads first. Each other screen is its own file, fetched when it is opened. */
+const loadExamine = () => import("./modal");
+const loadStudio = () => import("./studio");
+const loadUse = () => import("./use");
+const ExamineModal = lazy(() => loadExamine().then((m) => ({ default: m.ExamineModal })));
+const StudioModal = lazy(() => loadStudio().then((m) => ({ default: m.StudioModal })));
+const BrandModal = lazy(() => loadUse().then((m) => ({ default: m.BrandModal })));
+const InspireModal = lazy(() => loadUse().then((m) => ({ default: m.InspireModal })));
+const ProductModal = lazy(() => loadUse().then((m) => ({ default: m.ProductModal })));
+const SpyView = lazy(() => import("./spy").then((m) => ({ default: m.SpyView })));
+const PackView = lazy(() => import("./pack").then((m) => ({ default: m.PackView })));
+const LabView = lazy(() => import("./lab").then((m) => ({ default: m.LabView })));
+
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),video[controls],[tabindex]:not([tabindex="-1"])';
+const scrollTop = () => {
+  const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: 0, behavior: calm ? "auto" : "smooth" });
+};
+const modalWait = <div className="fixed inset-0 z-50 bg-slate-900/40" />;
+const PAGE = 30; // cards added per step as the gallery scrolls
+const viewWait = <p role="status" className="mt-16 text-center text-sm text-slate-500">Loading...</p>;
 
 /* -------------------------------- Vault -------------------------------- */
 
@@ -33,14 +50,14 @@ function VaultView({ items, onOpen, onRemove, onExamine }) {
           <button onClick={(e) => { e.stopPropagation(); onOpen(it); }} aria-label={`Open report: ${it.headline || "saved ad"}`} className="flex items-start gap-4 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
             <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-semibold tabular-nums ring-4 ${it.tone === "good" ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : it.tone === "warn" ? "bg-amber-50 text-amber-700 ring-amber-100" : "bg-rose-50 text-rose-700 ring-rose-100"}`}>{it.score}</span>
             <div className="min-w-0">
-              <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">{it.brand || "Untitled brand"} · {it.type === "video" ? "Video" : "Static"}</p>
+              <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">{it.brand || "Untitled brand"} · {it.type === "video" ? "Video" : "Static"}</p>
               <p className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">{it.headline || "No headline"}</p>
               <p className={`mt-1 text-xs font-medium ${TONE[it.tone].text}`}>{it.status}</p>
             </div>
             {it.asset && it.asset.thumb && <img src={it.asset.thumb} alt="" className="ml-auto h-14 w-11 shrink-0 rounded-md border border-slate-200 object-cover" />}
           </button>
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-            <span className="text-xs text-slate-400">Saved {new Date(it.savedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+            <span className="text-xs text-slate-500">Saved {new Date(it.savedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
             <span className="flex items-center gap-1">
               <button onClick={(e) => { e.stopPropagation(); onOpen(it); }} className="rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">View report</button>
               <button onClick={(e) => { e.stopPropagation(); onRemove(it.id); }} aria-label={`Remove ${it.headline || "saved report"} from vault`} className="rounded-full p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-500/20"><Icon.Trash className="h-4 w-4" /></button>
@@ -105,11 +122,15 @@ function App() {
   const [look, setLook] = useState(null); // template whose "use this template" view is open
   const [brand, setBrand] = useState(null); // template getting the user's logo
   const [inspire, setInspire] = useState(null); // video template being briefed as a new version
+  const [product, setProduct] = useState(null); // template being remade with the visitor's own product
   const [favs, setFavs] = useState(loadFavs);
   const [sort, setSort] = useState("featured");
   const [quick, setQuick] = useState(null); // null | "new" | "trending" | "video" | "favs"
   const [toTop, setToTop] = useState(false);
   const searchRef = useRef(null);
+  const [shown, setShown] = useState(PAGE);
+  const moreRef = useRef(null);
+  const gridRef = useRef(null);
 
   useEffect(() => {
     try { localStorage.setItem(VAULT_KEY, JSON.stringify(vault)); } catch (e) {}
@@ -139,7 +160,46 @@ function App() {
   }, [toast]);
 
   useEffect(() => {
-    const onHash = () => { setExam(null); setStudio(null); setLook(null); setBrand(null); setInspire(null); setView(viewFromHash()); };
+    document.title = view === "explore" ? "AdDoctor – ad creative audits and templates" : `${VIEWS[view].title} – AdDoctor`;
+  }, [view]);
+
+  /* Keyboard focus stays inside an open dialog, and goes back to where it was when the dialog closes. */
+  const anyModal = !!(exam || studio || look || brand || inspire || product);
+  const lastFocus = useRef(null);
+  useEffect(() => {
+    const onFocus = (e) => { if (e.target instanceof Element && !e.target.closest('[role="dialog"]')) lastFocus.current = e.target; };
+    const onTab = (e) => {
+      if (e.key !== "Tab") return;
+      const all = document.querySelectorAll('[role="dialog"]');
+      const d = all[all.length - 1];
+      if (!d) return;
+      const f = [...d.querySelectorAll(FOCUSABLE)].filter((el) => el.getClientRects().length);
+      if (!f.length) return;
+      const a = document.activeElement;
+      if (!d.contains(a)) { e.preventDefault(); f[0].focus(); }
+      else if (e.shiftKey && a === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && a === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    };
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("keydown", onTab);
+    return () => { document.removeEventListener("focusin", onFocus); document.removeEventListener("keydown", onTab); };
+  }, []);
+  useEffect(() => { holdClips(anyModal); }, [anyModal]);
+  useEffect(() => {
+    if (anyModal) return;
+    const el = lastFocus.current;
+    if (el && el.isConnected && document.activeElement === document.body) el.focus({ preventScroll: true });
+  }, [anyModal]);
+
+  /* Fetch the dialogs people open from the gallery once the page is idle, so the first click does not wait. */
+  useEffect(() => {
+    const warm = () => { loadUse().catch(() => {}); loadStudio().catch(() => {}); loadExamine().catch(() => {}); };
+    const id = window.requestIdleCallback ? window.requestIdleCallback(warm, { timeout: 4000 }) : setTimeout(warm, 2500);
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
+  }, []);
+
+  useEffect(() => {
+    const onHash = () => { setExam(null); setStudio(null); setLook(null); setBrand(null); setInspire(null); setProduct(null); setView(viewFromHash()); };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -147,10 +207,12 @@ function App() {
   const notify = useCallback((msg, ms = 2000) => setToast({ msg, ms, id: Date.now() }), []);
   const openExam = useCallback((init) => { setExamKey((k) => k + 1); setExam(init || {}); }, []);
   const closeExam = useCallback(() => setExam(null), []);
+  const closeMenu = useCallback(() => setMenu(false), []);
   const closeStudio = useCallback(() => setStudio(null), []);
   const closeLook = useCallback(() => setLook(null), []);
   const closeBrand = useCallback(() => setBrand(null), []);
   const closeInspire = useCallback(() => setInspire(null), []);
+  const closeProduct = useCallback(() => setProduct(null), []);
   const spend = useCallback((n) => setCredits((c) => Math.max(0, c - (Number.isFinite(n) ? n : 1))), []);
 
   const goto = (id) => {
@@ -161,13 +223,14 @@ function App() {
     setLook(null);
     setBrand(null);
     setInspire(null);
+    setProduct(null);
     setView(id);
     try { history.pushState(null, "", id === "explore" ? location.pathname + location.search : "#" + id); } catch (e) {}
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollTop();
   };
 
-  const rebuild = (ad) => {
-    const t = TEMPLATES.find((x) => x.id === SPY_ANGLE[ad.angle].tpl) || TEMPLATES[0];
+  const rebuild = (tplId) => {
+    const t = TEMPLATES.find((x) => x.id === tplId) || TEMPLATES[0];
     setStudio(t);
     notify(`Opened "${t.title}", the closest match to this ad's angle.`, 2600);
   };
@@ -180,9 +243,13 @@ function App() {
     notify("Saved to Vault");
   };
   const toggleFav = useCallback((id) => setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : [id, ...f])), []);
+  const pinned = useMemo(() => favs.map((id) => TEMPLATES.find((t) => t.id === id)).filter(Boolean).slice(0, 4), [favs]);
+  const pickPinned = useCallback((t) => { setExam(null); setStudio(null); setBrand(null); setInspire(null); setProduct(null); setLook(t); }, []);
+  const showPinned = () => { goto("explore"); setQ(""); setCat("All"); setQuick("favs"); };
   const removeSaved = (id) => { setVault((v) => v.filter((x) => x.id !== id)); notify("Removed from Vault"); };
 
-  const s = q.trim().toLowerCase();
+  const dq = useDeferredValue(q); // typing stays instant while the grid catches up
+  const s = dq.trim().toLowerCase();
   const words = useMemo(() => s.split(/\s+/).filter(Boolean), [s]);
   const passQuick = useCallback(
     (t) => !quick || (quick === "new" ? !!t.isNew : quick === "trending" ? !!t.trending : quick === "video" ? t.type === "video" : favs.includes(t.id)),
@@ -211,6 +278,16 @@ function App() {
     });
     return m;
   }, [view, passQuick]);
+  /* The gallery is drawn a page at a time: more cards are added shortly before the end scrolls into view. */
+  useEffect(() => { setShown(PAGE); }, [view, cat, quick, s, sort]);
+  const more = shown < list.length;
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) setShown((n) => n + PAGE); }, { rootMargin: "900px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [shown, more, view]);
   const filtered = cat !== "All" || !!quick || !!s;
   const clearFilters = () => { setQ(""); setCat("All"); setQuick(null); };
   const vaultList = useMemo(
@@ -222,18 +299,20 @@ function App() {
   const isGrid = view !== "vault" && view !== "spy" && view !== "pack" && view !== "lab";
   const V = VIEWS[view];
   const inStudio = !!V.studio;
+  const inspect = useCallback((tp) => (inStudio ? setStudio(tp) : setLook(tp)), [inStudio]);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 antialiased">
       <Sidebar
-        active={active} onNav={goto} open={menu} onClose={() => setMenu(false)} onExamine={() => openExam({})}
+        active={active} onNav={goto} open={menu} onClose={closeMenu} onExamine={() => openExam({})}
         credits={credits} vaultCount={vault.length} onUpgrade={() => notify("Plan upgrades aren't available in this preview.")}
+        pinned={pinned} pinnedTotal={favs.length} onPick={pickPinned} onShowPinned={showPinned}
       />
 
       <div className="min-h-screen bg-slate-50/50 lg:pl-64">
-        <header className="sticky z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur" style={{ top: "env(safe-area-inset-top, 0px)" }}>
+        <header className="sticky z-20 border-b border-slate-200/80 bg-white/95 lg:bg-white/85 lg:backdrop-blur" style={{ top: "env(safe-area-inset-top, 0px)" }}>
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
-            <button onClick={() => setMenu(true)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
+            <button onClick={() => setMenu(true)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Open menu" aria-expanded={menu}>
               <Icon.Menu className="h-5 w-5" />
             </button>
             <div className={`relative min-w-0 flex-1 md:max-w-md ${isGrid || view === "vault" ? "" : "invisible"}`}>
@@ -242,7 +321,7 @@ function App() {
                 id="search" ref={searchRef} type="search" value={q} onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
                 placeholder={view === "vault" ? "Search saved reports..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search saved reports" : "Search templates, niches, formats"}
-                className="h-10 w-full rounded-full border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                className="h-10 w-full rounded-full border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
               {!q && <kbd className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 md:block">/</kbd>}
             </div>
@@ -259,7 +338,11 @@ function App() {
           </div>
         </header>
 
-        <main className="px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+        <main className="px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
+          <div key={view} className="view-in">
+          {view === "explore" ? (
+            <Hero onExamine={() => openExam({})} onBrowse={() => gridRef.current && gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" })} />
+          ) : (
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[28px]">
@@ -270,23 +353,22 @@ function App() {
                 {inStudio ? "Choose a direct-response template to synthesize a high-converting creative with your product photo." : V.sub}
               </p>
             </div>
-            {view !== "spy" && view !== "pack" && view !== "lab" && <p className="text-xs font-medium tabular-nums text-slate-400">
-              {isGrid ? `${list.length} ${list.length === 1 ? "template" : "templates"}` : `${vaultList.length} saved`}
-            </p>}
+            {view === "vault" && <p className="text-xs font-medium tabular-nums text-slate-500">{vaultList.length} saved</p>}
           </div>
+          )}
 
           {isGrid && (
-            <div className="-mx-4 mt-6 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+            <div ref={gridRef} className="-mx-4 mt-6 scroll-mt-20 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
               <div className="flex w-max gap-2" role="group" aria-label="Filter by niche">
                 {CATEGORIES.map((c) => {
                   const on = cat === c;
                   return (
                     <button
                       key={c} onClick={() => setCat(c)} aria-pressed={on}
-                      className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-slate-100/70 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900"}`}
+                      className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition active:scale-95 [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-slate-900 bg-slate-900 text-white shadow-md shadow-slate-900/20" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900"}`}
                     >
                       {c}
-                      <span className={`ml-1.5 text-[11px] tabular-nums ${on ? "text-white/60" : "text-slate-400"}`}>{catCounts[c] || 0}</span>
+                      <span className={`ml-1.5 text-[11px] tabular-nums ${on ? "text-white/70" : "text-slate-500"}`}>{catCounts[c] || 0}</span>
                     </button>
                   );
                 })}
@@ -302,11 +384,11 @@ function App() {
                   return (
                     <button
                       key={id} onClick={() => setQuick(on ? null : id)} aria-pressed={on}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}
+                      className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}
                     >
                       {id === "new" ? <Icon.Sparkle className="h-3.5 w-3.5" /> : id === "trending" ? <Icon.Flame className="h-3.5 w-3.5" /> : id === "video" ? <Icon.Video className="h-3.5 w-3.5" /> : <Icon.Heart className="h-3.5 w-3.5" />}
                       {label}
-                      {id === "favs" && favs.length > 0 && <span className="tabular-nums text-slate-400">{favs.length}</span>}
+                      {id === "favs" && favs.length > 0 && <span className="tabular-nums text-slate-500">{favs.length}</span>}
                     </button>
                   );
                 })}
@@ -314,11 +396,12 @@ function App() {
                   <button onClick={clearFilters} className="rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Clear filters</button>
                 )}
               </div>
-              <label className="ml-auto flex items-center gap-2 text-xs font-medium text-slate-500">
+              <p className="ml-auto text-xs font-medium tabular-nums text-slate-500">{list.length} {list.length === 1 ? "template" : "templates"}</p>
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
                 Sort
                 <select
                   value={sort} onChange={(e) => setSort(e.target.value)}
-                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition [@media(pointer:coarse)]:h-10 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
                 >
                   {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
                 </select>
@@ -328,13 +411,16 @@ function App() {
 
           {isGrid ? (
             list.length ? (
-              <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-x-5">
-                {list.map((t) => <TemplateCard
-                    key={t.id} t={t} fav={favs.includes(t.id)} onFav={toggleFav}
+              <>
+              <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-x-5" {...tilt}>
+                {list.slice(0, shown).map((t, i) => <TemplateCard
+                    key={t.id} t={t} i={i % 10} fav={favs.includes(t.id)} onFav={toggleFav}
                     {...(inStudio ? { verb: "Open Studio:", action: "Open Studio" } : {})}
-                    onInspect={(tp) => (inStudio ? setStudio(tp) : setLook(tp))}
+                    onInspect={inspect}
                   />)}
               </div>
+              {more && <div ref={moreRef} className="h-24" aria-hidden="true" />}
+              </>
             ) : (
               <div className="mt-16 flex flex-col items-center text-center">
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-400"><Icon.Search className="h-5 w-5" /></div>
@@ -344,11 +430,11 @@ function App() {
               </div>
             )
           ) : view === "lab" ? (
-            <LabView notify={notify} />
+            <Suspense fallback={viewWait}><LabView notify={notify} /></Suspense>
           ) : view === "pack" ? (
-            <PackView notify={notify} credits={credits} onSpend={spend} />
+            <Suspense fallback={viewWait}><PackView notify={notify} credits={credits} onSpend={spend} /></Suspense>
           ) : view === "spy" ? (
-            <SpyView notify={notify} onRebuild={rebuild} />
+            <Suspense fallback={viewWait}><SpyView notify={notify} onRebuild={rebuild} /></Suspense>
           ) : (
             <VaultView
               items={vaultList}
@@ -357,9 +443,11 @@ function App() {
               onExamine={() => openExam({})}
             />
           )}
+          </div>
         </main>
       </div>
 
+      <Suspense fallback={modalWait}>
       {exam && (
         <ExamineModal
           key={examKey} init={exam} onClose={closeExam} credits={credits} onSpend={spend}
@@ -373,25 +461,30 @@ function App() {
           onBrand={(tp) => { setLook(null); setBrand(tp); }}
           onInspire={(tp) => { setLook(null); if (TEMPLATE_VIDS[tp.id]) setInspire(tp); else setStudio(tp); }}
           onExamine={(tp) => { setLook(null); openExam({ template: tp }); }}
+          onProduct={(tp) => { setLook(null); setProduct(tp); }}
         />
       )}
 
       {brand && <BrandModal key={brand.id} tpl={brand} onClose={closeBrand} notify={notify} />}
       {inspire && <InspireModal key={inspire.id} tpl={inspire} onClose={closeInspire} notify={notify} credits={credits} onSpend={spend} />}
+      {product && <ProductModal key={product.id} tpl={product} onClose={closeProduct} notify={notify} onSpend={spend} />}
 
       {studio && <StudioModal key={studio.id} tpl={studio} onClose={closeStudio} notify={notify} />}
+      </Suspense>
 
-      {toTop && isGrid && !exam && !studio && !look && !brand && !inspire && (
+      <BottomNav active={active} onNav={goto} vaultCount={vault.length} />
+
+      {toTop && isGrid && !exam && !studio && !look && !brand && !inspire && !product && (
         <button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top"
-          className="fixed bottom-6 right-5 z-20 grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-900/10 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+          onClick={scrollTop} aria-label="Back to top"
+          className="fixed bottom-24 right-5 z-20 grid h-11 w-11 lg:bottom-6 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-900/10 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
         >
           <Icon.Arrow className="h-4 w-4 -rotate-90" />
         </button>
       )}
 
       {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4 lg:bottom-6" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           <div key={toast.id} role="status" className="toast-in pointer-events-auto rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-xl shadow-slate-900/25">{toast.msg}</div>
         </div>
       )}

@@ -10,6 +10,7 @@ React 18 + Vite + Tailwind CSS (compiled with PostCSS). No backend needed except
 npm install
 npm run dev        # http://localhost:5173
 npm run build      # outputs dist/, upload anywhere static
+npm run lint       # ESLint: unused imports, hook rules
 ```
 
 ## Project layout
@@ -22,7 +23,9 @@ src/
   templateImgs.js   template id -> /public/templates/<id>.jpg
   analysis.js       rule-based diagnostic engine
   ui.jsx            icons, creative renderer, shared components
-  asset.jsx  modal.jsx  studio.jsx  spy.jsx  pack.jsx  lab.jsx   feature screens
+  shared.js         small helpers used by several screens (copy, API address)
+  look.jsx          the "use this template" dialog
+  asset.jsx  modal.jsx  studio.jsx  use.jsx  spy.jsx  pack.jsx  lab.jsx   feature screens, each loaded on demand
 public/
   templates/        one 600x750 (4:5) JPEG per template
   logo.png  favicon.png

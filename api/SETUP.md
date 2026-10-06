@@ -33,7 +33,28 @@ Pieces: (1) the page (addoctor.html), (2) the backend (worker.js), (3) two paid 
 - Scraping Meta's Ad Library is against Meta's terms of service for automated collection; the scraping service carries
   that risk. The official Ad Library API is the lower-risk alternative (EU/UK ads only, no video/static flag).
 
-## Competitor Spy without Apify (free): Meta's official Ad Library API
+## Competitor Spy without Apify: three ways to read the Ad Library
+Meta answers plain server requests to the Ad Library with a bot check ("403 Client challenge"), so the Worker cannot
+read it by itself. worker.js picks the first of these that is set up (GET /caps shows which):
+
+1. The AdDoctor helper (free, needs no key). A bookmark the visitor drags from the Competitor Spy screen. Clicked on an
+   advertiser's Ad Library page, it reads the ads Meta already sent to that page (text, dates, image links), scrolls
+   to load up to 400, and opens AdDoctor in a new tab with them. The page posts them to /analyze as "ads". Only the
+   Claude call costs anything. Tested on 2026-10-06 with Admiral Sport Shops (page 599285093554002, Greece) in Chrome.
+   Limits: desktop browsers only, the Ad Library tab must stay in front while it scrolls, and it breaks if Meta
+   renames the fields it reads (ad_archive_id, snapshot). The code is src/spyHelper.js.
+2. ScrapeCreators (paid, cheap, fully automatic): add a SCRAPECREATORS_KEY secret. One request returns about 30 ads
+   with images for 1 credit; 100 credits are free, then $47 buys 25,000 that do not expire (checked 2026-10-06).
+   A 200-ad analysis is about 7 credits, roughly one cent, against about a dollar on Apify. Written from their
+   documentation and NOT yet run against the real service: run one analysis after adding the key.
+3. Meta's official API (free, needs Meta's identity check): the META_TOKEN section below.
+Apify stays as the last fallback while APIFY_TOKEN is set.
+
+Whichever way the ads arrive, the Worker loads up to 16 creatives (VISION_MAX) from Meta's image servers, the ones
+most ads share, the longest-running, and the newest offer ads, and Claude reads them together with the ad text.
+The reply has "slide", "report" (sections of findings), "creatives" (what Claude saw in each image) and "insights".
+
+## Meta's official Ad Library API
 worker.js uses the official API whenever a META_TOKEN secret is set, and Apify is then not called at all.
 It covers ads shown in the EU and UK. It returns the ad text, dates and advertiser, not the images or videos.
 1. Confirm your identity with Meta: facebook.com/ID (usually a day or two).

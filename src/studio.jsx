@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Icon, hl, Creative, pill } from "./ui";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Icon } from "./ui";
 import { rrect } from "./asset";
-import { copyText, field } from "./modal";
+import { copyText } from "./shared.js";
 import { detectCategory } from "./analysis.js";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
 
@@ -1323,10 +1323,10 @@ function StudioModal({ tpl, onClose, notify }) {
     onDragLeave: () => setOver(false),
     onDrop: (e) => { e.preventDefault(); setOver(false); onFile(e.dataTransfer.files && e.dataTransfer.files[0]); },
   };
-  const field = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
+  const field = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/30 backdrop-blur-[2px] sm:items-center sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-6" onClick={onClose}>
       <div
         role="dialog" aria-modal="true" aria-labelledby="st-title" onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
