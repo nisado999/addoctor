@@ -595,6 +595,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount,
           <button onClick={onUpgrade} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 transition hover:text-blue-700 focus:outline-none focus-visible:underline">
             Upgrade plan <Icon.Arrow className="h-3 w-3" />
           </button>
+          <a href="./privacy.html" className="mt-2 block text-[11px] font-medium text-slate-400 transition hover:text-slate-600 focus:outline-none focus-visible:underline">Privacy</a>
         </div>
       </aside>
     </>

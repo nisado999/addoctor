@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy – AdDoctor</title>
+    <meta name="description" content="What AdDoctor does with the photos, links and text you give it, and which services process them." />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <style>
+      body { margin: 0; background: #f8fafc; color: #0f172a; font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      main { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+      img.logo { height: 30px; }
+      h1 { margin: 28px 0 4px; font-size: 30px; letter-spacing: -0.02em; }
+      h2 { margin: 36px 0 8px; font-size: 19px; }
+      p, li { color: #334155; }
+      .muted { color: #64748b; font-size: 14px; }
+      a { color: #2563eb; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 15px; }
+      th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+      th { color: #64748b; font-weight: 600; font-size: 13px; }
+      .box { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 4px 8px; overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a href="./"><img class="logo" src="./logo.png" alt="AdDoctor" /></a>
+      <h1>Privacy</h1>
+      <p class="muted">Last updated 7 October 2026. This page describes what the site does today. It will be updated before accounts or payments are added.</p>
+
+      <h2>The short version</h2>
+      <ul>
+        <li>AdDoctor has no accounts. It does not ask for your name or email and does not keep a database of visitors.</li>
+        <li>It sets no cookies and has no advertising or tracking scripts.</li>
+        <li>Photos, links and text you submit to an AI feature are sent to the AI services listed below so they can produce the result. AdDoctor itself does not store them afterwards.</li>
+      </ul>
+
+      <h2>What stays in your browser</h2>
+      <p>Your favourite templates, the reports you save to the Vault and the credit counter are kept in your browser's local storage on your own device. They are never sent to a server. Clearing your browser data removes them.</p>
+      <p>Browsing templates, Examine Ad, the Static Ads studio and "Add my logo" all run in your browser. A logo or ad you load there does not leave your device.</p>
+
+      <h2>What is sent to a server, and to whom</h2>
+      <div class="box">
+        <table>
+          <tr><th>Feature</th><th>What is sent</th><th>Who processes it</th></tr>
+          <tr><td>Competitor Spy</td><td>The advertiser's Ad Library link, and the public ads read from Meta's Ad Library (text, dates, image links)</td><td>Cloudflare (our server), ScrapeCreators (reads the public Ad Library when you paste a link), Anthropic (writes the analysis and looks at the ad images)</td></tr>
+          <tr><td>Make it with my product</td><td>The product photos you upload, your headline and note, and the ad being edited or scored</td><td>Cloudflare, Google (Gemini generates the image), Anthropic (scores the ad)</td></tr>
+          <tr><td>Social Pack</td><td>Your product description, product photos or store link, and the posts being checked</td><td>Cloudflare, Google (Gemini generates the images), Anthropic (writes the brief, captions and checks)</td></tr>
+        </table>
+      </div>
+      <p>Our server passes these on, returns the result to your browser and keeps no copy. The services above handle the data under their own terms and may keep it for a limited time for safety and abuse monitoring. Do not upload photos of people, or anything confidential, that you are not entitled to share with them.</p>
+
+      <h2>The AdDoctor bookmark</h2>
+      <p>The optional AdDoctor bookmark runs only when you click it on a Meta Ad Library page. It reads the public ads shown on that page and hands them to the AdDoctor tab it opens. It does not read your Facebook account, messages, or anything outside the Ad Library results.</p>
+
+      <h2>Technical data</h2>
+      <ul>
+        <li><b>Abuse limits.</b> Our server on Cloudflare uses your IP address to count requests per hour, so one visitor cannot run up unlimited costs. The count expires within a day. Cloudflare also keeps short-lived request logs.</li>
+        <li><b>Hosting.</b> The site is served by GitHub Pages, which logs visitor IP addresses for security, as any web host does.</li>
+        <li><b>Fonts.</b> Fonts are loaded from Google Fonts, so your browser contacts Google when the page loads.</li>
+      </ul>
+
+      <h2>Your choices</h2>
+      <p>You can use the template gallery and the in-browser tools without sending anything to a server. Because AdDoctor keeps no account or stored copy of what you submit, there is nothing on our side to export or delete. If you are in the EU or UK you also have the right to complain to your data protection authority.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about this page: <a href="https://github.com/nisado999/addoctor/issues">open an issue on the AdDoctor GitHub page</a>.</p>
+
+      <p class="muted"><a href="./">← Back to AdDoctor</a></p>
+    </main>
+  </body>
+</html>
