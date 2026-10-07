@@ -88,4 +88,15 @@ async function authOptions() {
   } catch (e) { return { google: false, email: true }; }
 }
 
-export { authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, signOut, accessToken, authOptions };
+/* Deletes the signed-in account on the server, then signs out here. The server needs its own secret for this, so until
+   it is set up the call answers "not_configured" and the account menu explains that. */
+async function deleteAccount() {
+  const { apiFetch } = await import("./api.js");
+  await apiFetch("/account/delete", { method: "POST", body: {} });
+  await signOut();
+}
+
+// Paid server calls send the visitor's token when they are signed in (see api.js).
+import("./api.js").then((m) => m.setTokenProvider(accessToken)).catch(() => {});
+
+export { authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, signOut, accessToken, authOptions, deleteAccount };

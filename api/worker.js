@@ -574,6 +574,8 @@ const FIDELITY = (n) => `The ${n > 1 ? n + " attached photos show" : "attached p
 const inline = (x) => ({ inlineData: { mimeType: x.mime, data: x.data } });
 
 async function packImage(env, b) {
+  // Raw prompts skip the brief and go straight to the image model, so only the owner may use them.
+  if (b.raw && env.ALLOW_RAW !== "1") { const e = new Error("This feature is only for the site owner."); e.status = 403; throw e; }
   const refs = await loadRefs(b.refs, 4);
   return geminiImage(env, [...refs.map(inline), { text: (refs.length ? FIDELITY(refs.length) : "") + imagePromptText(b, b.brief) }], b.quality);
 }
@@ -591,12 +593,13 @@ async function geminiImage(env, parts, quality) {
     }),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error((j.error && j.error.message) || "Image model error " + r.status); e.status = r.status; throw e; }
+  // The provider's own message stays in the server log; the visitor only sees a short line.
+  if (!r.ok) { console.log("image model error", r.status, JSON.stringify(j.error || {}).slice(0, 500)); const e = new Error("The image model could not make this image. Try again."); e.status = r.status === 429 ? 429 : 502; throw e; }
   const got = ((j.candidates || [])[0] || {}).content ? (j.candidates[0].content.parts || []) : [];
   const img = got.map((p) => p.inlineData || p.inline_data).find((d) => d && d.data);
   if (!img) {
     const why = (j.candidates && j.candidates[0] && j.candidates[0].finishReason) || (j.promptFeedback && j.promptFeedback.blockReason) || "no image returned";
-    const e = new Error("The image model returned no image (" + why + ")"); e.status = 422; throw e;
+    console.log("image model returned no image", String(why).slice(0, 80)); const e = new Error("The image model returned no image. Try a different photo or wording."); e.status = 422; throw e;
   }
   return { mime: img.mimeType || img.mime_type || "image/png", data: img.data, model };
 }
@@ -697,8 +700,11 @@ async function bump(key, ttl) {
   return n;
 }
 
+// Used when ALLOW_ORIGIN is not set: the live site and local dev servers. Set ALLOW_ORIGIN in Cloudflare to change it.
+const DEFAULT_ORIGINS = "https://nisado999.github.io,http://localhost:5173,http://localhost:4173";
+
 function allowedOrigin(req, env) {
-  const list = String(env.ALLOW_ORIGIN || "*").split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean);
+  const list = String(env.ALLOW_ORIGIN || DEFAULT_ORIGINS).split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean);
   if (list.includes("*")) return "*";
   const origin = (req.headers.get("Origin") || "").replace(/\/+$/, "");
   return list.includes(origin) ? origin : null;
@@ -818,7 +824,7 @@ export default {
       }
       return json(env, { error: "not found" }, 404);
     } catch (e) {
-      return json(env, { error: String(e.message || e).slice(0, 240) }, e && (e.status === 429 || e.status === 422) ? e.status : 500);
+      return json(env, { error: String(e.message || e).slice(0, 240) }, e && [403, 422, 429, 502].includes(e.status) ? e.status : 500);
     }
   },
 };
