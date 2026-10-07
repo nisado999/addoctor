@@ -1,6 +1,9 @@
-import React, { useEffect, useRef, memo } from "react";
-import { LOGO_SRC } from "./data";
+import { useEffect, useRef, useState, memo } from "react";
+import { TEMPLATES } from "./data";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
+import { useDialog } from "./dialog.jsx";
+
+const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
 
 /* ------------------------------- Icons --------------------------------- */
 
@@ -41,275 +44,69 @@ const Icon = {
   Layout: (p) => (<svg {...svgBase} {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M3.5 9.5h17M10 9.5v11" /></svg>),
 };
 
-/* ---------------------- CSS-built ad creatives ------------------------- */
+/* -------------------------------- Media -------------------------------- */
 
-function hl(text) {
-  return String(text).split("*").map((part, i) => (i % 2 ? <span key={i} className="cr-hl">{part}</span> : <span key={i}>{part}</span>));
-}
-function Stars({ n = 5, className = "" }) {
+/* Cards show a 360x450 WebP made from each template photo (public/templates/card/<id>.webp), about a quarter of the
+   JPEG's weight. The full 600x750 JPEG stays the fallback, and the dialogs keep using it. */
+const cardWebp = (src) => (/templates\/[^/]+\.jpg$/.test(src) ? src.replace(/templates\/([^/]+)\.jpg$/, "templates/card/$1.webp") : "");
+
+// The photos carry their ad headline (the video first frames do not), so the alt text says what is written on them.
+const altFor = (t) => (t.type !== "video" && t.headline ? `${t.title} ad with the headline "${t.headline}"` : `${t.title} ad`);
+
+/* What shows when a template's media cannot be loaded: an old tab after a publish (files are renamed), or a dropped
+   connection. A plain slate panel with the title reads as "missing", where a broken image would read as "broken". */
+function MediaFallback({ title, label, compact = false }) {
+  if (compact) return <span role="img" aria-label={label || title} className="absolute inset-0 bg-slate-200" />;
   return (
-    <span className={`cr-stars ${className}`} aria-hidden="true">
-      {Array.from({ length: n }).map((_, i) => <Icon.Star key={i} />)}
+    <span role="img" aria-label={label || title} className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-slate-100 to-slate-200 p-4 text-center">
+      <Icon.Image className="h-6 w-6 text-slate-400" aria-hidden="true" />
+      <span aria-hidden="true" className="line-clamp-3 text-[13px] font-semibold leading-snug text-slate-600">{title}</span>
     </span>
   );
 }
 
-function CreativeBody({ a }) {
-  switch (a.kind) {
-    case "myth":
-      return (
-        <>
-          <div className="cr-panel" style={{ background: "rgba(244,63,94,.16)", borderColor: "rgba(251,113,133,.45)" }}>
-            <span className="cr-ic" style={{ background: "#f43f5e" }}><Icon.Cross /></span>
-            <span><b className="cr-k">Myth</b><br />{a.myth}</span>
-          </div>
-          <div className="cr-panel" style={{ background: "rgba(16,185,129,.18)", borderColor: "rgba(52,211,153,.5)" }}>
-            <span className="cr-ic" style={{ background: "#10b981" }}><Icon.Check /></span>
-            <span><b className="cr-k">Fact</b><br />{a.fact}</span>
-          </div>
-        </>
-      );
-    case "stat":
-      return (
-        <>
-          <div className="cr-statwrap">
-            <span className="cr-big" style={{ color: a.hl }}>{a.big}</span>
-            <span className="cr-unit">{a.unit}</span>
-          </div>
-          <div className="cr-chips">{a.chips.map((c) => <span key={c} className="cr-chip">{c}</span>)}</div>
-        </>
-      );
-    case "split":
-      return (
-        <div className="cr-split">
-          <div className="cr-half" style={{ background: "linear-gradient(180deg,#475569,#334155)", filter: "saturate(.5)" }}>
-            <span className="cr-lab">{a.left.label}</span>
-            <span className="cr-num">{a.left.metric}</span>
-            <span className="cr-note">{a.left.note}</span>
-          </div>
-          <div className="cr-half" style={{ background: "linear-gradient(180deg,#38bdf8,#2563eb)" }}>
-            <span className="cr-lab">{a.right.label}</span>
-            <span className="cr-num">{a.right.metric}</span>
-            <span className="cr-note">{a.right.note}</span>
-          </div>
-          <span className="cr-handle"><Icon.Arrow style={{ transform: "rotate(180deg)" }} /><Icon.Arrow /></span>
-        </div>
-      );
-    case "review":
-      return (
-        <div className="cr-white">
-          <Stars />
-          <p className="cr-quote">“{a.quote}”</p>
-          <div className="cr-who"><span className="cr-av">{a.initial}</span><span>{a.who}</span></div>
-        </div>
-      );
-    case "offer":
-      return (
-        <>
-          <div className="cr-statwrap">
-            <span className="cr-big" style={{ color: a.hl }}>{a.big}</span>
-            <span className="cr-unit">{a.sub}</span>
-          </div>
-          <div className="cr-chips">{a.pills.map((c) => <span key={c} className="cr-chip">{c}</span>)}</div>
-          <span className="cr-cta">{a.cta}</span>
-        </>
-      );
-    case "steps":
-      return (
-        <>
-          {a.rows.map(([n, v]) => (
-            <div key={n} className="cr-panel" style={{ padding: "2.6cqw 4cqw" }}>
-              <span className="cr-ic" style={{ background: v === "keep" ? "#10b981" : "#f43f5e", width: "6.6cqw", height: "6.6cqw" }}>
-                {v === "keep" ? <Icon.Check /> : <Icon.Cross />}
-              </span>
-              <span style={{ flex: 1 }}>{n}</span>
-              <b className="cr-k" style={{ opacity: 0.8 }}>{v}</b>
-            </div>
-          ))}
-          <span className="cr-cta" style={{ background: a.hl }}>{a.foot}</span>
-        </>
-      );
-    case "compare":
-      return (
-        <div className="cr-table">
-          <span />
-          <b className="cr-th cr-us">{a.cols[0]}</b>
-          <b className="cr-th">{a.cols[1]}</b>
-          {a.rows.map(([k, us, them]) => (
-            <React.Fragment key={k}>
-              <span className="cr-rowk">{k}</span>
-              <span className="cr-cell cr-us"><Icon.Check />{us}</span>
-              <span className="cr-cell cr-them"><Icon.Cross />{them}</span>
-            </React.Fragment>
-          ))}
-        </div>
-      );
-    case "quote":
-      return (
-        <div className="cr-paper">
-          <span className="cr-tape" />
-          <p>{a.text}</p>
-          <span className="cr-sign">– {a.sign}</span>
-        </div>
-      );
-    case "checklist":
-      return (
-        <>
-          {a.items.map((it) => (
-            <div key={it} className="cr-panel">
-              <span className="cr-ic" style={{ background: "#10b981" }}><Icon.Check /></span>
-              <span>{it}</span>
-            </div>
-          ))}
-          <span className="cr-chip" style={{ alignSelf: "flex-start", background: a.hl, color: "#0f172a", borderColor: "transparent" }}>{a.chip}</span>
-        </>
-      );
-    case "timeline":
-      return (
-        <>
-          <div className="cr-time">
-            <span className="cr-line" />
-            {a.points.map(([t, s, l]) => (
-              <div key={t} className="cr-node">
-                <span className="cr-dot" style={{ background: s === "ok" ? "#10b981" : "#f43f5e" }}>{s === "ok" ? <Icon.Check /> : <Icon.Cross />}</span>
-                <b>{t}</b>
-                <span>{l}</span>
-              </div>
-            ))}
-          </div>
-          <span className="cr-cta" style={{ background: a.hl }}>{a.foot}</span>
-        </>
-      );
-    case "restock":
-      return (
-        <>
-          <span className="cr-badge">{a.badge}</span>
-          <div className="cr-chips">
-            {a.sizes.map(([s, on]) => (
-              <span key={s} className="cr-size" style={on ? undefined : { opacity: 0.35, textDecoration: "line-through" }}>{s}</span>
-            ))}
-          </div>
-          <span className="cr-cta">Pick your size</span>
-        </>
-      );
-    case "neon":
-      return (
-        <div className="cr-neonwrap">
-          <span className="cr-ring cr-ring1" />
-          <span className="cr-ring cr-ring2" />
-          <span className="cr-neontxt">{a.label}</span>
-        </div>
-      );
-    case "reviews":
-      return (
-        <div className="cr-stack">
-          {a.items.map(([q, n], i) => (
-            <div key={q} className="cr-white cr-mini" style={{ transform: `translateX(${i % 2 ? 2 : -2}cqw)` }}>
-              <Stars />
-              <p className="cr-quote">{q}</p>
-              <span className="cr-nm">{n} · Verified buyer</span>
-            </div>
-          ))}
-        </div>
-      );
-    case "marker":
-      return (
-        <div className="cr-marknote">
-          <svg viewBox="0 0 60 60" aria-hidden="true"><path d="M8 6c6 26 18 38 40 44M34 50l14 0-6-13" fill="none" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          <span>{a.note}</span>
-        </div>
-      );
-    case "receipt":
-      return (
-        <div className="cr-receipt">
-          <b className="cr-rc-h">Order summary</b>
-          {a.rows.map(([k, o, n]) => (
-            <div key={k} className="cr-rc-r"><span>{k}</span><span><s>{o}</s> <b>{n}</b></span></div>
-          ))}
-          <div className="cr-rc-r cr-rc-t"><span>Total</span><span><s>{a.totals[0]}</s> <b>{a.totals[1]}</b></span></div>
-        </div>
-      );
-    case "tweet":
-      return (
-        <div className="cr-tweet">
-          <div className="cr-tw-h"><span className="cr-av" style={{ background: "#dbeafe", color: "#1d4ed8" }}>{a.name.charAt(0)}</span><span><b>{a.name}</b><br />{a.handle}</span></div>
-          <p>{a.text}</p>
-        </div>
-      );
-    case "ingredients":
-      return (
-        <>
-          {a.items.map((it, i) => (
-            <div key={it} className="cr-panel" style={{ padding: "2.2cqw 3.6cqw" }}>
-              <span className="cr-ic" style={{ background: a.hl, color: "#0f172a", fontWeight: 800, fontSize: "3.4cqw", width: "6.6cqw", height: "6.6cqw" }}>{i + 1}</span>
-              <span>{it}</span>
-            </div>
-          ))}
-        </>
-      );
-    case "stoplight": {
-      const col = { g: "#22c55e", y: "#facc15", r: "#ef4444" };
-      return (
-        <div className="cr-table" style={{ gridTemplateColumns: "1.5fr 1fr 1fr 1fr" }}>
-          <span />
-          {a.cols.map((c, i) => <b key={c} className={`cr-th ${i === 0 ? "cr-us" : ""}`}>{c}</b>)}
-          {a.rows.map(([k, ...v]) => (
-            <React.Fragment key={k}>
-              <span className="cr-rowk">{k}</span>
-              {v.map((x, i) => <span key={i} className="cr-cell" style={{ justifyContent: "center" }}><i className="cr-light-dot" style={{ background: col[x] }} /></span>)}
-            </React.Fragment>
-          ))}
-        </div>
-      );
-    }
-    case "dm":
-      return (
-        <div className="cr-dm">
-          <span className="cr-bub cr-recv">{a.recv}</span>
-          <span className="cr-bub cr-sent">{a.sent}</span>
-        </div>
-      );
-    case "press":
-      return (
-        <div className="cr-press">
-          <b>As seen in {a.pub}</b>
-          <p>“{a.quote}”</p>
-        </div>
-      );
-    case "newspaper":
-      return (
-        <div className="cr-news">
-          <div className="cr-news-mast">{a.pub}</div>
-          <p className="cr-news-hd">{a.quote}</p>
-          <p className="cr-news-sub">{a.sub}</p>
-        </div>
-      );
-    case "beforeafter":
-      return (
-        <div className="cr-split">
-          <div className="cr-half" style={{ background: "linear-gradient(180deg,#334155,#1e293b)" }}>
-            <span className="cr-pillbadge" style={{ background: "#475569" }}>{a.before.label}</span>
-            <span className="cr-num" style={{ fontSize: "8cqw" }}>{a.before.metric}</span>
-          </div>
-          <div className="cr-half" style={{ background: "linear-gradient(180deg,#38bdf8,#2563eb)" }}>
-            <span className="cr-pillbadge" style={{ background: "#10b981" }}>{a.after.label}</span>
-            <span className="cr-num" style={{ fontSize: "8cqw" }}>{a.after.metric}</span>
-          </div>
-        </div>
-      );
-    case "chart":
-      return (
-        <div className="cr-chart">
-          <svg viewBox="0 0 100 56" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M4 46 C30 46 40 40 55 28 S82 10 96 8" fill="none" stroke={a.hl} strokeWidth="2.6" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-            <path d="M4 46 C30 46 40 40 55 28 S82 10 96 8 L96 56 L4 56Z" fill={a.hl} opacity=".18" />
-          </svg>
-          <div className="cr-ch-l"><span>{a.start[0]}<br /><b>{a.start[1]}</b></span><span style={{ textAlign: "right" }}>{a.end[0]}<br /><b>{a.end[1]}</b> {a.metric}</span></div>
-        </div>
-      );
-    default:
-      return null;
+/* A template photo: the card WebP first, the JPEG if that fails, then the slate panel. */
+function TemplateImage({ src, alt, title, focus, lazy = true, priority = false, compact = false, className = "cr-photo-img" }) {
+  const [stage, setStage] = useState(0); // 0: WebP with JPEG fallback, 1: JPEG only, 2: nothing loaded
+  const webp = stage === 0 ? cardWebp(src) : "";
+  if (!src || stage === 2) return <MediaFallback title={title} label={alt} compact={compact} />;
+  const img = (
+    <img
+      key={stage} src={src} alt={alt} width="360" height="450" draggable="false"
+      loading={lazy ? "lazy" : "eager"} decoding="async" fetchpriority={priority ? "high" : undefined}
+      onError={() => setStage(webp ? 1 : 2)}
+      className={className} style={focus ? { objectPosition: focus } : undefined}
+    />
+  );
+  return webp ? <picture><source type="image/webp" srcSet={webp} />{img}</picture> : img;
+}
+
+/* One observer for every card: a card's photo and clip are attached only once it comes within a few hundred pixels
+   of the screen, so a phone downloads the cards it shows rather than the first page of thirty. */
+let nearIO = null;
+const nearCbs = new Map();
+function watchNear(el, cb) {
+  if (typeof IntersectionObserver === "undefined") { cb(); return () => {}; }
+  if (!nearIO) {
+    nearIO = new IntersectionObserver((entries) => entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      const f = nearCbs.get(e.target);
+      nearCbs.delete(e.target);
+      nearIO.unobserve(e.target);
+      if (f) f();
+    }), { rootMargin: "300px 0px" });
   }
+  nearCbs.set(el, cb);
+  nearIO.observe(el);
+  return () => { nearCbs.delete(el); nearIO.unobserve(el); };
+}
+function useNear(ref, eager) {
+  const [near, setNear] = useState(eager);
+  useEffect(() => {
+    if (near || !ref.current) return;
+    return watchNear(ref.current, () => setNear(true));
+  }, [near, ref]);
+  return near;
 }
 
 /* Silent looping clips. Decoding video is the most expensive thing the gallery does, so only a few play at once
@@ -333,7 +130,9 @@ function syncClips() {
 function holdClips(on) { held = on; syncClips(); }
 if (typeof document !== "undefined") document.addEventListener("visibilitychange", syncClips);
 
-function LoopVideo({ src, poster, title, focus }) {
+/* The clip lies over the photo, which is its first frame, so there is no poster to download: until the clip plays,
+   the photo shows through. If the clip fails, it is dropped and the photo stays. */
+function LoopVideo({ src, focus, onFail }) {
   const ref = useRef(null);
   useEffect(() => {
     const v = ref.current;
@@ -345,48 +144,34 @@ function LoopVideo({ src, poster, title, focus }) {
     io.observe(v);
     return () => { io.disconnect(); onScreen.delete(v); syncClips(); };
   }, [src]);
-  return <video ref={ref} src={src} poster={poster} aria-label={title} muted loop playsInline preload="none" disablePictureInPicture className="cr-photo-img" style={focus ? { objectPosition: focus } : undefined} />;
+  return <video ref={ref} src={src} aria-hidden="true" tabIndex={-1} muted loop playsInline preload="none" disablePictureInPicture onError={onFail} className="cr-photo-img" style={focus ? { objectPosition: focus } : undefined} />;
 }
 
-function Creative({ t }) {
-  const a = t.art;
+/* A template's media, sized by its parent. `lazy` waits until it is near the screen (the gallery), then loads it at
+   once; without it the media loads straight away (a dialog that is already open). */
+function Creative({ t, lazy = false, priority = false }) {
+  const ref = useRef(null);
+  const near = useNear(ref, !lazy);
+  const [clipOk, setClipOk] = useState(true);
   const photo = TEMPLATE_IMGS[t.id];
   const clip = TEMPLATE_VIDS[t.id];
-  if (clip) {
-    return (
-      <div className="cr cr-photo">
-        <LoopVideo src={clip} poster={photo} title={t.title} focus={t.focus} />
-      </div>
-    );
-  }
-  if (photo) {
-    return (
-      <div className={`cr cr-photo ${t.type === "video" ? "cr-vid" : ""}`}>
-        <img src={photo} alt={t.title} draggable="false" loading="lazy" decoding="async" className="cr-photo-img" />
-        {t.type === "video" && <span className="cr-prog"><i /></span>}
-      </div>
-    );
-  }
+  const alt = altFor(t);
   return (
-    <div className={`cr cr-k-${a.kind} ${a.light ? "cr-light" : ""} ${t.type === "video" ? "cr-vid" : ""}`} style={{ background: a.bg, "--hl": a.hl }}>
-      <div className="cr-in">
-        <div className="cr-hook">{hl(a.hook)}</div>
-        <div className="cr-body">
-          <CreativeBody a={a} />
-        </div>
-        <div className="cr-foot">
-          <span>{a.tag}</span>
-          {t.type === "video" ? <span className="cr-dur"><Icon.Play />{t.dur}</span> : <span>AdDoctor sample</span>}
-        </div>
-      </div>
-      {t.type === "video" && <span className="cr-prog"><i /></span>}
+    <div ref={ref} className={`cr cr-photo ${t.type === "video" && !clip ? "cr-vid" : ""}`}>
+      {!near ? <span role="img" aria-label={alt} className="absolute inset-0" />
+        : photo ? <TemplateImage src={photo} alt={alt} title={t.title} focus={t.focus} lazy={false} priority={priority} />
+        : <MediaFallback title={t.title} label={alt} />}
+      {near && clip && clipOk && <LoopVideo src={clip} focus={t.focus} onFail={() => setClipOk(false)} />}
+      {t.type === "video" && !clip && <span className="cr-prog"><i /></span>}
     </div>
   );
 }
 
 /* ------------------------------- Card ---------------------------------- */
 
-/* One listener on the grid leans the card under the pointer. Mouse only, at most one update per frame. */
+/* One listener on the grid leans the card under the pointer. Mouse only, at most one update per frame,
+   and not at all for visitors who asked for less motion. */
+const calm = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
 let tiltEl = null, tiltRaf = 0, tiltX = 0, tiltY = 0;
 const tiltClear = () => {
   if (!tiltEl) return;
@@ -395,7 +180,7 @@ const tiltClear = () => {
 };
 const tilt = {
   onPointerMove(e) {
-    if (e.pointerType !== "mouse") return;
+    if (e.pointerType !== "mouse" || (calm && calm.matches)) return;
     const el = e.target.closest("[data-tilt]");
     if (el !== tiltEl) { tiltClear(); tiltEl = el; }
     if (!el) return;
@@ -418,63 +203,80 @@ const tilt = {
 
 const pill = "inline-flex items-center gap-1 rounded-full bg-slate-950/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white";
 
+/* Most templates are flagged trending, so a badge on each would say nothing. The flag still drives the Trending
+   filter and sort; the badge goes only on the first 40 of them that are not new (about one card in six). NEW wins. */
+let trendingBadge = null;
+const showTrending = (t) => {
+  if (!trendingBadge) trendingBadge = new Set(TEMPLATES.filter((x) => x.trending && !x.isNew).slice(0, 40).map((x) => x.id));
+  return !t.isNew && trendingBadge.has(t.id);
+};
+
+/* A card is a list item: the heading stays a heading, and one real button (stretched over the whole card) opens it. */
 const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use this template", verb = "Use", fav = false, onFav, i = 0 }) {
+  const cta = verb === "Use" ? "Use template" : "Open Studio";
   return (
-    <div data-tilt className="tilt rise group relative" style={{ "--i": i }}>
-    <div
-      role="button"
-      tabIndex={0}
-      aria-label={`${verb} ${t.title}`}
-      onClick={() => onInspect(t)}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onInspect(t))}
-      className="group/btn flex cursor-pointer flex-col focus:outline-none"
-    >
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10 group-focus-visible/btn:ring-4 group-focus-visible/btn:ring-blue-600/25">
-        <Creative t={t} />
-        <span className="tilt-glare" />
+    <li data-tilt className="tilt rise group relative list-none" style={{ "--i": i }}>
+      <article className="group/card relative flex flex-col">
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10">
+          <Creative t={t} lazy />
+          <span className="tilt-glare" />
 
-        {/* Badges sit at the bottom: the photos carry their headline at the top. */}
-        <div className="pointer-events-none absolute bottom-2 left-2 right-11 z-[2] flex flex-wrap items-center gap-1.5">
-          {t.type === "video" && (
-            <span className={pill}><Icon.Video className="h-3 w-3" /> VIDEO</span>
-          )}
-          {t.isNew && <span className={`${pill} !bg-emerald-600/90`}>NEW</span>}
-          {t.trending && (
-            <span className={pill}><Icon.Flame className="h-3 w-3 text-blue-300" /> TRENDING</span>
-          )}
+          {/* Badges sit at the bottom: the photos carry their headline at the top. */}
+          <div className="pointer-events-none absolute bottom-2 left-2 right-11 z-[2] flex flex-wrap items-center gap-1.5">
+            {t.type === "video" && (
+              <span className={pill}><Icon.Video className="h-3 w-3" /> VIDEO</span>
+            )}
+            {t.isNew && <span className={`${pill} !bg-emerald-600/90`}>NEW</span>}
+            {showTrending(t) && (
+              <span className={pill}><Icon.Flame className="h-3 w-3 text-blue-300" /> TRENDING</span>
+            )}
+          </div>
+
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-has-[:focus-visible]/card:opacity-100">
+            <span className="inline-flex translate-y-1.5 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-950/40 transition duration-300 group-hover:translate-y-0">
+              <Icon.Wand className="h-4 w-4" /> {action}
+            </span>
+          </div>
         </div>
 
-        <div className="absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-focus-visible/btn:opacity-100">
-          <span className="inline-flex translate-y-1.5 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-950/40 transition duration-300 group-hover:translate-y-0">
-            <Icon.Wand className="h-4 w-4" /> {action}
-          </span>
+        <div className="px-1 pt-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{t.label}</p>
+          <h3 className="mt-1 text-[14px] font-semibold leading-snug tracking-tight text-slate-900">{t.title}</h3>
+          <button
+            type="button" onClick={() => onInspect(t)}
+            className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-blue-600 focus:outline-none after:absolute after:inset-0 after:z-[3] after:rounded-2xl focus-visible:text-blue-700 focus-visible:after:ring-2 focus-visible:after:ring-blue-600 focus-visible:after:ring-offset-4"
+          >
+            {cta}<span className="sr-only">: {t.title}</span> <Icon.Arrow className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+          </button>
         </div>
-      </div>
+      </article>
 
-      <div className="px-1 pt-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{t.label}</p>
-        <h3 className="mt-1 text-[14px] font-semibold leading-snug tracking-tight text-slate-900">{t.title}</h3>
-        <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-blue-600">
-          {verb === "Use" ? "Use template" : "Open Studio"} <Icon.Arrow className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-        </span>
-      </div>
-    </div>
-
-      {/* Laid over the photo, outside the card's own button, so it is a control of its own. */}
+      {/* Laid over the photo, above the card's own button, so it is a control of its own. */}
       {onFav && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[4] aspect-[4/5]">
           <button
             onClick={() => onFav(t.id)}
             aria-pressed={fav} aria-label={`${fav ? "Remove" : "Add"} ${t.title} ${fav ? "from" : "to"} favourites`}
-            className={`pointer-events-auto absolute bottom-1.5 right-1.5 grid h-8 w-8 place-items-center rounded-full shadow-sm transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/30 [@media(pointer:coarse)]:h-10 [@media(pointer:coarse)]:w-10 ${fav ? "bg-white text-rose-500 opacity-100" : "bg-white/95 text-slate-600 opacity-0 hover:text-rose-500 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"}`}
+            className={`pointer-events-auto absolute bottom-1.5 right-1.5 grid h-8 w-8 place-items-center rounded-full shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 [@media(pointer:coarse)]:h-10 [@media(pointer:coarse)]:w-10 ${fav ? "bg-white text-rose-500 opacity-100" : "bg-white/95 text-slate-600 opacity-0 hover:text-rose-500 focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100"}`}
           >
             <Icon.Heart className="h-4 w-4" fill={fav ? "currentColor" : "none"} />
           </button>
         </div>
       )}
-    </div>
+    </li>
   );
 });
+
+/* The gallery: a list of cards under a heading screen readers can jump to. `role="list"` because Safari drops list
+   semantics from a list styled without bullets. */
+function TemplateGrid({ className = "", label = "Templates", children }) {
+  return (
+    <>
+      <h2 className="sr-only">{label}</h2>
+      <ul role="list" className={className} {...tilt}>{children}</ul>
+    </>
+  );
+}
 
 /* ------------------------------- Sidebar ------------------------------- */
 
@@ -493,30 +295,62 @@ const NAV = [
     { id: "vault", label: "Saved Vault", icon: Icon.Bookmark },
   ] },
 ];
-const navHead = "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400";
+const navHead = "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500";
+// One visible focus ring for everything here: solid sapphire with a white gap, readable on white and on photos.
+const ring = "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
 
-function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount, onUpgrade, pinned = [], pinnedTotal = 0, onPick, onShowPinned }) {
+/* Below lg the sidebar slides in over the page, so it behaves as a dialog while it is open there: focus moves in and
+   stays in, Escape and the backdrop close it, the page behind stops scrolling, and focus goes back to the menu button. */
+function DrawerBackdrop({ panelRef, onClose, initialFocusRef }) {
+  const { overlayProps } = useDialog({ onClose, panelRef, initialFocusRef });
+  return <div className="fixed inset-0 z-[35] bg-slate-900/20 lg:hidden" {...overlayProps} />;
+}
+
+const WIDE = "(min-width: 1024px)"; // Tailwind's lg, where the sidebar is always on screen
+function useWide() {
+  const [wide, setWide] = useState(() => mq(WIDE));
   useEffect(() => {
-    if (!open) return;
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    if (!window.matchMedia) return;
+    const m = window.matchMedia(WIDE);
+    const on = () => setWide(m.matches);
+    on();
+    if (m.addEventListener) m.addEventListener("change", on); else m.addListener(on);
+    return () => { if (m.removeEventListener) m.removeEventListener("change", on); else m.removeListener(on); };
+  }, []);
+  return wide;
+}
+
+function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerDay = 15, vaultCount, pinned = [], pinnedTotal = 0, onPick, onShowPinned }) {
+  const asideRef = useRef(null);
+  const closeRef = useRef(null);
+  const wide = useWide();
+  const drawer = open && !wide;
+  // Growing the window past lg while the menu is open: the sidebar is simply there now, so the menu is closed.
+  useEffect(() => { if (open && wide) onClose(); }, [open, wide, onClose]);
+  const left = Number.isFinite(credits) ? Math.max(0, credits) : null;
   return (
     <>
-      {open && <div className="fixed inset-0 z-30 bg-slate-900/20 lg:hidden" onClick={onClose} />}
+      {drawer && <DrawerBackdrop panelRef={asideRef} onClose={onClose} initialFocusRef={closeRef} />}
       <aside
+        ref={asideRef} data-drawer
+        role={drawer ? "dialog" : undefined} aria-modal={drawer ? "true" : undefined} aria-label={drawer ? "Menu" : undefined}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white transition-[transform,visibility] duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full max-lg:invisible"}`}
+        // Opening shows the menu at once (so focus can move into it); closing hides it only after it has slid away.
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white duration-200 lg:translate-x-0 ${open ? "translate-x-0 transition-transform" : "-translate-x-full transition-[transform,visibility] max-lg:invisible"}`}
       >
-        <div className="flex h-16 shrink-0 items-center px-5">
-          <img src={LOGO_SRC} alt="ad doctor" className="block h-[26px] w-auto select-none" draggable={false} />
+        <div className="flex h-16 shrink-0 items-center gap-2 pl-4 pr-3">
+          <button onClick={() => { onNav("explore"); onClose(); }} aria-label="AdDoctor: Explore Templates" className={`rounded-lg p-1 ${ring}`}>
+            <img src={LOGO_SRC} alt="" width="141" height="26" className="block h-[26px] w-auto select-none" draggable={false} />
+          </button>
+          <button ref={closeRef} onClick={onClose} aria-label="Close menu" className={`ml-auto rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden ${ring}`}>
+            <Icon.Close className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="px-4 pt-1">
           <button
             onClick={() => { onExamine(); onClose(); }}
-            className="btn-glow flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition active:scale-[.98] focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+            className={`btn-glow flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition active:scale-[.98] ${ring}`}
           >
             <Icon.Plus className="h-4 w-4" />
             Examine / Generate
@@ -538,11 +372,11 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount,
                         key={n.id}
                         onClick={() => { onNav(n.id); onClose(); }}
                         aria-current={on ? "page" : undefined}
-                        className={`group flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-left text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30 ${on ? "bg-slate-100 font-semibold text-slate-900" : n.quiet ? "text-slate-400 hover:bg-slate-50 hover:text-slate-600" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                        className={`group flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-left text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "bg-slate-100 font-semibold text-slate-900" : n.quiet ? "text-slate-500 hover:bg-slate-50 hover:text-slate-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
                       >
                         <I className={`h-4 w-4 shrink-0 ${on ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
                         <span className="flex-1 truncate">{n.label}</span>
-                        {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-400" : "text-blue-600"}`}>{n.note}</span>}
+                        {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-500" : "text-blue-600"}`}>{n.note}</span>}
                         {count > 0 && <span className="text-[11px] font-semibold tabular-nums text-slate-500">{count}</span>}
                       </button>
                     );
@@ -557,7 +391,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount,
             <div className="flex items-center justify-between pr-2">
               <p className={navHead}>Favourites</p>
               {pinnedTotal > pinned.length && (
-                <button onClick={() => { onShowPinned(); onClose(); }} className="pb-1.5 text-[11px] font-semibold text-blue-600 hover:text-blue-700 focus:outline-none focus-visible:underline">All {pinnedTotal}</button>
+                <button onClick={() => { onShowPinned(); onClose(); }} className={`mb-1.5 rounded text-[11px] font-semibold text-blue-600 hover:text-blue-700 ${ring}`}>All {pinnedTotal}</button>
               )}
             </div>
             {pinned.length ? (
@@ -565,18 +399,20 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount,
                 {pinned.map((t) => (
                   <button
                     key={t.id} onClick={() => { onPick(t); onClose(); }}
-                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/30"
+                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600"
                   >
-                    <img src={TEMPLATE_IMGS[t.id]} alt="" loading="lazy" className="h-8 w-[26px] shrink-0 rounded-[5px] border border-slate-200 object-cover" />
+                    <span className="relative h-8 w-[26px] shrink-0 overflow-hidden rounded-[5px] border border-slate-200 bg-slate-100">
+                      <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" />
+                    </span>
                     <span className="min-w-0">
                       <span className="block truncate text-[13px] font-medium text-slate-700 group-hover:text-slate-900">{t.title}</span>
-                      <span className="block truncate text-[11px] text-slate-400">{t.label}</span>
+                      <span className="block truncate text-[11px] text-slate-500">{t.label}</span>
                     </span>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="flex items-start gap-2 px-3 text-xs leading-relaxed text-slate-400">
+              <p className="flex items-start gap-2 px-3 text-xs leading-relaxed text-slate-500">
                 <Icon.Heart className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 Tap the heart on a template to keep it here.
               </p>
@@ -585,17 +421,19 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, vaultCount,
         </div>
 
         <div className="shrink-0 border-t border-slate-200/80 px-5 py-4">
-          <div className="flex items-baseline justify-between">
-            <p className="text-xs font-medium text-slate-500">Credits</p>
-            <p className={`text-xs font-semibold tabular-nums ${credits > 0 ? "text-slate-900" : "text-rose-600"}`}>{credits} <span className="font-medium text-slate-400">of 50</span></p>
-          </div>
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, (credits / 50) * 100))}%` }} />
-          </div>
-          <button onClick={onUpgrade} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 transition hover:text-blue-700 focus:outline-none focus-visible:underline">
-            Upgrade plan <Icon.Arrow className="h-3 w-3" />
-          </button>
-          <a href="./privacy.html" className="mt-2 block text-[11px] font-medium text-slate-400 transition hover:text-slate-600 focus:outline-none focus-visible:underline">Privacy</a>
+          {/* The free allowance as it really is: kept on this device and topped up each day. Nothing to buy yet. */}
+          {left !== null && (
+            <>
+              <p className="text-xs font-medium text-slate-600">
+                <span className={`font-semibold tabular-nums ${left > 0 ? "text-slate-900" : "text-rose-700"}`}>{left}</span> of {creditsPerDay} free credits today
+              </p>
+              <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.min(100, (left / creditsPerDay) * 100)}%` }} />
+              </div>
+              <p className={`mt-2 text-[11px] font-medium ${left > 0 ? "text-slate-500" : "text-rose-700"}`}>{left > 0 ? "Kept on this device. Refills daily." : "Refills tomorrow."}</p>
+            </>
+          )}
+          <a href="./privacy.html" className={`mt-2 inline-block rounded text-[11px] font-medium text-slate-500 transition hover:text-slate-700 ${ring}`}>Privacy</a>
         </div>
       </aside>
     </>
@@ -618,11 +456,12 @@ function BottomNav({ active, onNav, vaultCount }) {
           const on = active === n.id;
           const I = n.icon;
           return n.main ? (
-            <button key={n.id} onClick={() => onNav(n.id)} aria-label="Examine an ad" className="btn-glow mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white ring-4 ring-white transition active:scale-95 focus:outline-none focus-visible:ring-blue-200">
+            <button key={n.id} onClick={() => onNav(n.id)} aria-label="Examine an ad" className="btn-glow mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white ring-4 ring-white transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
               <I className="h-6 w-6" />
             </button>
           ) : (
-            <button key={n.id} onClick={() => onNav(n.id)} aria-current={on ? "page" : undefined} className={`relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold transition active:scale-95 focus:outline-none focus-visible:text-blue-700 ${on ? "text-blue-700" : "text-slate-500"}`}>
+            // The active tab is already blue, so focus draws a ring of its own rather than only changing colour.
+            <button key={n.id} onClick={() => onNav(n.id)} aria-current={on ? "page" : undefined} className={`relative flex h-full flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "text-blue-700" : "text-slate-500 focus-visible:text-blue-700"}`}>
               <span className={`absolute top-0 h-0.5 w-8 rounded-full bg-blue-600 transition-transform duration-300 ${on ? "scale-x-100" : "scale-x-0"}`} />
               <I className="h-5 w-5" />
               {n.label}
@@ -635,4 +474,4 @@ function BottomNav({ active, onNav, vaultCount }) {
   );
 }
 
-export { svgBase, Icon, hl, Stars, CreativeBody, Creative, pill, TemplateCard, NAV, Sidebar, BottomNav, tilt, holdClips };
+export { svgBase, Icon, Creative, TemplateImage, MediaFallback, cardWebp, pill, TemplateCard, TemplateGrid, NAV, Sidebar, BottomNav, tilt, holdClips };

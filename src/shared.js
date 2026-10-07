@@ -27,7 +27,12 @@ async function copyText(text) {
   }
 }
 
-const inputKey = (i) => JSON.stringify([i.brand.trim(), i.headline.trim(), i.copy.trim(), i.type, i.asset ? [i.asset.name, i.asset.w, i.asset.h, i.asset.lumMean, i.asset.lumStd] : null]);
+// Saved entries can come from an older version of the app, so a missing field counts as empty instead of throwing.
+const trimmed = (x) => String(x || "").trim();
+const inputKey = (i) => JSON.stringify([trimmed(i.brand), trimmed(i.headline), trimmed(i.copy), i.type, i.asset ? [i.asset.name, i.asset.w, i.asset.h, i.asset.lumMean, i.asset.lumStd] : null]);
+
+/* One 0-100 score means the same thing on every screen: these are the bands Examine uses for its overall status. */
+const scoreTone = (score) => (score >= 70 ? "good" : score >= 40 ? "warn" : "bad");
 
 const field =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
@@ -38,4 +43,4 @@ const SPY_API_KEY_RAW = import.meta.env.VITE_ADDOCTOR_KEY || "";
 const SPY_API = (typeof window !== "undefined" && window.ADDOCTOR_API) || (SPY_API_RAW.indexOf("__") === 0 ? "" : SPY_API_RAW.replace(/\/+$/, ""));
 const SPY_KEY = (typeof window !== "undefined" && window.ADDOCTOR_KEY) || (SPY_API_KEY_RAW.indexOf("__") === 0 ? "" : SPY_API_KEY_RAW);
 
-export { TONE, copyText, inputKey, field, SPY_API, SPY_KEY };
+export { TONE, copyText, inputKey, scoreTone, field, SPY_API, SPY_KEY };
