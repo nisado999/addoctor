@@ -4,6 +4,7 @@ import { Icon, TemplateCard, Sidebar, BottomNav, tilt, holdClips } from "./ui";
 import { Hero } from "./hero";
 import { TONE, inputKey } from "./shared.js";
 import { track, setConsent, needsConsent } from "./track.js";
+import { authWanted, watchAuth, signOut } from "./auth.js";
 
 // What every template event carries, so GTM can report by template, category and type.
 const tplInfo = (t) => ({ template_id: t.id, template_category: t.category, template_type: t.type === "video" ? "video" : "image" });
@@ -19,6 +20,7 @@ const StudioModal = lazy(() => loadStudio().then((m) => ({ default: m.StudioModa
 const BrandModal = lazy(() => loadUse().then((m) => ({ default: m.BrandModal })));
 const InspireModal = lazy(() => loadUse().then((m) => ({ default: m.InspireModal })));
 const ProductModal = lazy(() => loadUse().then((m) => ({ default: m.ProductModal })));
+const AuthModal = lazy(() => import("./account").then((m) => ({ default: m.AuthModal })));
 const SpyView = lazy(() => import("./spy").then((m) => ({ default: m.SpyView })));
 const PackView = lazy(() => import("./pack").then((m) => ({ default: m.PackView })));
 const LabView = lazy(() => import("./lab").then((m) => ({ default: m.LabView })));
@@ -126,6 +128,11 @@ function App() {
   const [look, setLook] = useState(null); // template whose "use this template" view is open
   const [brand, setBrand] = useState(null); // template getting the user's logo
   const [inspire, setInspire] = useState(null); // video template being briefed as a new version
+  const [user, setUser] = useState(null);                 // the signed-in visitor, or null
+  const [authOn, setAuthOn] = useState(authWanted);       // whether the sign-in library has a reason to load
+  const [authReady, setAuthReady] = useState(() => !authWanted());
+  const [authOpen, setAuthOpen] = useState(false);
+  const [acct, setAcct] = useState(false);                // the account menu under the avatar
   const [askConsent, setAskConsent] = useState(needsConsent);
   const answerConsent = (ok) => { setConsent(ok); setAskConsent(false); };
   const [product, setProduct] = useState(null); // template being remade with the visitor's own product
@@ -172,7 +179,7 @@ function App() {
   }, [view]);
 
   /* Keyboard focus stays inside an open dialog, and goes back to where it was when the dialog closes. */
-  const anyModal = !!(exam || studio || look || brand || inspire || product);
+  const anyModal = !!(exam || studio || look || brand || inspire || product || authOpen);
   const lastFocus = useRef(null);
   useEffect(() => {
     const onFocus = (e) => { if (e.target instanceof Element && !e.target.closest('[role="dialog"]')) lastFocus.current = e.target; };
@@ -221,6 +228,25 @@ function App() {
   const closeBrand = useCallback(() => setBrand(null), []);
   const closeInspire = useCallback(() => setInspire(null), []);
   const closeProduct = useCallback(() => setProduct(null), []);
+  const closeAuth = useCallback(() => setAuthOpen(false), []);
+
+  useEffect(() => {
+    if (!authOn) return;
+    let off = null, dead = false;
+    watchAuth((u, how) => {
+      setUser(u);
+      setAuthReady(true);
+      if (u) setAuthOpen(false);
+      if (u && how) { track("login", { method: how }); notify(`Signed in as ${u.email}`, 2600); }
+      // back from Google: show any error, then drop the one-time code from the address and keep the screen
+      const q = new URLSearchParams(location.search);
+      if (q.has("code") || q.has("error_description")) {
+        if (q.get("error_description")) notify(q.get("error_description"), 4200);
+        try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) { /* keep the address */ }
+      }
+    }).then((stop) => { if (dead) stop(); else off = stop; }).catch(() => setAuthReady(true));
+    return () => { dead = true; if (off) off(); };
+  }, [authOn, notify]);
   const spend = useCallback((n) => setCredits((c) => Math.max(0, c - (Number.isFinite(n) ? n : 1))), []);
 
   const goto = (id) => {
@@ -338,10 +364,30 @@ function App() {
                 <Icon.Badge className="h-3.5 w-3.5" />
                 Doctor Tier: <span className="font-semibold">Growth Specialist</span>
               </span>
-              <button onClick={() => notify("Credit packs aren't available in this preview.")} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700">
+              <button onClick={() => notify("Credit packs aren't available in this preview.")} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700">
                 <Icon.Bolt className="h-3.5 w-3.5 text-blue-600" />
                 Get Credits
               </button>
+              {user ? (
+                <div className="relative">
+                  <button id="acct" onClick={() => setAcct((v) => !v)} aria-haspopup="menu" aria-expanded={acct} aria-label="Your account" className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+                    {user.avatar ? <img src={user.avatar} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : (user.name || user.email || "?").charAt(0).toUpperCase()}
+                  </button>
+                  {acct && (
+                    <>
+                      <button aria-hidden="true" tabIndex={-1} onClick={() => setAcct(false)} className="fixed inset-0 z-30 cursor-default" />
+                      <div id="acct-menu" role="menu" className="absolute right-0 top-11 z-40 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10">
+                        <p className="px-3 py-2 text-xs text-slate-500">Signed in as<span className="block truncate text-sm font-semibold text-slate-900">{user.email}</span></p>
+                        <button id="signout" role="menuitem" onClick={() => { setAcct(false); signOut(); notify("Signed out"); }} className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50">Sign out</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : authReady ? (
+                <button id="signin" onClick={() => { setAuthOn(true); setAuthOpen(true); }} className="inline-flex items-center rounded-full bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">Sign in</button>
+              ) : (
+                <span className="h-9 w-9" aria-hidden="true" />
+              )}
             </div>
           </div>
         </header>
@@ -476,6 +522,7 @@ function App() {
       {brand && <BrandModal key={brand.id} tpl={brand} onClose={closeBrand} notify={notify} />}
       {inspire && <InspireModal key={inspire.id} tpl={inspire} onClose={closeInspire} notify={notify} credits={credits} onSpend={spend} />}
       {product && <ProductModal key={product.id} tpl={product} onClose={closeProduct} notify={notify} onSpend={spend} />}
+      {authOpen && <AuthModal onClose={closeAuth} notify={notify} />}
 
       {studio && <StudioModal key={studio.id} tpl={studio} onClose={closeStudio} notify={notify} />}
       </Suspense>
