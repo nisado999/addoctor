@@ -1,10 +1,12 @@
 /* Google Tag Manager. The app only describes what happened by pushing events into window.dataLayer; which of them
    go to Google Analytics or anywhere else is decided inside the GTM container, not here.
 
-   GTM is loaded only after the visitor accepts analytics, and only when VITE_GTM_ID is set in .env (e.g. GTM-ABC1234).
+   GTM is loaded only after the visitor accepts analytics on the banner.
    Events are pushed either way, so anything that happened before the visitor accepted is still there for GTM to read. */
 
-const GTM_ID = /^GTM-[A-Z0-9]+$/.test(import.meta.env.VITE_GTM_ID || "") ? import.meta.env.VITE_GTM_ID : "";
+// The container ID is public (it is in every page that uses GTM). VITE_GTM_ID in .env overrides it, e.g. for a test container.
+const GTM_DEFAULT = "GTM-N8WXL37Z";
+const GTM_ID = /^GTM-[A-Z0-9]+$/.test(import.meta.env.VITE_GTM_ID || "") ? import.meta.env.VITE_GTM_ID : GTM_DEFAULT;
 const CONSENT_KEY = "addoctor.consent.v1";
 
 const layer = () => (window.dataLayer = window.dataLayer || []);

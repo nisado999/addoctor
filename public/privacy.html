@@ -30,7 +30,7 @@
       <h2>The short version</h2>
       <ul>
         <li>AdDoctor has no accounts. It does not ask for your name or email and does not keep a database of visitors.</li>
-        <li>It sets no cookies and has no advertising or tracking scripts.</li>
+        <li>It sets no cookies and loads no analytics unless you press Accept on the analytics banner. It has no advertising scripts.</li>
         <li>Photos, links and text you submit to an AI feature are sent to the AI services listed below so they can produce the result. AdDoctor itself does not store them afterwards.</li>
       </ul>
 
@@ -51,6 +51,16 @@
 
       <h2>The AdDoctor bookmark</h2>
       <p>The optional AdDoctor bookmark runs only when you click it on a Meta Ad Library page. It reads the public ads shown on that page and hands them to the AdDoctor tab it opens. It does not read your Facebook account, messages, or anything outside the Ad Library results.</p>
+
+      <h2>Analytics, only if you accept</h2>
+      <p>The first time you visit, a banner asks whether AdDoctor may use analytics cookies. If you decline, nothing is loaded. If you accept, Google Tag Manager and Google Analytics are loaded. They set cookies and tell us which screens and features are used: for example that a template was opened, an ad was generated, or a competitor analysis finished, and how many ads it covered. They are never sent your photos, the text you type, the links you paste, or the ads you make. Google processes this data under its own terms.</p>
+      <p>Your answer is remembered in your browser. <button id="reset" type="button" style="border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;cursor:pointer">Ask me again</button> <span id="reset-done" class="muted"></span></p>
+      <script>
+        document.getElementById("reset").onclick = function () {
+          try { localStorage.removeItem("addoctor.consent.v1"); } catch (e) {}
+          document.getElementById("reset-done").textContent = "Done. The banner will show the next time you open AdDoctor.";
+        };
+      </script>
 
       <h2>Technical data</h2>
       <ul>
