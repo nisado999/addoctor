@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "./ui";
 import { copyText, SPY_API, SPY_KEY } from "./shared.js";
 import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
+import { track } from "./track.js";
 
 /* ============================ Competitor Spy ============================ */
 
@@ -558,6 +559,8 @@ function spyHalves(a, b) {
   return [[a, mid], [next, b]];
 }
 
+// Reported when an analysis comes back, so GTM can count finished analyses and their size.
+const spyDone = (out) => track("spy_complete", { ads_count: out.count || 0, creatives_read: (out.vision && out.vision.images) || 0, ai_written: !!(out.slide && out.slide.length) });
 const spySeen = (out) => (out.vision && out.vision.images ? ` and looked at ${spyPlural(out.vision.images, "creative")}` : "");
 
 function SpyView({ onRebuild, notify }) {
@@ -625,6 +628,7 @@ function SpyView({ onRebuild, notify }) {
     };
     try {
       setCrawl({ phase: "running", i: 0, n: 1, found: 0, msg: "Finding every ad from this advertiser…" });
+      track("spy_analyze", { method: "link", country: cty });
       const { run, paged, max } = await post("/start", { page_id: lib.id, country: cty, from, to });
       let status = "RUNNING", found = 0, tick = 0;
       // A long advertiser is read a few pages at a time, then every ad is sent for the analysis in one go.
@@ -659,6 +663,7 @@ function SpyView({ onRebuild, notify }) {
       const out = await post("/analyze", all ? { ads: all, brand: brand.trim(), from, to } : { run, brand: brand.trim(), from, to });
       const name = brand.trim() || out.brand || "";
       if (!brand.trim() && name) setBrand(name);
+      spyDone(out);
       finish(out.slide && out.slide.length ? "crawl-ai" : "crawl", out.ads || [], out.slide, out.insights, name, out);
       setCrawl({ phase: "done", i: 20, n: 20, found: out.count || 0, msg: `Done. Read ${out.count || 0} distinct ads${spySeen(out)}.${out.aiError ? " Claude could not write the analysis (" + out.aiError + "), so the bullets come from keyword rules." : ""}` });
     } catch (e) {
@@ -678,6 +683,7 @@ function SpyView({ onRebuild, notify }) {
     if (pl && !pl.error) setLibRaw(String(data.url));
     setState(null);
     setCrawl({ phase: "running", i: 12, n: 20, found: raw.length, plain: true, msg: "Looking at the creatives and writing the analysis…" });
+    track("spy_analyze", { method: "bookmark" });
     const local = (why) => {
       const seen = new Set();
       const ads = raw.map(spyFromLib).filter((a) => (a.headline || a.body) && a.libId && !seen.has(a.libId) && seen.add(a.libId));
@@ -695,6 +701,7 @@ function SpyView({ onRebuild, notify }) {
       setBrand(name);
       if (out.from) setFrom(out.from);
       if (out.to) setTo(out.to);
+      spyDone(out);
       finish(out.slide && out.slide.length ? "crawl-ai" : "crawl", out.ads, out.slide, out.insights, name, out);
       setCrawl({ phase: "done", i: 20, n: 20, found: out.count || 0, msg: `Done. Read ${out.count || 0} distinct ads${spySeen(out)}.${out.aiError ? " Claude could not write the analysis (" + out.aiError + "), so the bullets come from keyword rules." : ""}` });
     } catch (e) {

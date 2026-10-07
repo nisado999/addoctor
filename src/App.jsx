@@ -3,6 +3,10 @@ import { CATEGORIES, TEMPLATES } from "./data";
 import { Icon, TemplateCard, Sidebar, BottomNav, tilt, holdClips } from "./ui";
 import { Hero } from "./hero";
 import { TONE, inputKey } from "./shared.js";
+import { track, setConsent, needsConsent } from "./track.js";
+
+// What every template event carries, so GTM can report by template, category and type.
+const tplInfo = (t) => ({ template_id: t.id, template_category: t.category, template_type: t.type === "video" ? "video" : "image" });
 import { LookModal } from "./look";
 import { TEMPLATE_VIDS } from "./templateImgs.js";
 
@@ -122,6 +126,8 @@ function App() {
   const [look, setLook] = useState(null); // template whose "use this template" view is open
   const [brand, setBrand] = useState(null); // template getting the user's logo
   const [inspire, setInspire] = useState(null); // video template being briefed as a new version
+  const [askConsent, setAskConsent] = useState(needsConsent);
+  const answerConsent = (ok) => { setConsent(ok); setAskConsent(false); };
   const [product, setProduct] = useState(null); // template being remade with the visitor's own product
   const [favs, setFavs] = useState(loadFavs);
   const [sort, setSort] = useState("featured");
@@ -161,6 +167,8 @@ function App() {
 
   useEffect(() => {
     document.title = view === "explore" ? "AdDoctor – ad creative audits and templates" : `${VIEWS[view].title} – AdDoctor`;
+    // The app is one page, so each screen is reported as its own page view.
+    track("screen_view", { screen_name: view, page_title: document.title, page_path: location.pathname + location.hash });
   }, [view]);
 
   /* Keyboard focus stays inside an open dialog, and goes back to where it was when the dialog closes. */
@@ -299,7 +307,7 @@ function App() {
   const isGrid = view !== "vault" && view !== "spy" && view !== "pack" && view !== "lab";
   const V = VIEWS[view];
   const inStudio = !!V.studio;
-  const inspect = useCallback((tp) => (inStudio ? setStudio(tp) : setLook(tp)), [inStudio]);
+  const inspect = useCallback((tp) => { if (inStudio) return setStudio(tp); track("template_open", tplInfo(tp)); setLook(tp); }, [inStudio]);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 antialiased">
@@ -458,10 +466,10 @@ function App() {
       {look && (
         <LookModal
           tpl={look} onClose={closeLook}
-          onBrand={(tp) => { setLook(null); setBrand(tp); }}
-          onInspire={(tp) => { setLook(null); if (TEMPLATE_VIDS[tp.id]) setInspire(tp); else setStudio(tp); }}
-          onExamine={(tp) => { setLook(null); openExam({ template: tp }); }}
-          onProduct={(tp) => { setLook(null); setProduct(tp); }}
+          onBrand={(tp) => { track("template_use", { method: "add_logo", ...tplInfo(tp) }); setLook(null); setBrand(tp); }}
+          onInspire={(tp) => { track("template_use", { method: "inspired_version", ...tplInfo(tp) }); setLook(null); if (TEMPLATE_VIDS[tp.id]) setInspire(tp); else setStudio(tp); }}
+          onExamine={(tp) => { track("template_use", { method: "examine", ...tplInfo(tp) }); setLook(null); openExam({ template: tp }); }}
+          onProduct={(tp) => { track("template_use", { method: "my_product", ...tplInfo(tp) }); setLook(null); setProduct(tp); }}
         />
       )}
 
@@ -481,6 +489,16 @@ function App() {
         >
           <Icon.Arrow className="h-4 w-4 -rotate-90" />
         </button>
+      )}
+
+      {askConsent && (
+        <div id="consent" role="dialog" aria-label="Analytics cookies" className="fixed inset-x-3 bottom-24 z-[55] mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/15 lg:bottom-5 lg:left-auto lg:right-5 lg:mx-0">
+          <p className="text-[13px] leading-relaxed text-slate-600">AdDoctor would like to use analytics cookies to see which features get used. Nothing is loaded unless you accept. <a href="./privacy.html" className="font-semibold text-blue-600 hover:text-blue-700">Privacy</a></p>
+          <div className="mt-3 flex justify-end gap-2">
+            <button id="consent-no" onClick={() => answerConsent(false)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300">Decline</button>
+            <button id="consent-yes" onClick={() => answerConsent(true)} className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">Accept</button>
+          </div>
+        </div>
       )}
 
       {toast && (

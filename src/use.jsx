@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Icon } from "./ui";
 import { field, copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 
 /* Two ways to use a template: put your logo on it as it is (BrandModal), or brief a new one in its style (InspireModal). */
@@ -466,6 +467,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setAd(`data:${out.mime};base64,${out.data}`);
       setReview(null); setFix("");
+      track(body.base ? "ad_edited" : "ad_generated", { template_id: tpl.id, template_category: tpl.category, quality: premium ? "premium" : "standard", product_photos: photos.length, has_headline: !!headline.trim() });
       if (spendNow && onSpend) onSpend(MAKE_COST);
     } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
     setBusy("");
@@ -483,13 +485,16 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     setBusy("Scoring this ad…"); setErr("");
     try {
       const small = await shrinkPhoto(ad, 900, 0.85);
-      setReview(await makeCall("/make/review", { image: small, headline: headline.trim(), refs: photos.slice(0, 2).map((p) => p.src) }));
+      const rv = await makeCall("/make/review", { image: small, headline: headline.trim(), refs: photos.slice(0, 2).map((p) => p.src) });
+      setReview(rv);
+      track("ad_scored", { template_id: tpl.id, template_category: tpl.category, score: rv.score });
     } catch (e) { setErr(e.message || "The check failed. Try again."); }
     setBusy("");
   };
 
   const download = async () => {
     const blob = await (await fetch(ad)).blob();
+    track("ad_downloaded", { template_id: tpl.id, template_category: tpl.category });
     saveBlob(blob, `${tpl.id}-my-product.${blob.type.includes("png") ? "png" : "jpg"}`);
   };
 

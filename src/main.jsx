@@ -1,7 +1,9 @@
 import { createRoot } from "react-dom/client";
+import { initTracking } from "./track.js";
 import "./styles.css";
 import { App } from "./App";
 
+initTracking();
 createRoot(document.getElementById("root")).render(<App />);
 
 /* Screens load as separate files. After a publish the old files are gone, so a tab left open would fail to open one:
