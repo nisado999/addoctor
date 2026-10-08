@@ -28,7 +28,7 @@ const SLIDE_RULES = `Rules for "slide": write like this example, which is only a
 const json = (env, body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": env.ALLOW_ORIGIN || "*", "Access-Control-Allow-Headers": "Content-Type, X-App-Key", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" },
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": env.ALLOW_ORIGIN || "*", "Access-Control-Allow-Headers": "Content-Type, X-App-Key, Authorization", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" },
   });
 
 const toMs = (v) => {
@@ -689,6 +689,24 @@ Never invent facts about the product.`;
 //   DAILY_CAP      paid calls allowed per day across all visitors, default 300
 // Counters live in Cloudflare's edge cache, which is per data centre, so the numbers are approximate:
 // good enough to stop a script hammering the API, not an exact meter.
+const SUPABASE_URL = "https://ivzyyeokjcmsucldawja.supabase.co";   // same project as src/auth.js; SUPABASE_URL overrides it
+
+// Deletes the signed-in caller's own account. The caller's token says who they are; the service role key does the delete.
+async function deleteAccount(env, req) {
+  if (!env.SUPABASE_SERVICE_ROLE) return json(env, { error: "Deleting accounts is not set up on this server yet.", code: "not_configured" }, 501);
+  const auth = req.headers.get("Authorization") || "";
+  if (!/^Bearer \S+/.test(auth)) return json(env, { error: "Sign in to delete your account.", code: "signin_required" }, 401);
+  const base = String(env.SUPABASE_URL || SUPABASE_URL).replace(/\/+$/, "");
+  const admin = { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: "Bearer " + env.SUPABASE_SERVICE_ROLE };
+  const who = await fetch(base + "/auth/v1/user", { headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: auth } });
+  if (who.status === 401 || who.status === 403) return json(env, { error: "Your sign-in has expired. Sign in again.", code: "signin_required" }, 401);
+  const user = who.ok ? await who.json().catch(() => null) : null;
+  if (!user || !user.id) return json(env, { error: "Could not check your sign-in. Try again." }, 502);
+  const del = await fetch(base + "/auth/v1/admin/users/" + encodeURIComponent(user.id), { method: "DELETE", headers: admin });
+  if (!del.ok) return json(env, { error: "Could not delete the account. Try again." }, 502);
+  return json(env, { ok: true });
+}
+
 const PAID = /^\/(start|page|analyze|pack\/|make\/)/;
 
 async function bump(key, ttl) {
@@ -725,6 +743,9 @@ export default {
       const perHour = Number(env.RATE_PER_HOUR) || 60, perDay = Number(env.DAILY_CAP) || 300;
       if ((await bump(`ip/${ip}/${Math.floor(now / 3600000)}`, 3600)) > perHour) return json(env, { error: "Too many requests from this connection. Try again in an hour." }, 429);
       if ((await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > perDay) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow." }, 429);
+    }
+    if (u.pathname === "/account/delete" && req.method === "POST") {
+      try { return await deleteAccount(env, req); } catch (e) { return json(env, { error: "Could not delete the account. Try again." }, 502); }
     }
     const apify = (path) => `https://api.apify.com/v2/${path}${path.includes("?") ? "&" : "?"}token=${env.APIFY_TOKEN}`;
     try {
