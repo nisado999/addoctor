@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Where this page may load from. The fonts stylesheet's onload is allowed by its hash ('unsafe-hashes'); there is
+         no other inline script. GTM (loaded after consent) and Google Analytics, Supabase sign-in and the AdDoctor
+         Worker are the only other hosts. data: and blob: in connect-src let the app read back images it made itself.
+         In development Vite's own scripts sit above this tag, so the policy does not apply to them. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' data: blob: https://*.supabase.co https://*.workers.dev https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
     <title>AdDoctor – ad creative audits and templates</title>
     <meta name="description" content="Audit ad creatives for conversion leaks and generate high-converting direct-response ads." />
     <meta name="theme-color" content="#2563EB" />
@@ -13,19 +18,150 @@
     <meta property="og:description" content="Audit ad creatives for conversion leaks and build new ones from proven direct-response templates." />
     <meta property="og:image" content="https://nisado999.github.io/addoctor/templates/ingredient-callouts.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="./favicon-64.png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Caveat:wght@600&family=Inter+Tight:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Caveat:wght@600&family=Inter+Tight:wght@400;500;600;700&display=swap" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Caveat:wght@600&family=Inter+Tight:wght@400;500;600;700&display=swap" /></noscript>
-    <script type="module" crossorigin src="./assets/index-DXJio4sr.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/vendor-DhEz86-d.js">
-    <link rel="modulepreload" crossorigin href="./assets/templates-B0BPIHEN.js">
-    <link rel="stylesheet" crossorigin href="./assets/index-vI1IXNhz.css">
+    <script type="module" crossorigin src="./assets/index-BB2H5VFa.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/vendor-DXcH-vAE.js">
+    <link rel="modulepreload" crossorigin href="./assets/templates-DeIMlOeR.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-2wqjZNnw.css">
   </head>
   <body>
-    <div id="root"></div>
-    <noscript>AdDoctor needs JavaScript to run.</noscript>
+    <!-- A static copy of the first screen, painted as soon as the HTML and CSS arrive; React replaces it when the
+         scripts have loaded. It mirrors Sidebar and BottomNav (src/ui.jsx), the header and main column (src/App.jsx)
+         and Hero (src/hero.jsx) class for class, with grey blocks where real data goes. Keep it in step with them. -->
+    <div id="root"><div data-shell aria-busy="true" class="min-h-screen bg-white font-sans text-slate-900 antialiased">
+      <svg width="0" height="0" class="absolute" aria-hidden="true">
+        <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" /></symbol>
+        <symbol id="i-layout" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M3.5 9.5h17M10 9.5v11" /></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3.5" width="18" height="17" rx="2.5" /><circle cx="8.5" cy="9" r="1.8" /><path d="m21 15.5-5-5-9.5 10" /></symbol>
+        <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="13" height="13" rx="2.5" /><path d="M15.5 10.2 21 7v10l-5.5-3.2z" /></symbol>
+        <symbol id="i-steth" viewBox="0 0 24 24"><path d="M5 3v5a5 5 0 0 0 10 0V3" /><path d="M10 13v2a5 5 0 0 0 10 0v-1" /><circle cx="20" cy="11.5" r="2" /></symbol>
+        <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+        <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1z" /></symbol>
+        <symbol id="i-heart" viewBox="0 0 24 24"><path stroke-width="2" d="M12 20.3s-7.5-4.4-7.5-10a4.3 4.3 0 0 1 7.5-2.9 4.3 4.3 0 0 1 7.5 2.9c0 5.6-7.5 10-7.5 10z" /></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path stroke-width="2.2" d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path stroke-width="2" d="M4 7h16M4 12h16M4 17h16" /></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle stroke-width="2" cx="11" cy="11" r="6.5" /><path stroke-width="2" d="m20 20-4.2-4.2" /></symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24"><path stroke-width="2" d="M5 12h14M13 6l6 6-6 6" /></symbol>
+      </svg>
+
+      <aside class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-slate-200/80 bg-white max-lg:invisible lg:translate-x-0" style="padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px)">
+        <div class="flex h-16 shrink-0 items-center gap-2 pl-4 pr-3">
+          <span class="rounded-lg p-1"><img src="./logo.png" alt="AdDoctor" width="141" height="26" class="block h-[26px] w-auto select-none" /></span>
+        </div>
+        <div class="px-4 pt-1">
+          <span class="btn-glow flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus" /></svg>Examine / Generate</span>
+        </div>
+        <div class="mt-5 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3">
+          <div class="flex flex-col gap-5">
+            <div>
+              <p class="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Create</p>
+              <div class="flex flex-col gap-px">
+                <span class="flex items-center gap-2.5 rounded-lg bg-slate-100 px-3 py-[7px] text-[13px] font-semibold text-slate-900"><svg class="h-4 w-4 shrink-0 text-blue-600" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-grid" /></svg><span class="flex-1 truncate">Explore Templates</span></span>
+                <span class="flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-600"><svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-layout" /></svg><span class="flex-1 truncate">Static Ads</span></span>
+                <span class="flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-600"><svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-image" /></svg><span class="flex-1 truncate">Social Pack</span><span class="text-[10px] font-semibold uppercase tracking-wider text-blue-600">New</span></span>
+                <span class="flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-500"><svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-video" /></svg><span class="flex-1 truncate">Video Generator</span><span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Soon</span></span>
+              </div>
+            </div>
+            <div>
+              <p class="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Analyse</p>
+              <div class="flex flex-col gap-px">
+                <span class="flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-600"><svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-steth" /></svg><span class="flex-1 truncate">Examine Ad</span></span>
+                <span class="flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-600"><svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-eye" /></svg><span class="flex-1 truncate">Competitor Spy</span><span class="text-[10px] font-semibold uppercase tracking-wider text-blue-600">New</span></span>
+              </div>
+            </div>
+            <div>
+              <p class="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Library</p>
+              <div class="flex flex-col gap-px">
+                <span class="flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-[13px] font-medium text-slate-600"><svg class="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bookmark" /></svg><span class="flex-1 truncate">Saved Vault</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-5">
+            <div class="flex items-center justify-between pr-2"><p class="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Favourites</p></div>
+            <p class="flex items-start gap-2 px-3 text-xs leading-relaxed text-slate-500"><svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-heart" /></svg>Tap the heart on a template to keep it here.</p>
+          </div>
+        </div>
+        <div class="shrink-0 border-t border-slate-200/80 px-5 py-4">
+          <span class="mt-2 inline-block text-[11px] font-medium text-slate-500">Privacy</span>
+        </div>
+      </aside>
+
+      <div class="min-h-screen bg-slate-50/50 lg:pl-64">
+        <header class="sticky z-20 border-b border-slate-200/80 bg-white/95 lg:bg-white/85 lg:backdrop-blur" style="top: env(safe-area-inset-top, 0px)">
+          <div class="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+            <span class="rounded-lg p-2 text-slate-500 lg:hidden"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-menu" /></svg></span>
+            <span class="-ml-1 shrink-0 rounded-lg p-1 lg:hidden"><img src="./logo.png" alt="AdDoctor" width="98" height="18" class="block h-[18px] w-auto select-none sm:h-5" /></span>
+            <div class="relative min-w-0 flex-1 md:max-w-md">
+              <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-search" /></svg>
+              <span class="flex h-10 w-full items-center rounded-full border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-base text-slate-400 sm:text-sm"><span class="truncate">Search templates, niches, formats...</span></span>
+            </div>
+            <div class="ml-auto flex shrink-0 items-center gap-2.5"><span class="h-9 w-9"></span></div>
+          </div>
+        </header>
+
+        <main class="px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
+          <section class="hero relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+            <div class="relative grid items-center gap-6 px-5 pb-12 pt-6 sm:px-8 sm:pb-16 sm:pt-9 md:grid-cols-[1.15fr_1fr] lg:px-10">
+              <div class="min-w-0">
+                <p class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-700 shadow-sm"><span class="hero-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span> The ad creative clinic</p>
+                <h1 class="hero-title mt-4 text-[32px] leading-[1.04] text-slate-900 sm:text-[42px] lg:text-[48px]">Ads that stop the scroll, <span class="hero-ink">diagnosed and rebuilt.</span></h1>
+                <p class="mt-4 max-w-md text-[15px] leading-relaxed text-slate-600">Pick a proven direct-response format, add your logo, or make a new one in its style. Then examine any ad for conversion leaks.</p>
+                <div class="mt-6 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center">
+                  <span class="btn-glow inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-4 text-sm font-semibold text-white sm:px-5"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-steth" /></svg> Examine an ad</span>
+                  <span class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm sm:px-5">Browse templates <svg class="hidden h-4 w-4 rotate-90 sm:block" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow" /></svg></span>
+                </div>
+                <noscript><p class="mt-4 text-sm font-semibold text-rose-700">AdDoctor needs JavaScript to run. Turn it on and reload the page.</p></noscript>
+                <div class="-mx-5 mt-5 flex gap-3 overflow-hidden px-5 py-1 sm:-mx-8 sm:px-8 md:hidden">
+                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-16 rounded-full bg-slate-200/70"></span></span></span>
+                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-14 rounded-full bg-slate-200/70"></span></span></span>
+                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-16 rounded-full bg-slate-200/70"></span></span></span>
+                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-12 rounded-full bg-slate-200/70"></span></span></span>
+                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-16 rounded-full bg-slate-200/70"></span></span></span>
+                </div>
+                <div class="mt-6 flex flex-wrap gap-x-5 gap-y-2 sm:mt-7 sm:gap-x-7">
+                  <span class="h-8 w-[100px] rounded-lg bg-slate-100/80"></span>
+                  <span class="h-8 w-[104px] rounded-lg bg-slate-100/80"></span>
+                  <span class="h-8 w-[72px] rounded-lg bg-slate-100/80"></span>
+                </div>
+              </div>
+              <div class="hero-stage relative hidden h-[300px] md:block lg:h-[340px]"></div>
+            </div>
+          </section>
+
+          <div class="-mx-4 mt-6 flex gap-2 overflow-hidden px-4 sm:mx-0 sm:px-0">
+            <span class="h-[34px] w-[62px] shrink-0 rounded-full bg-slate-900 [@media(pointer:coarse)]:h-10"></span>
+            <span class="h-[34px] w-[160px] shrink-0 rounded-full border border-slate-200 bg-white [@media(pointer:coarse)]:h-10"></span>
+            <span class="h-[34px] w-[96px] shrink-0 rounded-full border border-slate-200 bg-white [@media(pointer:coarse)]:h-10"></span>
+            <span class="h-[34px] w-[118px] shrink-0 rounded-full border border-slate-200 bg-white [@media(pointer:coarse)]:h-10"></span>
+            <span class="h-[34px] w-[140px] shrink-0 rounded-full border border-slate-200 bg-white [@media(pointer:coarse)]:h-10"></span>
+            <span class="h-[34px] w-[124px] shrink-0 rounded-full border border-slate-200 bg-white [@media(pointer:coarse)]:h-10"></span>
+          </div>
+          <div class="mt-4 h-8 [@media(pointer:coarse)]:h-10"></div>
+          <div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-x-5">
+            <div><div class="aspect-[4/5] rounded-2xl border border-slate-200/80 bg-slate-100"></div><div class="px-1 pt-3"><span class="block h-2.5 w-16 rounded-full bg-slate-100"></span><span class="mt-2 block h-3.5 w-3/4 rounded-full bg-slate-100"></span></div></div>
+            <div><div class="aspect-[4/5] rounded-2xl border border-slate-200/80 bg-slate-100"></div><div class="px-1 pt-3"><span class="block h-2.5 w-16 rounded-full bg-slate-100"></span><span class="mt-2 block h-3.5 w-3/4 rounded-full bg-slate-100"></span></div></div>
+            <div><div class="aspect-[4/5] rounded-2xl border border-slate-200/80 bg-slate-100"></div><div class="px-1 pt-3"><span class="block h-2.5 w-16 rounded-full bg-slate-100"></span><span class="mt-2 block h-3.5 w-3/4 rounded-full bg-slate-100"></span></div></div>
+            <div><div class="aspect-[4/5] rounded-2xl border border-slate-200/80 bg-slate-100"></div><div class="px-1 pt-3"><span class="block h-2.5 w-16 rounded-full bg-slate-100"></span><span class="mt-2 block h-3.5 w-3/4 rounded-full bg-slate-100"></span></div></div>
+            <div><div class="aspect-[4/5] rounded-2xl border border-slate-200/80 bg-slate-100"></div><div class="px-1 pt-3"><span class="block h-2.5 w-16 rounded-full bg-slate-100"></span><span class="mt-2 block h-3.5 w-3/4 rounded-full bg-slate-100"></span></div></div>
+          </div>
+        </main>
+      </div>
+
+      <div class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 lg:hidden" style="padding-bottom: env(safe-area-inset-bottom, 0px)">
+        <div class="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
+          <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-blue-700"><span class="absolute top-0 h-0.5 w-8 rounded-full bg-blue-600"></span><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-grid" /></svg>Explore</span>
+          <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-layout" /></svg>Static</span>
+          <span class="btn-glow mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white ring-4 ring-white"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-steth" /></svg></span>
+          <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-eye" /></svg>Spy</span>
+          <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bookmark" /></svg>Vault</span>
+        </div>
+      </div>
+    </div></div>
   </body>
 </html>
