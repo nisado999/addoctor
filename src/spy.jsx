@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "./ui";
-import { copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { copyText, SPY_API } from "./shared.js";
+import { apiFetch, isCancel } from "./api.js";
 import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
 
@@ -620,12 +621,7 @@ function SpyView({ onRebuild, notify }) {
     crawlCtl.current = ctrl;
     const cty = country || lib.country || "ALL";
     const sleep = (ms) => new Promise((r) => setTimeout(r, window.__spyFast ? 5 : ms));
-    const post = async (path, body) => {
-      const r = await fetch(SPY_API + path, { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }, body: JSON.stringify(body) });
-      let j = {}; try { j = await r.json(); } catch (e) {}
-      if (!r.ok) throw { code: "api", message: j.error || "Server error " + r.status };
-      return j;
-    };
+    const post = (path, body) => apiFetch(path, { body, signal: ctrl.signal, timeout: 120000 });
     try {
       setCrawl({ phase: "running", i: 0, n: 1, found: 0, msg: "Finding every ad from this advertiser…" });
       track("spy_analyze", { method: "link", country: cty });
@@ -640,7 +636,7 @@ function SpyView({ onRebuild, notify }) {
           if (ctrl.signal.aborted) throw { code: "cancelled" };
           let pg;
           try { pg = await post("/page", { run, cursor, have: all.length }); }
-          catch (e) { if (all.length && e && e.code === "api") break; throw e; }   // e.g. out of credits part-way: analyse what was read
+          catch (e) { if (all.length && e && ["api", "rate_limited", "daily_cap"].includes(e.code)) break; throw e; }   // e.g. out of credits part-way: analyse what was read
           all = all.concat(pg.ads || []);
           cursor = pg.cursor || "";
           setCrawl({ phase: "running", i: Math.min(18, Math.round((all.length / (max || 200)) * 18)), n: 20, found: all.length, plain: true, msg: "Reading the Ad Library" });
@@ -652,9 +648,7 @@ function SpyView({ onRebuild, notify }) {
       while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
         await sleep(3500);
         if (ctrl.signal.aborted) throw { code: "cancelled" };
-        const r = await fetch(`${SPY_API}/status?run=${encodeURIComponent(run)}`, { signal: ctrl.signal, headers: SPY_KEY ? { "X-App-Key": SPY_KEY } : {} });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw { code: "api", message: j.error || "Server error " + r.status };
+        const j = await apiFetch(`/status?run=${encodeURIComponent(run)}`, { signal: ctrl.signal });
         status = j.status; found = j.found || 0; tick++;
         setCrawl({ phase: "running", i: Math.min(tick, 18), n: 20, found, msg: "Reading the Ad Library" });
       }
@@ -667,9 +661,12 @@ function SpyView({ onRebuild, notify }) {
       finish(out.slide && out.slide.length ? "crawl-ai" : "crawl", out.ads || [], out.slide, out.insights, name, out);
       setCrawl({ phase: "done", i: 20, n: 20, found: out.count || 0, msg: `Done. Read ${out.count || 0} distinct ads${spySeen(out)}.${out.aiError ? " Claude could not write the analysis (" + out.aiError + "), so the bullets come from keyword rules." : ""}` });
     } catch (e) {
+      const stopped = isCancel(e) || ctrl.signal.aborted;
       const c = e && e.code;
-      if (c === "api") setHelper(true);   // the server could not read the Ad Library, so offer the free way
-      setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: c === "cancelled" ? "Stopped." : c === "api" ? e.message + " You can still read this advertiser for free with the AdDoctor button below." : "Couldn't reach the AdDoctor server. Check your connection and try again." });
+      const reach = c === "network" || c === "offline" || c === "timeout";   // no answer at all: the free way would not help yet
+      if (!stopped && !reach) setHelper(true);   // the server could not read the Ad Library, so offer the free way
+      const said = (e && e.message) || "Couldn't reach the AdDoctor server. Check your connection and try again.";
+      setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: stopped ? "Stopped." : reach ? said : said + " You can still read this advertiser for free with the AdDoctor button below." });
     } finally { crawlCtl.current = null; }
   };
 
@@ -694,9 +691,10 @@ function SpyView({ onRebuild, notify }) {
     };
     try {
       if (!SPY_API) return local("This copy of AdDoctor has no server set up.");
-      const r = await fetch(SPY_API + "/analyze", { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }, body: JSON.stringify({ ads: raw }) });
-      const out = await r.json().catch(() => ({}));
-      if (!r.ok || !Array.isArray(out.ads)) return local(r.status === 429 ? (out.error || "The server is busy.") : "The AdDoctor server has not been updated to read these yet.");
+      let out;
+      try { out = await apiFetch("/analyze", { body: { ads: raw }, signal: ctrl.signal, timeout: 120000 }); }
+      catch (e) { if (isCancel(e)) throw e; return local(e.code === "rate_limited" || e.code === "daily_cap" ? e.message : e.code === "api" || e.code === "server" ? "The AdDoctor server has not been updated to read these yet." : "The AdDoctor server could not be reached."); }
+      if (!Array.isArray(out.ads)) return local("The AdDoctor server has not been updated to read these yet.");
       const name = out.brand || "";
       setBrand(name);
       if (out.from) setFrom(out.from);
@@ -705,10 +703,12 @@ function SpyView({ onRebuild, notify }) {
       finish(out.slide && out.slide.length ? "crawl-ai" : "crawl", out.ads, out.slide, out.insights, name, out);
       setCrawl({ phase: "done", i: 20, n: 20, found: out.count || 0, msg: `Done. Read ${out.count || 0} distinct ads${spySeen(out)}.${out.aiError ? " Claude could not write the analysis (" + out.aiError + "), so the bullets come from keyword rules." : ""}` });
     } catch (e) {
-      if (ctrl.signal.aborted) setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: "Stopped." });
+      if (isCancel(e) || ctrl.signal.aborted) setCrawl({ phase: "error", i: 0, n: 0, found: 0, msg: "Stopped." });
       else local("The AdDoctor server could not be reached.");
     } finally { crawlCtl.current = null; }
   };
+  // A paid read stops when the screen goes away, so it cannot keep spending in the background.
+  useEffect(() => () => { if (crawlCtl.current) crawlCtl.current.abort(); }, []);
   const postedRef = useRef(runPosted);
   postedRef.current = runPosted;
   useEffect(() => {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { TEMPLATES } from "./data";
 import { Icon } from "./ui";
 import { SPY_API } from "./shared.js";
+import { isCancel } from "./api.js";
 import { packCall, packZip, packB64, packExt, packSave } from "./pack";
 
 /* ---------------------------- Template Lab ----------------------------- */
@@ -73,16 +74,19 @@ function LabView({ notify }) {
   const [prompts, setPrompts] = useState(() => ({ ...LAB_PROMPTS }));
   const [running, setRunning] = useState(false);
   const stop = useRef(false);
+  const life = useRef(new AbortController());   // aborted when the screen goes away
+  const run = useRef(null);                     // the "Generate missing" run, aborted by Stop
 
   useEffect(() => { labGetAll().then((o) => setImgs((p) => ({ ...o, ...p }))); }, []);
+  useEffect(() => { const l = life.current; return () => { stop.current = true; l.abort(); }; }, []);
 
-  const one = async (t) => {
+  const one = async (t, signal = life.current.signal) => {
     setBusy((b) => ({ ...b, [t.id]: true }));
     try {
-      const r = await packCall("/pack/image", { raw: true, prompt: LAB_STYLE + " " + (prompts[t.id] || t.title), quality, brief: {} });
+      const r = await packCall("/pack/image", { raw: true, prompt: LAB_STYLE + " " + (prompts[t.id] || t.title), quality, brief: {} }, signal);
       const v = { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data };
       setImgs((p) => ({ ...p, [t.id]: v })); setErrs((e) => ({ ...e, [t.id]: "" })); labPut(t.id, v);
-    } catch (e) { setErrs((x) => ({ ...x, [t.id]: e.message || "Failed" })); }
+    } catch (e) { setErrs((x) => ({ ...x, [t.id]: isCancel(e) ? "" : e.message || "Failed" })); }
     setBusy((b) => ({ ...b, [t.id]: false }));
   };
 
@@ -90,8 +94,9 @@ function LabView({ notify }) {
     if (!SPY_API) { notify("The Template Lab needs the AdDoctor server. Open the hosted page."); return; }
     const todo = TEMPLATES.filter((t) => !imgs[t.id]);
     if (!todo.length) { notify("Every template already has an image."); return; }
-    setRunning(true); stop.current = false; let n = 0;
-    const worker = async () => { while (n < todo.length && !stop.current) { await one(todo[n++]); } };
+    setRunning(true); stop.current = false; const rc = new AbortController(); run.current = rc; let n = 0;
+    const off = () => rc.abort(); life.current.signal.addEventListener("abort", off, { once: true });
+    const worker = async () => { while (n < todo.length && !stop.current) { await one(todo[n++], rc.signal); } };
     await Promise.all([worker(), worker()]);
     setRunning(false);
   };
@@ -117,7 +122,7 @@ function LabView({ notify }) {
             ))}
           </div>
           {running ? (
-            <button onClick={() => { stop.current = true; }} className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200">Stop</button>
+            <button onClick={() => { stop.current = true; if (run.current) run.current.abort(); }} className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200">Stop</button>
           ) : (
             <button id="lab-run" onClick={runMissing} className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700">Generate missing ({TEMPLATES.length - done})</button>
           )}
