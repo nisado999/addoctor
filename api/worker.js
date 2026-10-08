@@ -573,9 +573,10 @@ const FIDELITY = (n) => `The ${n > 1 ? n + " attached photos show" : "attached p
 
 const inline = (x) => ({ inlineData: { mimeType: x.mime, data: x.data } });
 
-async function packImage(env, b) {
-  // Raw prompts skip the brief and go straight to the image model, so only the owner may use them.
-  if (b.raw && env.ALLOW_RAW !== "1") { const e = new Error("This feature is only for the site owner."); e.status = 403; throw e; }
+async function packImage(env, b, who) {
+  // Raw prompts skip the brief and go straight to the image model, so only a signed-in owner may use them.
+  if (b.raw && !who) { const e = new Error("Sign in to use this."); e.status = 401; e.code = "signin_required"; throw e; }
+  if (b.raw && !isOwner(env, who)) { const e = new Error("This feature is only for the site owner."); e.status = 403; e.code = "owner_only"; throw e; }
   const refs = await loadRefs(b.refs, 4);
   return geminiImage(env, [...refs.map(inline), { text: (refs.length ? FIDELITY(refs.length) : "") + imagePromptText(b, b.brief) }], b.quality);
 }
@@ -687,22 +688,43 @@ Never invent facts about the product.`;
 //                  When set to anything but *, requests from other sites (or with no Origin) are refused.
 //   RATE_PER_HOUR  paid calls one visitor (IP address) may make per hour, default 60
 //   DAILY_CAP      paid calls allowed per day across all visitors, default 300
+//   USER_PER_HOUR  paid calls one signed-in account may make per hour, default 120 (instead of the per-connection limit)
+//   USER_DAILY     paid calls one signed-in account may make per day, default 200
+//   OWNER_EMAILS   comma-separated confirmed addresses of the site owners: the only accounts that may use raw image
+//                  prompts (Template Lab), and exempt from the per-account limits
 // Counters live in Cloudflare's edge cache, which is per data centre, so the numbers are approximate:
 // good enough to stop a script hammering the API, not an exact meter.
 const SUPABASE_URL = "https://ivzyyeokjcmsucldawja.supabase.co";   // same project as src/auth.js; SUPABASE_URL overrides it
+const SUPABASE_PUBLISHABLE = "sb_publishable_U5tc2OA2H7vyDAYyVWPE9Q_U9W-aZWu";   // public by design; SUPABASE_ANON_KEY overrides it
+const supaBase = (env) => String(env.SUPABASE_URL || SUPABASE_URL).replace(/\/+$/, "");
+
+// Who the Bearer token belongs to: { id, email, verified }, or null when Supabase does not accept it. Answers are kept
+// for five minutes so a Social Pack does not ask Supabase 35 times. Throws when Supabase cannot be reached.
+async function supaUser(env, auth) {
+  const token = (auth.match(/^Bearer (\S+)$/) || [])[1];
+  if (!token) return null;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const key = "https://tokens.addoctor.internal/" + [...new Uint8Array(digest)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  const hit = typeof caches !== "undefined" ? await caches.default.match(key) : null;
+  if (hit) return hit.json();
+  const r = await fetch(supaBase(env) + "/auth/v1/user", { headers: { apikey: env.SUPABASE_ANON_KEY || SUPABASE_PUBLISHABLE, Authorization: "Bearer " + token } });
+  if (r.status === 401 || r.status === 403) return null;
+  const u = r.ok ? await r.json().catch(() => null) : null;
+  if (!u || !u.id) throw new Error("Could not check the sign-in");
+  const who = { id: u.id, email: String(u.email || "").toLowerCase(), verified: !!u.email_confirmed_at };
+  if (typeof caches !== "undefined") await caches.default.put(key, new Response(JSON.stringify(who), { headers: { "Cache-Control": "max-age=300" } }));
+  return who;
+}
+
+// OWNER_EMAILS is a comma-separated list. Only a confirmed address counts.
+const isOwner = (env, who) => !!who && who.verified && String(env.OWNER_EMAILS || "").toLowerCase().split(",").map((x) => x.trim()).filter(Boolean).includes(who.email);
 
 // Deletes the signed-in caller's own account. The caller's token says who they are; the service role key does the delete.
 async function deleteAccount(env, req) {
   if (!env.SUPABASE_SERVICE_ROLE) return json(env, { error: "Deleting accounts is not set up on this server yet.", code: "not_configured" }, 501);
-  const auth = req.headers.get("Authorization") || "";
-  if (!/^Bearer \S+/.test(auth)) return json(env, { error: "Sign in to delete your account.", code: "signin_required" }, 401);
-  const base = String(env.SUPABASE_URL || SUPABASE_URL).replace(/\/+$/, "");
-  const admin = { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: "Bearer " + env.SUPABASE_SERVICE_ROLE };
-  const who = await fetch(base + "/auth/v1/user", { headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: auth } });
-  if (who.status === 401 || who.status === 403) return json(env, { error: "Your sign-in has expired. Sign in again.", code: "signin_required" }, 401);
-  const user = who.ok ? await who.json().catch(() => null) : null;
-  if (!user || !user.id) return json(env, { error: "Could not check your sign-in. Try again." }, 502);
-  const del = await fetch(base + "/auth/v1/admin/users/" + encodeURIComponent(user.id), { method: "DELETE", headers: admin });
+  const who = await supaUser(env, req.headers.get("Authorization") || "");
+  if (!who) return json(env, { error: "Sign in to delete your account.", code: "signin_required" }, 401);
+  const del = await fetch(supaBase(env) + "/auth/v1/admin/users/" + encodeURIComponent(who.id), { method: "DELETE", headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: "Bearer " + env.SUPABASE_SERVICE_ROLE } });
   if (!del.ok) return json(env, { error: "Could not delete the account. Try again." }, 502);
   return json(env, { ok: true });
 }
@@ -737,15 +759,28 @@ export default {
     if (!origin) return json(env, { error: "This site is not allowed to use the AdDoctor API." }, 403);
     if (env.APP_KEY && req.headers.get("X-App-Key") !== env.APP_KEY) return json(env, { error: "unauthorized" }, 401);
     const u = new URL(req.url);
-    if (PAID.test(u.pathname)) {
-      const ip = req.headers.get("CF-Connecting-IP") || "unknown";
-      const now = Date.now();
-      const perHour = Number(env.RATE_PER_HOUR) || 60, perDay = Number(env.DAILY_CAP) || 300;
-      if ((await bump(`ip/${ip}/${Math.floor(now / 3600000)}`, 3600)) > perHour) return json(env, { error: "Too many requests from this connection. Try again in an hour." }, 429);
-      if ((await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > perDay) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow." }, 429);
-    }
     if (u.pathname === "/account/delete" && req.method === "POST") {
       try { return await deleteAccount(env, req); } catch (e) { return json(env, { error: "Could not delete the account. Try again." }, 502); }
+    }
+    let who = null;
+    if (PAID.test(u.pathname)) {
+      const now = Date.now();
+      if (req.headers.get("Authorization")) {
+        try { who = await supaUser(env, req.headers.get("Authorization")); } catch (e) { return json(env, { error: "Could not check your sign-in. Try again in a moment." }, 502); }
+        if (!who) return json(env, { error: "Your sign-in has expired. Sign in again.", code: "signin_required" }, 401);
+      }
+      if (who) {
+        // A signed-in caller is counted by account, so a shared network does not use up one person's allowance.
+        if (!isOwner(env, who)) {
+          const perHour = Number(env.USER_PER_HOUR) || 120, perDay = Number(env.USER_DAILY) || 200;
+          if ((await bump(`user/${who.id}/${Math.floor(now / 3600000)}`, 3600)) > perHour) return json(env, { error: "You have made a lot of requests this hour. Try again in a while.", code: "rate_limited" }, 429);
+          if ((await bump(`userday/${who.id}/${Math.floor(now / 86400000)}`, 86400)) > perDay) return json(env, { error: "You have reached today's limit for your account. Try again tomorrow.", code: "daily_cap" }, 429);
+        }
+      } else {
+        const ip = req.headers.get("CF-Connecting-IP") || "unknown";
+        if ((await bump(`ip/${ip}/${Math.floor(now / 3600000)}`, 3600)) > (Number(env.RATE_PER_HOUR) || 60)) return json(env, { error: "Too many requests from this connection. Try again in an hour.", code: "rate_limited" }, 429);
+      }
+      if ((await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > (Number(env.DAILY_CAP) || 300)) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow.", code: "daily_cap" }, 429);
     }
     const apify = (path) => `https://api.apify.com/v2/${path}${path.includes("?") ? "&" : "?"}token=${env.APIFY_TOKEN}`;
     try {
@@ -834,7 +869,7 @@ export default {
         if (u.pathname === "/pack/store") return json(env, await packStore(env, b));
         if (u.pathname === "/pack/brief") return json(env, { brief: await packBrief(env, b) });
         if (u.pathname === "/pack/posts") return json(env, { posts: await packPosts(env, b) });
-        if (u.pathname === "/pack/image") return json(env, await packImage(env, b));
+        if (u.pathname === "/pack/image") return json(env, await packImage(env, b, who));
         if (u.pathname === "/pack/review") return json(env, await packReview(env, b));
       }
       // ---- an ad from a template and a product photo ----
@@ -845,7 +880,8 @@ export default {
       }
       return json(env, { error: "not found" }, 404);
     } catch (e) {
-      return json(env, { error: String(e.message || e).slice(0, 240) }, e && [403, 422, 429, 502].includes(e.status) ? e.status : 500);
+      const st = e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500;
+      return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String(e.message || e).slice(0, 240) }, st);
     }
   },
 };

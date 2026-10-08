@@ -15,7 +15,12 @@ Pieces: (1) the page (addoctor.html), (2) the backend (worker.js), (3) two paid 
    - ANTHROPIC_KEY (secret)
    - ALLOW_ORIGIN = the address your page will live at, e.g. https://app.yourdomain.com
    - APP_KEY (secret, optional but recommended): any long random string
-   - MAX_ADS (optional): cap per analysis, default 800
+   - USER_PER_HOUR (optional, default 120) and USER_DAILY (optional, default 200): paid calls one signed-in account may make.
+  Signed-in visitors are counted by account instead of by connection.
+- OWNER_EMAILS (comma-separated confirmed addresses): the only accounts that can use the Template Lab's raw image
+  prompts, and exempt from the per-account limits. Without it, nobody can.
+- SUPABASE_SERVICE_ROLE (secret, optional): lets the account menu delete an account. Without it that answers "not_configured".
+- MAX_ADS (optional): cap per analysis, default 800
 3. Copy the Worker URL, e.g. https://addoctor-api.yourname.workers.dev
 
 ## 3. Put the page online
