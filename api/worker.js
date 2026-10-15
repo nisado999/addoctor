@@ -629,6 +629,34 @@ Put the real product where the reference has its product: worn by the model if i
 ${text}` }], b.quality);
 }
 
+/* ------------------------ One competitor creative, broken down ------------------------ */
+// Claude reads one ad image (plus its text) and returns the pieces a creative strategist would note.
+// Only Meta's own image hosts are fetched, so this route can't be used to reach anything else.
+const AD_IMG_HOST = /(^|\.)(fbcdn\.net|facebook\.com|fbsbx\.com|cdninstagram\.com)$/i;
+const AWARENESS = ["unaware", "problem", "solution", "product", "most"];
+
+async function creativeBreakdown(env, b) {
+  let host = "";
+  try { host = new URL(String(b.img || "")).hostname; } catch (e) { /* handled below */ }
+  if (!AD_IMG_HOST.test(host)) throw new Error("That creative image can't be read");
+  const ref = await loadRef({ url: b.img });
+  const prompt = `You are a senior direct-response creative strategist breaking down ONE competitor ad (Meta, ${clip(b.format, 20) || "unknown format"}). If it is a video you only see its cover frame, so do not describe motion or audio you cannot see.
+Brand: ${clip(b.brand, 80) || "unknown"}. Running for ${Number(b.days) >= 0 ? Number(b.days) + " days" : "an unknown time"}.
+Ad text: headline "${clip(b.headline, 160)}"${b.body ? `, body "${clip(b.body, 500)}"` : ""}${b.cta ? `, button "${clip(b.cta, 40)}"` : ""}.
+Describe only what is visible in the image or written in the ad text. Never invent claims, prices, results or reviews. If an element is not present write "Not shown".
+Return ONLY JSON: {"hook":"how it grabs attention in the first second, one sentence","problem":"the problem or desire it points at","solution":"how the product answers it","proof":"social proof, demo, result or authority shown","offer":"discount, bundle, guarantee or urgency","cta":"the call to action","visual":"what the image shows and how it is composed, one sentence","angle":"the creative angle in 2 to 5 words","awareness":"unaware | problem | solution | product | most","persona":"who this speaks to, one short line","tags":["max 5 short tags such as UGC, text overlay, before and after, founder, demo"],"why":"one sentence on why this may be working"}
+Inside JSON strings use single quotes when you quote words, never double quotes.`;
+  const o = await askClaude(env, [{ type: "image", source: { type: "base64", media_type: ref.mime, data: ref.data } }, { type: "text", text: prompt }], 900);
+  const aw = String(o.awareness || "").toLowerCase();
+  const f = (k, n = 240) => clip(o[k], n) || "Not shown";
+  return {
+    hook: f("hook"), problem: f("problem"), solution: f("solution"), proof: f("proof"), offer: f("offer"), cta: f("cta", 120),
+    visual: f("visual"), angle: f("angle", 60), persona: f("persona", 160), why: f("why", 300),
+    awareness: AWARENESS.find((a) => aw.startsWith(a)) || "",
+    tags: (Array.isArray(o.tags) ? o.tags : []).map((t) => clip(t, 30)).filter(Boolean).slice(0, 5),
+  };
+}
+
 async function makeReview(env, b) {
   const data = String(b.image || "").replace(/^data:image\/\w+;base64,/, "");
   if (!data || data.length > 3000000) throw new Error("image missing or too large");
@@ -686,7 +714,7 @@ Never invent facts about the product.`;
 //   DAILY_CAP      paid calls allowed per day across all visitors, default 300
 // Counters live in Cloudflare's edge cache, which is per data centre, so the numbers are approximate:
 // good enough to stop a script hammering the API, not an exact meter.
-const PAID = /^\/(start|page|analyze|pack\/|make\/)/;
+const PAID = /^\/(start|page|analyze|creative|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -799,6 +827,8 @@ export default {
         try { ({ slide, insights, report, creatives } = await writeSlide(env, ads, brand, from, to, images)); } catch (e) { aiError = String(e.message || e).slice(0, 200); }
         return json(env, { count: ads.length, brand, ads, slide, insights, report, creatives, aiError, vision, from, to });
       }
+      // 4. one creative broken down (hook, problem, solution, proof, offer, awareness stage)
+      if (u.pathname === "/creative" && req.method === "POST") return json(env, await creativeBreakdown(env, await req.json()));
       // what this server can do, so the page can offer the right way to read the Ad Library
       if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true });
       // ---- Social Pack ----

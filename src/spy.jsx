@@ -3,6 +3,7 @@ import { Icon } from "./ui";
 import { copyText, SPY_API, SPY_KEY } from "./shared.js";
 import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
+import { CreativeGallery } from "./creatives.jsx";
 
 /* ============================ Competitor Spy ============================ */
 
@@ -999,9 +1000,11 @@ ${spyCompact(ads)}`;
           )}
         </div>
 
+        <CreativeGallery ads={res.ads} brand={state.brand} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
+
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-slate-900">Ads analyzed</h3>
+            <h3 className="text-base font-semibold text-slate-900">{res.ads.some((a) => a.img) ? "Ads without an image" : "Ads analyzed"}</h3>
             <p className="text-xs text-slate-500">Each ad is tagged with its angle, product and promotions. Rebuild opens the closest template in the Studio.</p>
           </div>
           <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Sort ads">
@@ -1011,7 +1014,7 @@ ${spyCompact(ads)}`;
           </div>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {sorted.map((a) => <SpyAdCard key={a.id} ad={a} onRebuild={onRebuild} />)}
+          {(res.ads.some((a) => a.img) ? sorted.filter((a) => !a.img) : sorted).map((a) => <SpyAdCard key={a.id} ad={a} onRebuild={onRebuild} />)}
         </div>
       </div>
       )}
