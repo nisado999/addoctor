@@ -356,25 +356,53 @@ const stripFence = (t) => String(t || "").replace(/^```(?:json)?\s*/i, "").repla
 const parseJson = (text) => { const m = stripFence(text).match(/[\[{][\s\S]*[\]}]/); return JSON.parse(m ? m[0] : text); };
 const clip = (v, n) => wf(String(v == null ? "" : v)).slice(0, n);
 
-// The answer is requested as a forced tool call, so it arrives as an already-parsed object and a stray double quote
-// in an ad's text can no longer break it. If a model answers in plain text instead, that text is parsed as before.
+// The answer is asked for as a call to a "reply" tool, which arrives as an already-parsed object, so a stray double
+// quote in an ad's text can't break it. Some models refuse tools or a forced tool choice, so the tool is only offered
+// (tool_choice auto), a refusal falls back to plain text, and plain-text JSON gets its unescaped quotes repaired.
 const REPLY_TOOL = { name: "reply", description: "Return the answer as the JSON object described in the instructions, with exactly those keys.", input_schema: { type: "object", additionalProperties: true } };
 
-async function askClaude(env, content, maxTokens = 2000, again = false) {
+// Escapes double quotes that sit inside a JSON string, judged by what follows them: a closing quote is followed by
+// , : } ] or the end. Leaves valid JSON unchanged.
+function repairJson(s) {
+  let out = "", inStr = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr && c === "\\") { out += c + (s[i + 1] || ""); i++; continue; }
+    if (c === '"') {
+      if (!inStr) { inStr = true; out += c; continue; }
+      const rest = s.slice(i + 1).match(/^\s*(.)/);
+      if (!rest || /[,:}\]]/.test(rest[1])) { inStr = false; out += c; } else out += '\\"';
+      continue;
+    }
+    out += inStr && c === "\n" ? "\\n" : c;
+  }
+  return out;
+}
+
+const parseLoose = (text) => { try { return parseJson(text); } catch (e) { const m = stripFence(text).match(/[\[{][\s\S]*[\]}]/); return JSON.parse(repairJson(m ? m[0] : text)); } };
+
+async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
+  const parts = typeof content === "string" ? [{ type: "text", text: content }] : content;
+  const body = { model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content: parts }] };
+  if (mode === "tool") { body.tools = [REPLY_TOOL]; body.tool_choice = { type: "auto" }; body.messages[0].content = [...parts, { type: "text", text: "Give your answer by calling the reply tool with that JSON object." }]; }
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content }], ...(again ? {} : { tools: [REPLY_TOOL], tool_choice: { type: "tool", name: "reply" } }) }),
+    body: JSON.stringify(body),
   });
-  const j = await r.json();
-  if (!r.ok) throw new Error((j.error && j.error.message) || "Anthropic error " + r.status);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const msg = (j.error && j.error.message) || "Anthropic error " + r.status;
+    if (mode === "tool" && r.status === 400 && /tool/i.test(msg)) return askClaude(env, content, maxTokens, "text");   // this model takes no tools
+    throw new Error(msg);
+  }
   const tool = (j.content || []).find((b) => b.type === "tool_use");
   if (tool && tool.input && typeof tool.input === "object" && Object.keys(tool.input).length) return tool.input;
-  const text = ((j.content || []).find((b) => b.type === "text") || {}).text || "";
-  try { return parseJson(text); } catch (e) {
-    // Usually a double quote inside a string. Ask once for the same answer as valid JSON.
-    if (again) throw new Error("The analysis came back in a form that could not be read. Try again.");
-    return askClaude(env, [...(typeof content === "string" ? [{ type: "text", text: content }] : content), { type: "text", text: "Return valid JSON only. Inside strings use single quotes, never double quotes." }], maxTokens, true);
+  const text = (j.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+  try { return parseLoose(text); } catch (e) {
+    // Still unreadable: ask once more, in plain text, for valid JSON.
+    if (mode === "again") throw new Error("The analysis came back in a form that could not be read. Try again.");
+    return askClaude(env, [...parts, { type: "text", text: "Return valid JSON only. Inside strings use single quotes, never double quotes." }], maxTokens, "again");
   }
 }
 
