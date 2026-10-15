@@ -181,8 +181,12 @@ const ASK_IDEAS = [
 ];
 
 // Plain-text answer: lines starting with "- " become a list, blank lines split paragraphs.
+// The ads are numbered for Claude only, so references like "(ads 45, 46 and 50)" mean nothing on screen; the
+// evidence thumbnails show those ads instead.
+const stripRefs = (t) => String(t || "").replace(/\s*\((?:ads?|#)\s*\d+(?:\s*(?:,|and|&|-|–)\s*\d+)*\)/gi, "");
+
 function Answer({ text }) {
-  const blocks = String(text || "").split(/\n\s*\n/);
+  const blocks = stripRefs(text).split(/\n\s*\n/);
   return (
     <div className="space-y-2 text-[13.5px] leading-relaxed text-slate-700">
       {blocks.map((b, i) => {

@@ -718,7 +718,7 @@ async function askAds(env, b) {
   const history = (Array.isArray(b.history) ? b.history : []).slice(-4).map((h) => `Q: ${clip(h.q, 300)}\nA: ${clip(h.a, 700)}`).join("\n\n");
   const prompt = `You are a senior paid-social strategist answering a question about ONE advertiser's Meta ads. Today is ${new Date().toISOString().slice(0, 10)}. Advertiser: ${clip(b.brand, 80) || "unknown"}.
 Each line is one ad: number | format | days running | first seen (YYYY-MM-DD) | headline / body [button].
-Answer only from these ads. Ad libraries show what runs, not spend or results, so treat long-running ads as likely winners and say so plainly when that matters. Never invent numbers, products or claims. If the ads cannot answer the question, say what is missing.
+Answer only from these ads. Do not mention ad numbers in the answer; list them only in "evidence". Ad libraries show what runs, not spend or results, so treat long-running ads as likely winners and say so plainly when that matters. Never invent numbers, products or claims. If the ads cannot answer the question, say what is missing.
 ${history ? "Earlier in this conversation:\n" + history + "\n" : ""}
 Question: ${question}
 
