@@ -38,4 +38,12 @@ const SPY_API_KEY_RAW = import.meta.env.VITE_ADDOCTOR_KEY || "";
 const SPY_API = (typeof window !== "undefined" && window.ADDOCTOR_API) || (SPY_API_RAW.indexOf("__") === 0 ? "" : SPY_API_RAW.replace(/\/+$/, ""));
 const SPY_KEY = (typeof window !== "undefined" && window.ADDOCTOR_KEY) || (SPY_API_KEY_RAW.indexOf("__") === 0 ? "" : SPY_API_KEY_RAW);
 
-export { TONE, copyText, inputKey, field, SPY_API, SPY_KEY };
+// What the AdDoctor server can do, read once per page load, so a feature whose route is not deployed yet stays hidden.
+let capsP = null;
+function serverCaps() {
+  if (!capsP) capsP = SPY_API ? fetch(SPY_API + "/caps", { headers: SPY_KEY ? { "X-App-Key": SPY_KEY } : {} }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})) : Promise.resolve({});
+  return capsP;
+}
+const hasFeature = async (name) => { const c = await serverCaps(); return Array.isArray(c.features) && c.features.includes(name); };
+
+export { TONE, copyText, inputKey, field, SPY_API, SPY_KEY, serverCaps, hasFeature };

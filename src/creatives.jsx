@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "./ui";
-import { copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { copyText, SPY_API, SPY_KEY, hasFeature } from "./shared.js";
 import { track } from "./track.js";
 
 /* A competitor's creatives as a media-first gallery, with a per-creative breakdown opened on demand.
@@ -25,6 +25,13 @@ const ROWS = [
 ];
 
 const cache = new Map();   // libId -> breakdown, kept while the page is open
+
+// The Worker sends the landing page as "host/path" without a scheme. Only http(s) addresses are linked.
+function landing(link) {
+  const s = String(link || "").trim();
+  if (!s) return "";
+  try { const u = new URL(/^https?:\/\//i.test(s) ? s : "https://" + s); return /^https?:$/.test(u.protocol) && u.hostname.includes(".") ? u.href : ""; } catch (e) { return ""; }
+}
 
 function loadSaved() {
   try { const v = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); return Array.isArray(v) ? v.filter((x) => typeof x === "string") : []; } catch (e) { return []; }
@@ -163,11 +170,111 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
             <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"><Icon.Wand className="h-3.5 w-3.5" /> Rebuild this angle</button>
             <button onClick={onSave} aria-pressed={saved} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><Icon.Bookmark className="h-3.5 w-3.5" /> {saved ? "Saved" : "Save"}</button>
             {data && <button onClick={async () => { const ok = await copyText(breakdownText(ad, data, brand)); notify(ok === false ? "Couldn't copy. Select the text manually." : "Breakdown copied"); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><Icon.Copy className="h-3.5 w-3.5" /> Copy breakdown</button>}
-            {ad.link && /^https?:\/\//i.test(ad.link) && <a href={ad.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Landing page</a>}
+            {landing(ad.link) && <a href={landing(ad.link)} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><span className="truncate">Landing page · {String(ad.link).replace(/^https?:\/\//i, "").split("/")[0]}</span></a>}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+const ASK_IDEAS = [
+  "Which angles do their longest-running ads use?",
+  "What offers and discounts do they run?",
+  "What did they launch in the last 30 days?",
+  "Give me 5 ad ideas that would beat them",
+];
+
+// Plain-text answer: lines starting with "- " become a list, blank lines split paragraphs.
+function Answer({ text }) {
+  const blocks = String(text || "").split(/\n\s*\n/);
+  return (
+    <div className="space-y-2 text-[13.5px] leading-relaxed text-slate-700">
+      {blocks.map((b, i) => {
+        const lines = b.split("\n").map((l) => l.trim()).filter(Boolean);
+        if (lines.length && lines.every((l) => /^[-•]\s/.test(l))) return <ul key={i} className="space-y-1">{lines.map((l, k) => <li key={k} className="flex gap-2"><span className="mt-[9px] h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" /><span>{l.replace(/^[-•]\s/, "")}</span></li>)}</ul>;
+        return <p key={i}>{lines.join(" ")}</p>;
+      })}
+    </div>
+  );
+}
+
+function AdsChat({ ads, brand, onOpen }) {
+  const [q, setQ] = useState("");
+  const [thread, setThread] = useState([]);   // [{ q, a, evidence: [libId], err }]
+  const [busy, setBusy] = useState(false);
+  const byId = useMemo(() => new Map(ads.map((a) => [a.libId, a])), [ads]);
+  const endRef = useRef(null);
+  useEffect(() => { setThread([]); }, [ads]);
+
+  const ask = async (question) => {
+    const text = String(question || "").trim();
+    if (!text || busy) return;
+    setQ("");
+    if (!SPY_API) { setThread((t) => [...t, { q: text, a: "", evidence: [], err: "Questions need the AdDoctor server. Open the published page, not the preview." }]); return; }
+    setBusy(true);
+    setThread((t) => [...t, { q: text, a: "", evidence: [], pending: true }]);
+    try {
+      const compact = ads.slice(0, 400).map((a) => ({ id: a.libId, format: a.format, days: a.days, start: a.startMs ? new Date(a.startMs).toISOString().slice(0, 10) : "", headline: a.headline, body: String(a.body || "").slice(0, 220), cta: a.cta }));
+      const history = thread.filter((x) => x.a).slice(-4).map((x) => ({ q: x.q, a: x.a }));
+      const r = await fetch(SPY_API + "/ask", { method: "POST", headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }, body: JSON.stringify({ brand, question: text, ads: compact, history }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(r.status === 404 ? "The AdDoctor server has not been updated for questions yet." : j.error || "Request failed (" + r.status + ")");
+      setThread((t) => t.map((x, i) => (i === t.length - 1 ? { q: text, a: j.answer || "No answer came back.", evidence: Array.isArray(j.evidence) ? j.evidence : [] } : x)));
+      track("ads_question", { ads_count: ads.length });
+    } catch (e) {
+      setThread((t) => t.map((x, i) => (i === t.length - 1 ? { q: text, a: "", evidence: [], err: e.message || "The question failed. Try again." } : x)));
+    }
+    setBusy(false);
+    setTimeout(() => { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 50);
+  };
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Ask about these ads" id="spy-ask">
+      <div className="flex items-center gap-2.5">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-white"><Icon.Sparkle className="h-4 w-4" /></span>
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">Ask about these ads</h3>
+          <p className="text-xs text-slate-500">Claude answers from the {ads.length} ads read, and shows the ones it used.</p>
+        </div>
+      </div>
+
+      {thread.length > 0 && (
+        <div className="mt-4 space-y-5">
+          {thread.map((x, i) => (
+            <div key={i}>
+              <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-slate-100 px-3.5 py-2 text-[13px] font-medium text-slate-800">{x.q}</p>
+              <div className="mt-2.5">
+                {x.pending && <div className="space-y-2" role="status" aria-label="Thinking"><div className="h-3 w-3/4 animate-pulse rounded bg-slate-100" /><div className="h-3 w-2/3 animate-pulse rounded bg-slate-100" /><div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" /></div>}
+                {x.err && <p role="alert" className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{x.err}</p>}
+                {x.a && <Answer text={x.a} />}
+                {x.evidence.length > 0 && (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {x.evidence.map((id) => byId.get(id)).filter(Boolean).map((a) => (
+                      <button key={a.libId} onClick={() => onOpen(a)} title={a.headline} className="relative h-24 w-[76px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-blue-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+                        {a.img ? <img src={a.img} alt={a.headline} loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <span className="block p-1.5 text-left text-[10px] leading-tight text-slate-600">{a.headline}</span>}
+                        {a.days !== null && a.days !== undefined && <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-[9px] font-semibold text-slate-700">{a.days}d</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          <div ref={endRef} />
+        </div>
+      )}
+
+      {thread.length === 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {ASK_IDEAS.map((s) => <button key={s} onClick={() => ask(s)} disabled={busy} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-700 disabled:opacity-50">{s}</button>)}
+        </div>
+      )}
+      <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); ask(q); }}>
+        <input id="spy-ask-input" value={q} onChange={(e) => setQ(e.target.value)} maxLength={400} placeholder={`e.g. What hooks does ${brand || "this brand"} repeat most?`} aria-label="Your question" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
+        <button type="submit" disabled={!q.trim() || busy} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{busy ? "Thinking…" : "Ask"}</button>
+      </form>
+    </section>
   );
 }
 
@@ -179,6 +286,8 @@ function CreativeGallery({ ads, brand, onRebuild, notify }) {
   const [shown, setShown] = useState(PAGE);
   const [saved, setSaved] = useState(loadSaved);
   const [open, setOpen] = useState(null);
+  const [canAsk, setCanAsk] = useState(false);   // the question box shows only once the server says it can answer
+  useEffect(() => { let dead = false; hasFeature("ask").then((ok) => { if (!dead) setCanAsk(ok); }); return () => { dead = true; }; }, []);
   useEffect(() => { try { localStorage.setItem(SAVED_KEY, JSON.stringify(saved)); } catch (e) { /* storage unavailable */ } }, [saved]);
 
   const formats = useMemo(() => ["All", ...Array.from(new Set(ads.map((a) => a.format).filter(Boolean)))], [ads]);
@@ -201,7 +310,8 @@ function CreativeGallery({ ads, brand, onRebuild, notify }) {
 
   return (
     <div className="mt-8" id="spy-gallery">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      {canAsk && <AdsChat ads={ads} brand={brand} onOpen={(a) => { setOpen(a); track("creative_opened", { format: a.format, days: a.days, from: "answer" }); }} />}
+      <div className={`${canAsk ? "mt-8" : ""} flex flex-wrap items-end justify-between gap-3`}>
         <div>
           <h3 className="text-base font-semibold text-slate-900">Creatives</h3>
           <p className="text-xs text-slate-500">{withImg} of {ads.length} ads have an image. Open one for the hook, offer, proof and who it targets.</p>

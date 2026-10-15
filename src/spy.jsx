@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "./ui";
-import { copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { copyText, SPY_API, SPY_KEY, hasFeature } from "./shared.js";
 import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
 import { CreativeGallery } from "./creatives.jsx";
@@ -566,7 +566,7 @@ const spySeen = (out) => (out.vision && out.vision.images ? ` and looked at ${sp
 
 function SpyView({ onRebuild, notify }) {
   const now = new Date();
-  const iso = (d) => d.toISOString().slice(0, 10);
+  const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);   // local date, not UTC
   const [brand, setBrand] = useState("");
   const [ai, setAi] = useState({ ready: false, sample: null });
   const [sort, setSort] = useState("days");
@@ -580,6 +580,9 @@ function SpyView({ onRebuild, notify }) {
   const [browser, setBrowser] = useState({ ready: false, mcp: null });
   const [state, setState] = useState(null);
   const [helper, setHelper] = useState(false);
+  const [find, setFind] = useState({ q: "", busy: false, err: "", list: null });
+  const [canFind, setCanFind] = useState(false);   // brand search shows only once the server says it has it
+  useEffect(() => { let dead = false; hasFeature("brands").then((ok) => { if (!dead) setCanFind(ok); }); return () => { dead = true; }; }, []);
   const helperLink = useRef(null);
   const crawlCtl = useRef(null);
 
@@ -851,6 +854,28 @@ ${spyCompact(ads)}`;
     }
   };
 
+  // Find an advertiser by name (1 ScrapeCreators credit), then fill in its Ad Library link.
+  const searchBrands = async () => {
+    const q = find.q.trim();
+    if (q.length < 2 || find.busy) return;
+    if (!SPY_API) { setFind((f) => ({ ...f, err: "Brand search needs the AdDoctor server. Paste an Ad Library link instead.", list: null })); return; }
+    setFind((f) => ({ ...f, busy: true, err: "", list: null }));
+    try {
+      const r = await fetch(SPY_API + "/brands", { method: "POST", headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }, body: JSON.stringify({ q }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(r.status === 404 ? "The AdDoctor server has not been updated for brand search yet. Paste an Ad Library link instead." : j.error || "Search failed (" + r.status + ")");
+      setFind((f) => ({ ...f, busy: false, list: j.brands || [] }));
+      track("spy_brand_search", { results: (j.brands || []).length });
+    } catch (e) { setFind((f) => ({ ...f, busy: false, err: e.message || "Search failed. Try again." })); }
+  };
+  const pickBrand = (b) => {
+    setLibRaw(spyUrl(b.id, country || "ALL", from, to));
+    setBrand(b.name);
+    setFind({ q: "", busy: false, err: "", list: null });
+    setCrawl({ phase: "idle", i: 0, n: 0, found: 0, msg: "" });
+  };
+  const fmtCount = (n) => (n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "K" : String(n || 0));
+
   const res = state ? state.reports[state.active] : null;
   const sorted = useMemo(() => {
     if (!res) return [];
@@ -880,9 +905,35 @@ ${spyCompact(ads)}`;
   return (
     <div className="mt-6 space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-        <h2 className="text-lg font-semibold tracking-tight text-slate-900">Paste a competitor's Ad Library link</h2>
-        <p className="mt-1 text-sm text-slate-500">Open the <a href="https://www.facebook.com/ads/library/" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:text-blue-700">Meta Ad Library</a>, pick the advertiser from the dropdown and copy the address bar. AdDoctor finds every ad from that page and writes the analysis.</p>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <h2 className="text-lg font-semibold tracking-tight text-slate-900">Find a competitor</h2>
+        <p className="mt-1 text-sm text-slate-500">{canFind ? "Search a brand by name, or paste its " : "Paste a competitor's "}<a href="https://www.facebook.com/ads/library/" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:text-blue-700">Meta Ad Library</a> link{canFind ? "" : " (pick the advertiser from the dropdown and copy the address bar)"}. AdDoctor reads every ad from that page, pulls out the creatives and writes the analysis.</p>
+        {canFind && <>
+        <form className="mt-4 flex gap-2" onSubmit={(e) => { e.preventDefault(); searchBrands(); }} role="search">
+          <div className="relative min-w-0 flex-1">
+            <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input id="spy-find" value={find.q} onChange={(e) => setFind((f) => ({ ...f, q: e.target.value }))} placeholder="Search a brand, e.g. Glossier" aria-label="Search a brand by name" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
+          </div>
+          <button type="submit" disabled={find.q.trim().length < 2 || find.busy} className="h-12 shrink-0 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50">{find.busy ? "Searching…" : "Search"}</button>
+        </form>
+        {find.err && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{find.err}</p>}
+        {find.list && (
+          <div className="mt-2 overflow-hidden rounded-xl border border-slate-200" id="spy-brands">
+            {find.list.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">No advertisers found with that name.</p>}
+            {find.list.map((b) => (
+              <button key={b.id} onClick={() => pickBrand(b)} className="flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-2.5 text-left transition last:border-b-0 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none">
+                {b.avatar ? <img src={b.avatar} alt="" referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-full bg-slate-100 object-cover" /> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-slate-500">{(b.name || "?").slice(0, 1)}</span>}
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-1 truncate text-sm font-semibold text-slate-900">{b.name}{b.verified && <Icon.Check className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-label="Verified" />}</span>
+                  <span className="block truncate text-xs text-slate-500">{[b.category, b.likes ? fmtCount(b.likes) + " likes" : "", b.ig ? "@" + b.ig : ""].filter(Boolean).join(" · ")}</span>
+                </span>
+                <span className="shrink-0 text-xs font-semibold text-blue-600">Select</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">or paste a link</p>
+        </>}
+        <div className={`${canFind ? "mt-2" : "mt-4"} flex flex-col gap-3 sm:flex-row`}>
           <input id="spy-lib" value={libRaw} onChange={(e) => setLibRaw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && libOk && !running) runCrawl(); }} placeholder="https://www.facebook.com/ads/library/?…view_all_page_id=…" aria-label="Ad Library link" className="h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
           {running ? (
             <button onClick={() => crawlCtl.current && crawlCtl.current.abort()} className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 hover:border-slate-300">Stop</button>

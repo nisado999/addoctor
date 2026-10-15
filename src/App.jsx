@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback, useDeferredValue, lazy, Suspense } from "react";
+import { Component, useState, useMemo, useEffect, useRef, useCallback, useDeferredValue, lazy, Suspense } from "react";
 import { CATEGORIES, TEMPLATES } from "./data";
 import { Icon, TemplateCard, Sidebar, BottomNav, tilt, holdClips } from "./ui";
 import { Hero } from "./hero";
@@ -33,6 +33,30 @@ const scrollTop = () => {
 const modalWait = <div className="fixed inset-0 z-50 bg-slate-900/40" />;
 const PAGE = 30; // cards added per step as the gallery scrolls
 const viewWait = <p role="status" className="mt-16 text-center text-sm text-slate-500">Loading...</p>;
+
+/* ------------------------------ Error guard ------------------------------ */
+// Keeps one broken screen or dialog from blanking the whole app. The usual cause is a page left open across a
+// publish: its screen files were renamed, so loading one fails, and a reload fetches the new ones.
+class Guard extends Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err) { try { track("app_error", { message: String((err && err.message) || err).slice(0, 120) }); } catch (e) { /* tracking is optional */ } }
+  render() {
+    if (!this.state.err) return this.props.children;
+    const stale = /dynamically imported module|Importing a module script failed|Failed to fetch|ChunkLoadError/i.test(String(this.state.err && this.state.err.message));
+    const box = (
+      <div role="alert" className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+        <p className="text-sm font-semibold text-slate-900">{stale ? "AdDoctor was updated" : "Something went wrong here"}</p>
+        <p className="mt-1 text-sm text-slate-500">{stale ? "Reload the page to get the latest version." : "Reload the page and try again. Nothing you saved is lost."}</p>
+        <div className="mt-4 flex justify-center gap-2">
+          <button onClick={() => location.reload()} className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700">Reload</button>
+          {!stale && <button onClick={() => this.setState({ err: null })} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300">Dismiss</button>}
+        </div>
+      </div>
+    );
+    return this.props.floating ? <div className="fixed inset-x-4 bottom-6 z-[60] mx-auto max-w-sm">{box}</div> : <div className="mt-10">{box}</div>;
+  }
+}
 
 /* -------------------------------- Vault -------------------------------- */
 
@@ -484,11 +508,11 @@ function App() {
               </div>
             )
           ) : view === "lab" ? (
-            <Suspense fallback={viewWait}><LabView notify={notify} /></Suspense>
+            <Guard key="lab"><Suspense fallback={viewWait}><LabView notify={notify} /></Suspense></Guard>
           ) : view === "pack" ? (
-            <Suspense fallback={viewWait}><PackView notify={notify} credits={credits} onSpend={spend} /></Suspense>
+            <Guard key="pack"><Suspense fallback={viewWait}><PackView notify={notify} credits={credits} onSpend={spend} /></Suspense></Guard>
           ) : view === "spy" ? (
-            <Suspense fallback={viewWait}><SpyView notify={notify} onRebuild={rebuild} /></Suspense>
+            <Guard key="spy"><Suspense fallback={viewWait}><SpyView notify={notify} onRebuild={rebuild} /></Suspense></Guard>
           ) : (
             <VaultView
               items={vaultList}
@@ -501,6 +525,7 @@ function App() {
         </main>
       </div>
 
+      <Guard floating>
       <Suspense fallback={modalWait}>
       {exam && (
         <ExamineModal
@@ -526,6 +551,7 @@ function App() {
 
       {studio && <StudioModal key={studio.id} tpl={studio} onClose={closeStudio} notify={notify} />}
       </Suspense>
+      </Guard>
 
       <BottomNav active={active} onNav={goto} vaultCount={vault.length} />
 

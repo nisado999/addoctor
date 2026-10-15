@@ -326,15 +326,7 @@ ${compact(ads, ads.length > 300 ? 60000 : 26000)}`;
     content.push({ type: "text", text: wf(`Creative ${i + 1}: used by ${im.n} ad${im.n === 1 ? "" : "s"}, ${im.format}${im.days != null ? ", live " + im.days + " days" : ""}, headline "${im.headline}"`) });
     content.push({ type: "image", source: { type: "base64", media_type: im.type, data: im.data } });
   });
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: 4000, messages: [{ role: "user", content }] }),
-  });
-  const j = await r.json();
-  if (!r.ok) throw new Error((j.error && j.error.message) || "Anthropic error " + r.status);
-  const text = ((j.content || []).find((b) => b.type === "text") || {}).text || "";
-  const out = parseJson(text);
+  const out = await askClaude(env, content, 6000);
   const list = (v, n, len) => (Array.isArray(v) ? v : []).map((x) => clip(x, len)).filter(Boolean).slice(0, n);
   return {
     slide: list(out.slide, 8, 400), insights: list(out.insights, 6, 400),
@@ -364,14 +356,20 @@ const stripFence = (t) => String(t || "").replace(/^```(?:json)?\s*/i, "").repla
 const parseJson = (text) => { const m = stripFence(text).match(/[\[{][\s\S]*[\]}]/); return JSON.parse(m ? m[0] : text); };
 const clip = (v, n) => wf(String(v == null ? "" : v)).slice(0, n);
 
+// The answer is requested as a forced tool call, so it arrives as an already-parsed object and a stray double quote
+// in an ad's text can no longer break it. If a model answers in plain text instead, that text is parsed as before.
+const REPLY_TOOL = { name: "reply", description: "Return the answer as the JSON object described in the instructions, with exactly those keys.", input_schema: { type: "object", additionalProperties: true } };
+
 async function askClaude(env, content, maxTokens = 2000, again = false) {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content }] }),
+    body: JSON.stringify({ model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content }], ...(again ? {} : { tools: [REPLY_TOOL], tool_choice: { type: "tool", name: "reply" } }) }),
   });
   const j = await r.json();
   if (!r.ok) throw new Error((j.error && j.error.message) || "Anthropic error " + r.status);
+  const tool = (j.content || []).find((b) => b.type === "tool_use");
+  if (tool && tool.input && typeof tool.input === "object" && Object.keys(tool.input).length) return tool.input;
   const text = ((j.content || []).find((b) => b.type === "text") || {}).text || "";
   try { return parseJson(text); } catch (e) {
     // Usually a double quote inside a string. Ask once for the same answer as valid JSON.
@@ -657,6 +655,51 @@ Inside JSON strings use single quotes when you quote words, never double quotes.
   };
 }
 
+/* ------------------------ Find an advertiser by name ------------------------ */
+// ScrapeCreators' Ad Library company search: 1 credit per search, returns the page id the Spy needs.
+async function brandSearch(env, b) {
+  const q = clip(b.q, 80).trim();
+  if (q.length < 2) throw new Error("Type at least 2 letters");
+  if (!env.SCRAPECREATORS_KEY) throw new Error("Brand search is not set up on the server. Paste an Ad Library link instead.");
+  const r = await fetch("https://api.scrapecreators.com/v1/facebook/adLibrary/search/companies?" + new URLSearchParams({ query: q }), { headers: { "x-api-key": env.SCRAPECREATORS_KEY } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.success === false) throw new Error("Brand search failed: " + String(j.message || j.error || r.status).slice(0, 120));
+  const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  return {
+    brands: (Array.isArray(j.searchResults) ? j.searchResults : []).filter((x) => x && x.page_id && !x.page_is_deleted).slice(0, 12).map((x) => ({
+      id: String(x.page_id).replace(/\D/g, ""), name: clip(x.name, 120), category: clip(x.category, 60),
+      likes: num(x.likes), ig: clip(x.ig_username, 60), igFollowers: num(x.ig_followers),
+      verified: /VERIFIED/.test(String(x.verification || "")), avatar: AD_IMG_HOST.test((() => { try { return new URL(x.image_uri).hostname; } catch (e) { return ""; } })()) ? String(x.image_uri) : "",
+    })),
+  };
+}
+
+/* ------------------------ Ask a question about one advertiser's ads ------------------------ */
+// The page sends the ads it already has (compact), so nothing is fetched again. Claude answers from them only
+// and names the ads it used as evidence, which the page shows as thumbnails.
+async function askAds(env, b) {
+  const question = clip(b.question, 400).trim();
+  if (!question) throw new Error("Ask a question first");
+  const ads = (Array.isArray(b.ads) ? b.ads : []).slice(0, 400);
+  if (!ads.length) throw new Error("Analyze an advertiser first");
+  const lines = ads.map((a, i) => `${i + 1} | ${clip(a.format, 12)} | ${Number.isFinite(Number(a.days)) ? Number(a.days) + "d" : "?"} | ${clip(a.start, 10) || "?"} | ${clip(a.headline, 140)}${a.body ? " / " + clip(a.body, 220) : ""}${a.cta ? " [" + clip(a.cta, 30) + "]" : ""}`).join("\n");
+  const history = (Array.isArray(b.history) ? b.history : []).slice(-4).map((h) => `Q: ${clip(h.q, 300)}\nA: ${clip(h.a, 700)}`).join("\n\n");
+  const prompt = `You are a senior paid-social strategist answering a question about ONE advertiser's Meta ads. Today is ${new Date().toISOString().slice(0, 10)}. Advertiser: ${clip(b.brand, 80) || "unknown"}.
+Each line is one ad: number | format | days running | first seen (YYYY-MM-DD) | headline / body [button].
+Answer only from these ads. Ad libraries show what runs, not spend or results, so treat long-running ads as likely winners and say so plainly when that matters. Never invent numbers, products or claims. If the ads cannot answer the question, say what is missing.
+${history ? "Earlier in this conversation:\n" + history + "\n" : ""}
+Question: ${question}
+
+Return ONLY JSON: {"answer":"a direct answer in 2 to 6 short paragraphs or bullets (lines starting with '- '), plain text, no markdown headings","evidence":[up to 6 ad numbers that best support the answer]}
+Inside JSON strings use single quotes when you quote words, never double quotes.
+
+ADS:
+${lines}`;
+  const o = await askClaude(env, prompt, 1400);
+  const ev = (Array.isArray(o.evidence) ? o.evidence : []).map((n) => Number(n)).filter((n) => Number.isInteger(n) && n >= 1 && n <= ads.length);
+  return { answer: String(o.answer || "").slice(0, 3000), evidence: [...new Set(ev)].slice(0, 6).map((n) => String(ads[n - 1].id || "")) };
+}
+
 async function makeReview(env, b) {
   const data = String(b.image || "").replace(/^data:image\/\w+;base64,/, "");
   if (!data || data.length > 3000000) throw new Error("image missing or too large");
@@ -714,7 +757,7 @@ Never invent facts about the product.`;
 //   DAILY_CAP      paid calls allowed per day across all visitors, default 300
 // Counters live in Cloudflare's edge cache, which is per data centre, so the numbers are approximate:
 // good enough to stop a script hammering the API, not an exact meter.
-const PAID = /^\/(start|page|analyze|creative|pack\/|make\/)/;
+const PAID = /^\/(start|page|analyze|creative|brands|ask|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -829,8 +872,11 @@ export default {
       }
       // 4. one creative broken down (hook, problem, solution, proof, offer, awareness stage)
       if (u.pathname === "/creative" && req.method === "POST") return json(env, await creativeBreakdown(env, await req.json()));
+      // 5. find an advertiser by name, and 6. ask a question about the ads already read
+      if (u.pathname === "/brands" && req.method === "POST") return json(env, await brandSearch(env, await req.json()));
+      if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await req.json()));
       // what this server can do, so the page can offer the right way to read the Ad Library
-      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true });
+      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", ...(env.SCRAPECREATORS_KEY ? ["brands"] : [])] });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
         const b = await req.json();
