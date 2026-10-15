@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "./ui";
-import { copyText, SPY_API, SPY_KEY, hasFeature } from "./shared.js";
+import { copyText, SPY_API, hasFeature } from "./shared.js";
+import { apiFetch, need, isCancel } from "./api.js";
 import { track } from "./track.js";
 
 /* A competitor's creatives as a media-first gallery, with a per-creative breakdown opened on demand.
@@ -48,18 +49,12 @@ function useBreakdown(ad, brand) {
     setSt({ data: null, err: "", busy: true });
     (async () => {
       try {
-        const r = await fetch(SPY_API + "/creative", {
-          method: "POST", signal: c.signal,
-          headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) },
-          body: JSON.stringify({ img: ad.img, headline: ad.headline, body: ad.body, cta: ad.cta, format: ad.format, days: ad.days, brand }),
-        });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(r.status === 404 ? "The AdDoctor server has not been updated for creative breakdowns yet." : j.error || "Request failed (" + r.status + ")");
+        const j = need(await apiFetch("/creative", { signal: c.signal, timeout: 60000, body: { img: ad.img, headline: ad.headline, body: ad.body, cta: ad.cta, format: ad.format, days: ad.days, brand } }), ["hook", "tags[]"]);
         cache.set(ad.libId, j);
         setSt({ data: j, err: "", busy: false });
         track("creative_breakdown", { format: ad.format, days: ad.days });
       } catch (e) {
-        if (!c.signal.aborted) setSt({ data: null, err: e.message || "The breakdown failed. Try again.", busy: false });
+        if (!isCancel(e) && !c.signal.aborted) setSt({ data: null, err: e.message || "The breakdown failed. Try again.", busy: false });
       }
     })();
     return () => c.abort();
@@ -217,9 +212,7 @@ function AdsChat({ ads, brand, onOpen }) {
     try {
       const compact = ads.slice(0, 400).map((a) => ({ id: a.libId, format: a.format, days: a.days, start: a.startMs ? new Date(a.startMs).toISOString().slice(0, 10) : "", headline: a.headline, body: String(a.body || "").slice(0, 220), cta: a.cta }));
       const history = thread.filter((x) => x.a).slice(-4).map((x) => ({ q: x.q, a: x.a }));
-      const r = await fetch(SPY_API + "/ask", { method: "POST", headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }, body: JSON.stringify({ brand, question: text, ads: compact, history }) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(r.status === 404 ? "The AdDoctor server has not been updated for questions yet." : j.error || "Request failed (" + r.status + ")");
+      const j = need(await apiFetch("/ask", { timeout: 90000, body: { brand, question: text, ads: compact, history } }), ["answer"]);
       setThread((t) => t.map((x, i) => (i === t.length - 1 ? { q: text, a: j.answer || "No answer came back.", evidence: Array.isArray(j.evidence) ? j.evidence : [] } : x)));
       track("ads_question", { ads_count: ads.length });
     } catch (e) {

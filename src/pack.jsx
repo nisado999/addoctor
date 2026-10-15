@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Icon } from "./ui";
 import { copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { apiFetch } from "./api.js";
 
 /* ------------------------------ Social Pack ------------------------------ */
 
@@ -17,12 +18,7 @@ const PACK_IDEAS = [
 ];
 
 function packHeaders() { return { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }; }
-async function packCall(path, body, signal) {
-  const r = await fetch(SPY_API + path, { method: "POST", signal, headers: packHeaders(), body: JSON.stringify(body) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error(j.error || "Request failed (" + r.status + ")"); e.status = r.status; throw e; }
-  return j;
-}
+const packCall = (path, body, signal) => apiFetch(path, { body, signal, timeout: path === "/pack/image" ? 150000 : 90000 });
 
 /* Shrink an image to a small JPEG for the post check. */
 function packShrink(src, maxW = 900) {
@@ -83,17 +79,24 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, busy }) {
           <img src={post.src} alt={post.title} className="h-full w-full object-cover" />
         ) : (
           <div className="grid h-full w-full place-items-center p-6 text-center">
-            {post.error ? (
+            {busy ? (
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+            ) : post.error ? (
               <div>
                 <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-rose-50 text-rose-600"><Icon.Alert className="h-5 w-5" /></div>
-                <p className="mt-3 text-sm font-semibold text-slate-900">This image did not render</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900">Not generated</p>
                 <p className="mt-1 text-xs text-slate-500">{post.error}</p>
-                <button onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Try again</button>
+                <button onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Retry</button>
               </div>
-            ) : (
+            ) : post.queued ? (
               <div>
                 <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
                 <p className="mt-3 text-xs font-medium text-slate-500">{post.title || "Preparing"}…</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Not generated</p>
+                <button disabled={busy} onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">Retry</button>
               </div>
             )}
           </div>
@@ -160,10 +163,20 @@ function PackView({ notify, credits, onSpend }) {
   const briefRef = useRef(null);
   const qualityRef = useRef("standard");
   const refsRef = useRef([]);
+  const life = useRef(new AbortController());   // aborted when this screen goes away, so nothing keeps spending
 
+  useEffect(() => {
+    const l = life.current;
+    return () => { l.abort(); };
+  }, []);
+
+  const unitOf = () => (qualityRef.current === "premium" ? 2 : 1);
   const unit = quality === "premium" ? 2 : 1;
   const cost = size * unit;
   const setP = (idx, patch) => { postsRef.current = postsRef.current.map((p) => (p.index === idx ? { ...p, ...patch } : p)); setPosts(postsRef.current); };
+
+  // Posts that never got an image stop spinning: they show "Not generated" and a Retry button.
+  const settle = () => { postsRef.current = postsRef.current.map((p) => (p.src ? p : { ...p, queued: false })); setPosts(postsRef.current); };
 
   const renderImage = async (post, fix, signal) => {
     const refs = refsRef.current.slice(0, 4);
@@ -205,6 +218,8 @@ function PackView({ notify, credits, onSpend }) {
     qualityRef.current = quality;
     refsRef.current = mode === "upload" ? files.map((f) => ({ data: f.src })) : mode === "store" ? picked.map((url) => ({ url })) : [];
     const c = new AbortController(); ctrl.current = c;
+    const onLife = () => c.abort();
+    life.current.signal.addEventListener("abort", onLife, { once: true });
     try {
       setStatus("Reading your product and setting the visual style…");
       const b = (await packCall("/pack/brief", { description: desc, audience, tone, language: "", images: mode === "upload" ? files.slice(0, 3).map((f) => f.src) : [], imageUrls: mode === "store" ? picked.slice(0, 3) : [] }, c.signal)).brief;
@@ -214,7 +229,7 @@ function PackView({ notify, credits, onSpend }) {
         const idx = all.slice(i, i + 6);
         setStatus(`Planning posts ${idx[0] + 1}–${idx[idx.length - 1] + 1} of ${size}…`);
         const got = (await packCall("/pack/posts", { brief: b, indexes: idx, total: size, photos: refsRef.current.length > 0 }, c.signal)).posts;
-        postsRef.current = postsRef.current.concat(got.map((p) => ({ ...p, src: "", error: "" })));
+        postsRef.current = postsRef.current.concat(got.map((p) => ({ ...p, src: "", error: "", queued: true })));
         setPosts(postsRef.current);
       }
       let done = 0; let failed = 0; let next = 0;
@@ -224,44 +239,50 @@ function PackView({ notify, credits, onSpend }) {
           const p = postsRef.current[next++];
           try {
             const im = await renderImage(p, "", c.signal);
-            setP(p.index, { ...im, error: "" }); done++;
+            setP(p.index, { ...im, error: "", queued: false }); done++;
+            onSpend(unitOf());   // charged per image actually delivered
           } catch (e) {
             if (c.signal.aborted) return;
-            setP(p.index, { error: e.message || "Image failed" }); failed++;
+            setP(p.index, { error: e.message || "Image failed", queued: false }); failed++;
           }
           setStatus(`Creating images… ${done + failed} of ${total}`);
         }
       };
       await Promise.all([worker(), worker()]);
       if (c.signal.aborted) return;
-      onSpend(Math.max(1, (done * unit)));
+      settle();
       setStatus(""); setPhase("done");
       notify(failed ? `${done} posts ready, ${failed} need a retry.` : `All ${done} posts are ready.`, 3200);
     } catch (e) {
+      settle();
       if (c.signal.aborted) return;
       setErr(e.message || "Something went wrong"); setPhase(postsRef.current.length ? "done" : "form"); setStatus("");
     }
   };
 
-  const stop = () => { if (ctrl.current) ctrl.current.abort(); setPhase(postsRef.current.length ? "done" : "form"); setStatus(""); };
+  const stop = () => { if (ctrl.current) ctrl.current.abort(); settle(); setPhase(postsRef.current.length ? "done" : "form"); setStatus(""); };
 
   const check = async (p) => {
     setBusy((b) => ({ ...b, [p.index]: true }));
     try {
       const small = await packShrink(p.src);
-      const rv = await packCall("/pack/review", { image: small, caption: [p.caption, (p.hashtags || []).join(" ")].join("\n"), overlayText: p.overlayText, brief: briefRef.current, refs: refsRef.current.slice(0, 3) });
+      const rv = await packCall("/pack/review", { image: small, caption: [p.caption, (p.hashtags || []).join(" ")].join("\n"), overlayText: p.overlayText, brief: briefRef.current, refs: refsRef.current.slice(0, 3) }, life.current.signal);
       setP(p.index, { review: rv });
-    } catch (e) { notify(e.message || "The check failed", 3000); }
+    } catch (e) { if (life.current.signal.aborted) return; notify(e.message || "The check failed", 3000); }
     setBusy((b) => ({ ...b, [p.index]: false }));
   };
 
   const fix = async (p, note) => {
+    if (credits < unitOf()) { notify(`This needs ${unitOf()} credit${unitOf() > 1 ? "s" : ""} and you have ${credits}.`, 3200); return; }
     setBusy((b) => ({ ...b, [p.index]: true }));
     try {
-      const im = await renderImage(p, note, null);
-      setP(p.index, { ...im, error: "", review: null });
-      onSpend(unit);
-    } catch (e) { setP(p.index, p.src ? {} : { error: e.message }); notify(e.message || "The image failed", 3200); }
+      const im = await renderImage(p, note, life.current.signal);
+      setP(p.index, { ...im, error: "", review: null, queued: false });
+      onSpend(unitOf());
+    } catch (e) {
+      if (life.current.signal.aborted) return;
+      setP(p.index, p.src ? {} : { error: e.message, queued: false }); notify(e.message || "The image failed", 3200);
+    }
     setBusy((b) => ({ ...b, [p.index]: false }));
   };
 

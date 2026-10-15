@@ -1724,7 +1724,7 @@ const TEMPLATES = [
     id: "sunday-drop", type: "static", trending: true,
     category: "Fashion", label: "Fashion", title: "Sunday Drop Bulletin",
     format: "4:5 · Static · Church bulletin card", framework: "Scarcity",
-    art: { kind: "restock", bg: "linear-gradient(160deg,#1e3a8a 0%,#0f172a 100%)", hl: "#93c5fd", hook: "New *Sunday* drop", big: "SUN", sub: "limited run", pills: ["Heavyweight", "Faith apparel"], cta: "Shop the drop", tag: "Faith apparel" },
+    art: { kind: "restock", bg: "linear-gradient(160deg,#1e3a8a 0%,#0f172a 100%)", hl: "#93c5fd", hook: "New *Sunday* drop", badge: "Limited run", sizes: [["S", true], ["M", true], ["L", true], ["XL", false]], big: "SUN", sub: "limited run", pills: ["Heavyweight", "Faith apparel"], cta: "Shop the drop", tag: "Faith apparel" },
     why: [
       "A printed bulletin card is a familiar object for the exact audience, so it feels like theirs.",
       "'Sunday drop' sets a schedule people can plan around.",
@@ -1932,7 +1932,7 @@ const TEMPLATES = [
     id: "replacement-promise", type: "static", trending: true,
     category: "Fashion", label: "Fashion", title: "Free Replacement Card",
     format: "4:5 · Static · Unboxing guarantee", framework: "Risk reversal",
-    art: { kind: "checklist", bg: "linear-gradient(160deg,#1c1917 0%,#0c0a09 100%)", hook: "*Defect?* Free replacement", items: ["Damaged in the post", "Misprinted", "Faulty stitching"], chip: "No restocking fees", tag: "Faith apparel" },
+    art: { kind: "checklist", bg: "linear-gradient(160deg,#1c1917 0%,#0c0a09 100%)", hl: "#fcd34d", hook: "*Defect?* Free replacement", items: ["Damaged in the post", "Misprinted", "Faulty stitching"], chip: "No restocking fees", tag: "Faith apparel" },
     why: [
       "A card inside the box is the exact moment a buyer wonders if anything could go wrong.",
       "Naming the three problems makes the promise specific and believable.",

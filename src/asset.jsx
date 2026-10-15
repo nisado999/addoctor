@@ -1,7 +1,79 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { nameTokens, ratioInfo } from "./analysis.js";
 
 /* ---------------- Creative asset: read, measure, samples ---------------- */
+
+/* Every upload goes through the same checks, so the studio and Examine give the same answers. */
+const MB = 1024 * 1024;
+const IMAGE_MAX = 20 * MB;
+const VIDEO_MAX = 500 * MB;   // a video is streamed from the file, not read into memory, so it can be bigger
+const MAX_PIXELS = 50e6;      // about 8000 x 6000; larger photos are slow to open and can crash a phone's tab
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|avif|bmp|svg|heic|heif)$/i;
+const VIDEO_EXT = /\.(mp4|m4v|mov|webm)$/i;
+const UNREADABLE = "That image could not be opened. It may be damaged or in a format this browser can't read. Try a JPG or PNG.";
+const HEIC = "This browser can't open HEIC photos. Save it as a JPG or PNG and try again (on iPhone: Settings > Camera > Formats > Most Compatible).";
+
+// Some systems send a file with no type, so the extension decides then.
+function fileKind(file) {
+  const type = (file && file.type) || "", name = (file && file.name) || "";
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("video/")) return "video";
+  if (!type && IMAGE_EXT.test(name)) return "image";
+  if (!type && VIDEO_EXT.test(name)) return "video";
+  return "";
+}
+const isHeic = (file) => /hei[cf]/i.test(file.type || "") || /\.hei[cf]$/i.test(file.name || "");
+const sizeMB = (n) => (n >= 10 * MB ? Math.round(n / MB) : Math.round((n / MB) * 10) / 10);
+
+/* Opens an image file. Resolves { img, w, h, done } (call done() once the image has been drawn) or rejects with a
+   sentence the upload box can show. `what` names the file in messages; `minSide` turns away icons and thumbnails. */
+function openImage(file, o = {}) {
+  const what = o.what || "image";
+  return new Promise((resolve, reject) => {
+    if (!file) return reject(new Error(`Choose ${what === "image" ? "an" : "a"} ${what} to upload.`));
+    if (fileKind(file) !== "image") return reject(new Error(o.typeMessage || `Choose a JPG, PNG or WEBP ${what}.`));
+    if (file.size > IMAGE_MAX) return reject(new Error(`That file is ${sizeMB(file.size)} MB. Choose ${what === "image" ? "an" : "a"} ${what} under 20 MB.`));
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    let settled = false;
+    const fail = (msg) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      img.onload = img.onerror = null;
+      URL.revokeObjectURL(url);
+      reject(new Error(msg));
+    };
+    const timer = setTimeout(() => fail(`That ${what} took too long to open. Try a smaller JPG or PNG.`), 20000);
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      // An SVG logo can come without a size of its own; it is drawn at 512 px then.
+      if ((!w || !h) && /svg/i.test(file.type || file.name || "")) { w = 512; h = 512; }
+      if (!w || !h) return fail(UNREADABLE);
+      if (o.minSide && Math.min(w, h) < o.minSide) return fail(`That ${what} is only ${w}×${h} px. Use one at least ${o.minSide} px on its shorter side.`);
+      if (w * h > MAX_PIXELS) return fail(`That ${what} is ${w}×${h} px, too large to work with in the browser. Resize it to 6000 px or less on its longer side.`);
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ img, w, h, done: () => URL.revokeObjectURL(url) });
+    };
+    img.onerror = () => fail(isHeic(file) ? HEIC : UNREADABLE);
+    img.src = url;
+  });
+}
+
+/* Overlapping uploads: each read takes a ticket, and a result that comes back after a newer read started (or after
+   the dialog closed) is dropped, so the newest choice always wins. */
+function useUploadTicket() {
+  const n = useRef(0);
+  return useMemo(() => ({ take: () => ++n.current, isLatest: (id) => id === n.current, drop: () => { n.current += 1; } }), []);
+}
+
+function Spinner({ className = "h-4 w-4" }) {
+  return (
+    <svg className={`${className} animate-spin`} viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity=".3" strokeWidth="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+  );
+}
 
 function measurePixels(src, sw, sh) {
   const scale = Math.min(1, 96 / Math.max(sw, sh));
@@ -31,72 +103,74 @@ function measurePixels(src, sw, sh) {
   };
 }
 
+/* A 200 px wide JPEG for the Vault. A very tall screenshot keeps its top 500 px, so a saved report stays small. */
 function makeThumb(src, sw, sh) {
   const tw = 200;
-  const th = Math.max(40, Math.round((tw * sh) / sw));
+  const full = sw > 0 && sh > 0 ? Math.max(40, Math.round((tw * sh) / sw)) : 250;
+  const th = Math.min(500, full);
   const c = document.createElement("canvas");
   c.width = tw;
   c.height = th;
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, tw, th);
-  ctx.drawImage(src, 0, 0, tw, th);
+  if (th < full) ctx.drawImage(src, 0, 0, sw, (sw * th) / tw, 0, 0, tw, th);
+  else ctx.drawImage(src, 0, 0, tw, th);
   return c.toDataURL("image/jpeg", 0.8);
 }
 
 function readAsset(file) {
   return new Promise((resolve, reject) => {
-    const isImg = file.type.startsWith("image/");
-    const isVid = file.type.startsWith("video/");
-    if (!isImg && !isVid) return reject(new Error("Choose a JPG, PNG or WEBP image, or an MP4 or MOV video."));
+    const kind = fileKind(file);
+    if (!kind) return reject(new Error("Choose a JPG, PNG or WEBP image, or an MP4 or MOV video."));
+    const base = { name: file.name, tags: nameTokens(file.name), tagSource: "filename", sample: false };
+    if (kind === "image") {
+      openImage(file, { what: "image", minSide: 32 }).then(({ img, w, h, done }) => {
+        try {
+          resolve({ ...base, kind: "image", w, h, dur: null, thumb: makeThumb(img, w, h), ...measurePixels(img, w, h) });
+        } catch (e) {
+          reject(new Error(UNREADABLE));
+        } finally {
+          done();
+        }
+      }, reject);
+      return;
+    }
+    if (file.size > VIDEO_MAX) return reject(new Error(`That video is ${sizeMB(file.size)} MB. Upload a thumbnail image of it instead.`));
     const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
     let finished = false;
-    const finish = (fn, v) => {
+    const finish = (fn, val) => {
       if (finished) return;
       finished = true;
+      clearTimeout(timer);
+      v.onloadedmetadata = v.onseeked = v.onerror = null;
+      // Stop the browser decoding a file nobody is waiting for any more.
+      v.removeAttribute("src");
+      try { v.load(); } catch (e) {}
       URL.revokeObjectURL(url);
-      fn(v);
+      fn(val);
     };
-    const fail = (msg) => finish(reject, new Error(msg));
-    if (isImg) {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const w = img.naturalWidth, h = img.naturalHeight;
-          finish(resolve, {
-            name: file.name, kind: "image", w, h, dur: null, thumb: makeThumb(img, w, h),
-            ...measurePixels(img, w, h), tags: nameTokens(file.name), tagSource: "filename", sample: false,
-          });
-        } catch (e) {
-          fail("That image could not be read. Try a JPG or PNG.");
-        }
-      };
-      img.onerror = () => fail("That image could not be read. Try a JPG or PNG.");
-      img.src = url;
-    } else {
-      const v = document.createElement("video");
-      v.muted = true;
-      v.playsInline = true;
-      v.preload = "auto";
-      const timer = setTimeout(() => fail("This browser cannot read that video. Upload a thumbnail image instead."), 8000);
-      v.onloadedmetadata = () => {
-        try { v.currentTime = Math.min(0.5, (isFinite(v.duration) && v.duration ? v.duration : 1) / 2); } catch (e) {}
-      };
-      v.onseeked = () => {
-        clearTimeout(timer);
-        try {
-          const w = v.videoWidth, h = v.videoHeight;
-          finish(resolve, {
-            name: file.name, kind: "video", w, h, dur: isFinite(v.duration) && v.duration ? Math.round(v.duration * 10) / 10 : null, thumb: makeThumb(v, w, h),
-            ...measurePixels(v, w, h), tags: nameTokens(file.name), tagSource: "filename", sample: false,
-          });
-        } catch (e) {
-          fail("This browser cannot read that video. Upload a thumbnail image instead.");
-        }
-      };
-      v.onerror = () => { clearTimeout(timer); fail("This browser cannot read that video. Upload a thumbnail image instead."); };
-      v.src = url;
-    }
+    const fail = (msg) => finish(reject, new Error(msg || "This browser cannot read that video. Upload a thumbnail image instead."));
+    const timer = setTimeout(() => fail(), 8000);
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.onloadedmetadata = () => {
+      if (!v.videoWidth || !v.videoHeight) return fail("That video has no picture this browser can read. Upload a thumbnail image instead.");
+      try { v.currentTime = Math.min(0.5, (isFinite(v.duration) && v.duration ? v.duration : 1) / 2); } catch (e) {}
+    };
+    v.onseeked = () => {
+      try {
+        const w = v.videoWidth, h = v.videoHeight;
+        const out = { ...base, kind: "video", w, h, dur: isFinite(v.duration) && v.duration ? Math.round(v.duration * 10) / 10 : null, thumb: makeThumb(v, w, h), ...measurePixels(v, w, h) };
+        finish(resolve, out);
+      } catch (e) {
+        fail();
+      }
+    };
+    v.onerror = () => fail();
+    v.src = url;
   });
 }
 
@@ -226,7 +300,9 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
             </div>
           </div>
           <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
-            <button onClick={pick} className="rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Replace</button>
+            <button onClick={pick} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 disabled:cursor-wait disabled:text-slate-400 disabled:hover:bg-transparent">
+              {busy ? <><Spinner className="h-3.5 w-3.5" /> Reading…</> : "Replace"}
+            </button>
             <button onClick={onClear} className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Remove</button>
           </div>
         </div>
@@ -239,13 +315,13 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
         >
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
             {busy ? (
-              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity=".3" strokeWidth="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+              <Spinner className="h-5 w-5" />
             ) : (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5"><path d="M12 15.5V4M7.5 8.5 12 4l4.5 4.5" /><path d="M4 14.5v3A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5v-3" /></svg>
             )}
           </span>
-          <p className="mt-3 text-sm font-semibold text-slate-900">{busy ? "Reading your creative…" : "Drag a creative here, or click to browse"}</p>
-          <p className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP, MP4 or MOV. It never leaves your browser.</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900" role="status">{busy ? "Reading your creative…" : "Drag a creative here, or click to browse"}</p>
+          <p className="mt-1 text-xs text-slate-500">JPG, PNG, WEBP, MP4 or MOV, images up to 20 MB. It never leaves your browser.</p>
         </div>
       )}
       {error && <p role="alert" className="mt-2 text-xs font-medium text-rose-600">{error}</p>}
@@ -253,4 +329,4 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
   );
 }
 
-export { measurePixels, makeThumb, readAsset, paintText, rrect, SAMPLE_PAINT, SAMPLE_META, renderSampleAsset, AssetZone };
+export { measurePixels, makeThumb, fileKind, openImage, readAsset, useUploadTicket, Spinner, paintText, rrect, SAMPLE_PAINT, SAMPLE_META, renderSampleAsset, AssetZone };

@@ -13,9 +13,10 @@ const layer = () => (window.dataLayer = window.dataLayer || []);
 // Consent commands must be pushed as an arguments object, the way Google's own gtag() does it.
 function gtag() { layer().push(arguments); }
 
-/* One thing the visitor did. Names are snake_case, like GA4's own events. */
+/* One thing the visitor did. Names are snake_case, like GA4's own events. Never throws: a broken dataLayer (another
+   script can replace it) must not break the screen that reported the event. */
 function track(event, params = {}) {
-  layer().push({ event, ...params });
+  try { layer().push({ event, ...params }); } catch (e) { /* nothing to report to */ }
 }
 
 const consentChoice = () => { try { return localStorage.getItem(CONSENT_KEY) || ""; } catch (e) { return ""; } };

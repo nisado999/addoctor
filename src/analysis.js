@@ -2,6 +2,8 @@
 /* AdDoctor diagnostic engine. Rule-based checks grounded in direct-response
    copy principles: hook, value clarity, offer friction, call to action. */
 
+import { scoreTone } from "./shared.js";
+
 var STOP_RE = /\b(stop|myth|mistakes?|never|secret|why|truth|wrong|nobody|quit|warning|don'?t|worst|hate)\b/i;
 var GENERIC_RE = /\b(best|premium|high[- ]quality|introducing|new|revolutionary|innovative|cutting[- ]edge|game[- ]changing|state[- ]of[- ]the[- ]art|world[- ]class|amazing|awesome)\b/gi;
 var JARGON_RE = /\b(revolutionary|innovative|cutting[- ]edge|game[- ]changing|state[- ]of[- ]the[- ]art|solutions?|leverage|synergy|seamless|next[- ]level|designed for all)\b/gi;
@@ -21,6 +23,17 @@ function matches(re, s) {
 function clip(s, n) {
   s = (s || "").trim();
   return s.length > n ? s.slice(0, n - 1).trim() + "…" : s;
+}
+/* Sentences end at . ! or ? followed by space. Written as a loop because splitting with a lookbehind
+   regex throws on Safari before 16.4. It gives the same pieces that split did. */
+function splitSentences(c) {
+  var out = [], re = /[.!?]\s+/g, last = 0, m;
+  while ((m = re.exec(c))) {
+    out.push(c.slice(last, m.index + 1));
+    last = m.index + m[0].length;
+  }
+  out.push(c.slice(last));
+  return out;
 }
 
 
@@ -225,7 +238,7 @@ function analyze(input) {
   var c = (input.copy || "").trim();
   var type = input.type === "video" ? "video" : "static";
   var all = h + " " + c;
-  var sentences = c ? c.split(/(?<=[.!?])\s+/) : [];
+  var sentences = c ? splitSentences(c) : [];
   var firstTwo = sentences.slice(0, 2).join(" ");
   var words = c ? c.split(/\s+/).length : 0;
 
@@ -370,7 +383,7 @@ function analyze(input) {
   return {
     score: score,
     status: score >= 70 ? "Healthy" : score >= 40 ? "Needs Immediate Attention" : "Critical",
-    tone: score >= 70 ? "good" : score >= 40 ? "warn" : "bad",
+    tone: scoreTone(score),
     vitals: vitals,
     weakest: weakest,
     leaks: leaks,
@@ -408,4 +421,4 @@ function prescriptionText(input, r) {
 }
 
 
-export { STOP_RE, GENERIC_RE, JARGON_RE, OUTCOME_RE, OFFER_RE, RISK_RE, CTA_RE, URGENCY_RE, WEAK_CTA_RE, clamp, matches, clip, STOP_WORDS, NAME_SKIP, stem, tokens, nameTokens, ratioInfo, scoreCreative, alignment, detectCategory, LIB, analyze, prescriptionText };
+export { STOP_RE, GENERIC_RE, JARGON_RE, OUTCOME_RE, OFFER_RE, RISK_RE, CTA_RE, URGENCY_RE, WEAK_CTA_RE, clamp, matches, clip, splitSentences, STOP_WORDS, NAME_SKIP, stem, tokens, nameTokens, ratioInfo, scoreCreative, alignment, detectCategory, LIB, analyze, prescriptionText };
