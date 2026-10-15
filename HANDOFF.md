@@ -33,6 +33,16 @@ Audits ad creatives, analyses competitor ads, generates new creatives. 263 galle
 - Open task 1 ("Place my product in scene") is done by the item above. Open task 2 (real video generator) is still open.
 - test-output/ holds the test images from that run and is git-ignored.
 
+## State after 2026-10-15: Spyglass-style creatives in Competitor Spy
+The user wants the "creatives" side of spyglass.so (ads first, organic later), in AdDoctor's existing white design.
+- src/creatives.jsx: CreativeGallery, shown in the Spy results. A 4:5 media grid of the advertiser's ads (format, days live, saved), filters (format, running 30+ days, saved), sort (longest live, newest, most versions), 24 at a time. Clicking one opens CreativePanel: the image, then hook / problem / solution / proof / offer / CTA, awareness stage, persona, visual, angle, tags and "why it may be working", with Rebuild, Save, Copy breakdown and Landing page. Saved creatives live in localStorage addoctor.creatives.v1 (array of Ad Library ids), not in the Vault.
+- AdsChat (same file): "Ask about these ads". The page sends the ads it already has (compact, max 400) to POST /ask; Claude answers from them and names up to 6 ads as evidence, shown as thumbnails that open the same panel.
+- Brand search in the Spy input (src/spy.jsx): POST /brands runs ScrapeCreators' Ad Library company search (1 credit) and fills in the Ad Library link for the picked page.
+- Worker routes added: /creative (Claude reads one ad image, only Meta image hosts are fetched), /brands, /ask. All three are under the paid-route limits. /caps now lists "features"; the page shows brand search and Ask only when /caps lists them, so the site can be published before the Worker is.
+- askClaude now asks for its JSON through a forced tool call ("reply"), so a double quote inside an ad's text can no longer break the reply. writeSlide goes through askClaude (it used to make its own call with no retry). Found because a real Admiral run on 2026-10-15 lost its whole Claude analysis to "Expected ',' or ']'" in the JSON. Not yet verified live: there is no Anthropic key on this PC, so it is tested only once the Worker is pasted.
+- App.jsx: a Guard error boundary around each screen and the dialogs. A page left open across a publish fails to load the renamed screen files; it now says "AdDoctor was updated, reload" instead of going blank.
+- Wrangler is not logged in on this PC, so the Worker is still pasted by hand (addoctor-api > Edit code > Deploy).
+
 ## What the user wants from templates (learned the hard way on 2026-10-05)
 - Videos must look like real footage. Simple, calm motion: a model holding one pose with the camera moving, or a product with moving light. Walking at the camera, hand gestures and anything with fingers get rejected as "awkward" or "obviously AI".
 - No yellow or orange glow in lighting. Natural or cool light.
