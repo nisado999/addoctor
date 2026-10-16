@@ -10,7 +10,6 @@ import { ErrorBoundary, lazyRetry } from "./boundary.jsx";
 import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
 import { SwipeView, useSwipe } from "./swipe.jsx";
 import { CommandPalette } from "./palette.jsx";
-import { ToolTour } from "./tour.jsx";
 import { loadVault, sanitizeVault, loadFavs, loadCredits, saveCredits, writeJSON } from "./storage.js";
 import { ApiError } from "./api.js";
 
@@ -788,10 +787,7 @@ function App() {
           <ErrorBoundary variant="view" label={view} resetKeys={[view]}>
           <div key={view} className={moved ? "view-in" : undefined}>
           {view === "explore" ? (
-            <>
-              <Hero onExamine={() => openExam({})} onSpy={() => goto("spy")} onPick={inspect} onBrowse={() => gridRef.current && gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <ToolTour onSpy={() => goto("spy")} onMake={() => goto("static")} onExamine={() => openExam({})} />
-            </>
+            <Hero onExamine={() => openExam({})} onSpy={() => goto("spy")} onPick={inspect} onBrowse={() => gridRef.current && gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" })} />
           ) : (
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">

@@ -98,11 +98,6 @@ function Hero({ onExamine, onBrowse, onPick, onSpy }) {
             )}
           </div>
 
-          <p className="hero-up mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500" style={{ "--d": "200ms" }}>
-            <span className="inline-flex items-center gap-1.5"><Icon.Check className="h-3.5 w-3.5 text-emerald-600" /> Examining your ads is free</span>
-            <span className="inline-flex items-center gap-1.5"><Icon.Check className="h-3.5 w-3.5 text-emerald-600" /> No card needed to start</span>
-          </p>
-
           {!wide && (
             <ul role="list" aria-label="Popular templates" className="hero-up -mx-5 mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-5 px-5 py-1 [scrollbar-width:none] sm:-mx-8 sm:scroll-px-8 sm:px-8 [&::-webkit-scrollbar]:hidden" style={{ "--d": "220ms" }}>
               {STRIP.map((t, i) => (
