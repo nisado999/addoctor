@@ -611,6 +611,25 @@ function SpyView({ onRebuild, notify }) {
 
   const lib = useMemo(() => (libRaw.trim() ? spyParseLib(libRaw) : null), [libRaw]);
   const libOk = lib && !lib.error;
+  const [dateMsg, setDateMsg] = useState("");
+  const datesMatch = !!libOk && lib.from === from && lib.to === to;
+  // Puts the chosen dates into the pasted link, so the link and the date range never disagree. Only the two date
+  // values change; the advertiser, country and everything else in the link stay as pasted.
+  const applyDates = () => {
+    if (!libOk) return;
+    if (!from || !to) { setDateMsg("Pick both a start and an end date."); return; }
+    if (from > to) { setDateMsg("Dates: the start must be on or before the end."); return; }
+    let t = libRaw.trim();
+    if (/^\d{5,}$/.test(t)) t = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country || "ALL"}&is_targeted_country=false&media_type=all&search_type=page&view_all_page_id=${t}`;
+    const put = (key, val) => {
+      const re = new RegExp("start_date(?:\\[|%5B)" + key + "(?:\\]|%5D)=\\d{4}-\\d\\d-\\d\\d", "i");
+      t = re.test(t) ? t.replace(re, `start_date[${key}]=${val}`) : t + (t.includes("?") ? "&" : "?") + `start_date[${key}]=${val}`;
+    };
+    put("min", from); put("max", to);
+    setLibRaw(t);
+    setDateMsg(`Applied: ${from} to ${to}.`);
+    notify("Dates applied to the link");
+  };
   useEffect(() => { if (libOk) { setCountry(lib.country || ""); if (lib.name) setBrand(lib.name); if (lib.from) setFrom(lib.from); if (lib.to) setTo(lib.to); } }, [lib]);
 
   const finish = (source, ads, slide, insights, b, more) => {
@@ -988,9 +1007,15 @@ ${spyCompact(ads)}`;
             </div>
           )}
           {opts && (
-            <div className="mt-3 grid max-w-md gap-3 sm:grid-cols-2">
-              <label className="block"><span className="text-xs font-semibold text-slate-700">From</span><input id="spy-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inp} /></label>
-              <label className="block"><span className="text-xs font-semibold text-slate-700">To</span><input id="spy-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inp} /></label>
+            <div className="mt-3 max-w-xl">
+              <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <label className="block"><span className="text-xs font-semibold text-slate-700">From</span><input id="spy-from" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setDateMsg(""); }} className={inp} /></label>
+                <label className="block"><span className="text-xs font-semibold text-slate-700">To</span><input id="spy-to" type="date" value={to} onChange={(e) => { setTo(e.target.value); setDateMsg(""); }} className={inp} /></label>
+                <button id="spy-apply-dates" type="button" onClick={applyDates} disabled={!libOk || running || datesMatch} className="h-11 rounded-xl border border-blue-200 bg-white px-5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-500 disabled:hover:bg-white">Apply</button>
+              </div>
+              <p role="status" className={`mt-2 text-xs ${/^(Dates|Pick)/.test(dateMsg) ? "font-medium text-rose-600" : "text-slate-500"}`}>
+                {dateMsg || (!libOk ? "Paste or pick an advertiser first, then choose the dates." : datesMatch ? "The link above uses these dates." : "Press Apply to put these dates into the link.")}
+              </p>
             </div>
           )}
         </div>
