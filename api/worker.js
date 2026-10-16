@@ -683,7 +683,7 @@ ${text}` }], b.quality);
 /* ------------------------ One competitor creative, broken down ------------------------ */
 // Claude reads one ad image (plus its text) and returns the pieces a creative strategist would note.
 // Only Meta's own image hosts are fetched, so this route can't be used to reach anything else.
-const AD_IMG_HOST = /(^|\.)(fbcdn\.net|facebook\.com|fbsbx\.com|cdninstagram\.com|tiktokcdn\.com|tiktokcdn-us\.com)$/i;
+const AD_IMG_HOST = /(^|\.)(fbcdn\.net|facebook\.com|fbsbx\.com|cdninstagram\.com|tiktokcdn(-[a-z]{2,3})?\.com|tiktokv\.(com|us|eu))$/i;
 const AWARENESS = ["unaware", "problem", "solution", "product", "most"];
 
 async function creativeBreakdown(env, b) {
@@ -798,7 +798,8 @@ async function organicPosts(env, b) {
     (Array.isArray(j.aweme_list) ? j.aweme_list : []).forEach((it) => { const p = ttPost(it, tt); if (p.id && !p.ad) out.posts.push(p); });
   })().catch((e) => out.notes.push("TikTok: " + e.message)));
   await Promise.all(jobs);
-  const score = (p) => (p.views || p.likes * 20) + p.comments * 50 + p.shares * 30;
+  // Views exist only for videos (and Instagram photos have none), so ranking by engagement keeps both comparable.
+  const score = (p) => p.likes + p.comments * 5 + p.shares * 3;
   out.posts = out.posts.filter((p) => p.id && (p.thumb || p.caption)).sort((a, c) => score(c) - score(a)).slice(0, 48);
   if (!out.posts.length && !out.notes.length) out.notes.push("No public posts came back for that handle.");
   return out;

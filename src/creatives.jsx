@@ -318,7 +318,7 @@ function OrganicPosts({ brand, hint, onOpen }) {
   return (
     <section className="mt-10" id="spy-organic" aria-label="Organic posts">
       <h3 className="text-base font-semibold text-slate-900">Organic posts</h3>
-      <p className="text-xs text-slate-500">Their best Instagram and TikTok posts, ranked by views and engagement. Add a handle or a profile link.</p>
+      <p className="text-xs text-slate-500">Their best Instagram and TikTok posts, ranked by likes, comments and shares. Add a handle or a profile link.</p>
       <form className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" onSubmit={(e) => { e.preventDefault(); load(); }}>
         <input value={ig} onChange={(e) => setIg(e.target.value)} placeholder="Instagram handle, e.g. glossier" aria-label="Instagram handle" className={field} />
         <input value={tt} onChange={(e) => setTt(e.target.value)} placeholder="TikTok handle, e.g. glossier" aria-label="TikTok handle" className={field} />
