@@ -182,6 +182,14 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error) {
     reportError(error, { where: this.props.label || "app" });
+    // A tab opened before a new version was published asks for files that are gone. One reload fetches the new
+    // version; the minute-long guard stops a loop if the cause is something else (a real outage, an ad blocker).
+    if (isChunkError(error) && typeof navigator !== "undefined" && navigator.onLine !== false) {
+      try {
+        const last = Number(sessionStorage.getItem("addoctor.chunk-reload") || 0);
+        if (Date.now() - last > 60000) { sessionStorage.setItem("addoctor.chunk-reload", String(Date.now())); location.reload(); }
+      } catch (e) { /* storage blocked: the buttons below still work */ }
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
