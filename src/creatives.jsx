@@ -86,8 +86,8 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
   const winner = ad.days !== null && ad.days !== undefined && ad.days >= 30;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]" {...overlayProps}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="creative-title" className="flex h-full w-full max-w-[980px] flex-col overflow-y-auto bg-white shadow-2xl md:flex-row">
+    <div className="dlg-veil fixed inset-0 z-50 flex justify-end" {...overlayProps}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="creative-title" className="flex h-full w-full max-w-[980px] dlg-panel flex-col overflow-y-auto md:flex-row">
         <div className="shrink-0 bg-slate-100 md:sticky md:top-0 md:h-full md:w-[42%]">
           <div className="grid h-full place-items-center p-4 md:p-6">
             {ad.img ? <img src={ad.img} alt={`Ad creative from ${brand || ad.advertiser || "a competitor"}`} referrerPolicy="no-referrer" className="max-h-[70vh] w-full rounded-xl object-contain md:max-h-[88vh]" /> : <p className="text-sm text-slate-500">No image for this ad.</p>}

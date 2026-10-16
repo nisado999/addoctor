@@ -7,6 +7,7 @@ import { useDialog } from "./dialog.jsx";
    Arrow keys move, Enter runs, Escape closes. */
 
 const PAGES = [
+  { id: "home", label: "Home", hint: "Start page", icon: Icon.Home, keys: "home start main" },
   { id: "explore", label: "Explore Templates", hint: "Proven ad formats", icon: Icon.Grid, keys: "templates gallery browse" },
   { id: "static", label: "Static Ads", hint: "Make an image ad", icon: Icon.Layout, keys: "image create make" },
   { id: "pack", label: "Social Pack", hint: "A month of organic posts", icon: Icon.Image, keys: "posts instagram organic month" },
@@ -65,8 +66,8 @@ export function CommandPalette({ onClose, onGo, onExamine, onTemplate, extra = [
 
   let i = -1;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/30 px-4 pt-[12vh]" {...overlayProps}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Jump to" className="w-full max-w-xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
+    <div className="dlg-veil fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]" {...overlayProps}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Jump to" className="w-full max-w-xl dlg-panel overflow-hidden rounded-[22px]">
         <div className="flex items-center gap-3 border-b border-slate-100 px-4">
           <Icon.Search className="h-4 w-4 shrink-0 text-slate-400" />
           <input

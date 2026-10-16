@@ -148,14 +148,14 @@ function DialogFallback({ error, onRetry, onClose }) {
   const id = useId();
   const { overlayProps, requestClose } = useDialog({ onClose: onClose || noop, panelRef, initialFocusRef: retryRef, closeOnBackdrop: !!onClose });
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-6" {...overlayProps}>
+    <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" {...overlayProps}>
       <div
         ref={panelRef} role="alertdialog" aria-modal="true" aria-labelledby={id + "t"} aria-describedby={id + "d"}
         style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))" }}
-        className="relative w-full max-w-sm rounded-t-3xl bg-white px-6 pt-10 text-center shadow-2xl shadow-slate-900/20 sm:rounded-3xl"
+        className="dlg-panel relative w-full max-w-sm rounded-t-[28px] px-6 pt-10 text-center sm:rounded-[28px]"
       >
         {onClose && (
-          <button onClick={requestClose} aria-label="Close" className="absolute right-4 top-4 rounded-full border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+          <button onClick={requestClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
             <Icon.Close className="h-4 w-4" />
           </button>
         )}

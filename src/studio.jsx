@@ -1326,19 +1326,19 @@ function StudioModal({ tpl, onClose, notify }) {
   const field = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-6" onClick={onClose}>
+    <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" onClick={onClose}>
       <div
         role="dialog" aria-modal="true" aria-labelledby="st-title" onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        className="relative flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl shadow-slate-900/20 sm:rounded-3xl"
+        className="relative flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden dlg-panel rounded-t-[28px] sm:rounded-[28px]"
       >
-        <header className="flex items-start gap-3.5 border-b border-slate-100 px-6 py-5 md:px-8">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/30"><Icon.Wand className="h-5 w-5" /></span>
+        <header className="dlg-head flex items-start gap-3.5 px-6 py-5 md:px-8">
+          <span className="dlg-icon grid h-11 w-11 shrink-0 place-items-center rounded-2xl"><Icon.Wand className="h-5 w-5" /></span>
           <div className="min-w-0 flex-1 pr-8">
-            <h2 id="st-title" className="text-xl font-semibold tracking-tight text-slate-900">Creative Synthesizer</h2>
+            <h2 id="st-title" className="font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">Creative Synthesizer</h2>
             <p className="mt-0.5 truncate text-[13px] text-slate-500">{tpl.title} · {tpl.format}</p>
           </div>
-          <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 rounded-full border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+          <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
             <Icon.Close className="h-4 w-4" />
           </button>
         </header>

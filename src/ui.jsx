@@ -41,6 +41,7 @@ const Icon = {
   Upload: (p) => (<svg {...svgBase} {...p}><path d="M12 15.5v-11M7.5 8.5 12 4l4.5 4.5" /><path d="M4.5 16.5v2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2" /></svg>),
   Gap: (p) => (<svg {...svgBase} {...p}><path d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4" /><circle cx="12" cy="12" r="2.2" /></svg>),
   Heart: (p) => (<svg {...svgBase} strokeWidth="2" {...p}><path d="M12 20.3s-7.5-4.4-7.5-10a4.3 4.3 0 0 1 7.5-2.9 4.3 4.3 0 0 1 7.5 2.9c0 5.6-7.5 10-7.5 10z" /></svg>),
+  Home: (p) => (<svg {...svgBase} {...p}><path d="M3.5 10.5 12 3.5l8.5 7" /><path d="M5.5 9v10a1.5 1.5 0 0 0 1.5 1.5h3.5v-6h3v6H17a1.5 1.5 0 0 0 1.5-1.5V9" /></svg>),
   Layout: (p) => (<svg {...svgBase} {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M3.5 9.5h17M10 9.5v11" /></svg>),
 };
 
@@ -217,7 +218,7 @@ const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use th
   return (
     <li data-tilt data-reveal className="tilt group relative list-none" style={{ "--i": i }}>
       <article className="group/card relative flex flex-col">
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10">
+        <div className="card-frame relative aspect-[4/5] w-full overflow-hidden rounded-[20px] bg-slate-100">
           <Creative t={t} lazy />
           <span className="tilt-glare" />
 
@@ -232,8 +233,8 @@ const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use th
             )}
           </div>
 
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/65 via-slate-950/30 to-slate-950/10 opacity-0 transition duration-300 group-hover:opacity-100 group-has-[:focus-visible]/card:opacity-100">
-            <span className="inline-flex translate-y-1.5 items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-lg shadow-blue-950/40 transition duration-300 group-hover:translate-y-0">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[3] flex items-center justify-center bg-gradient-to-t from-slate-950/55 via-blue-950/20 to-transparent opacity-0 transition duration-300 group-hover:opacity-100 group-has-[:focus-visible]/card:opacity-100">
+            <span className="inline-flex translate-y-2 scale-95 items-center gap-1.5 rounded-full bg-white/95 px-4 py-2 text-[13px] font-semibold text-slate-950 shadow-[0_10px_30px_-8px_rgba(11,10,9,.55)] backdrop-blur transition duration-300 group-hover:translate-y-0 group-hover:scale-100">
               <Icon.Wand className="h-4 w-4" /> {action}
             </span>
           </div>
@@ -241,7 +242,7 @@ const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use th
 
         <div className="px-1 pt-3">
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{t.label}</p>
-          <h3 className="mt-1 text-[14px] font-semibold leading-snug tracking-tight text-slate-900">{t.title}</h3>
+          <h3 className="mt-1 text-[15px] font-semibold leading-snug tracking-[-0.01em] text-slate-950">{t.title}</h3>
           <button
             type="button" onClick={() => onInspect(t)}
             className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-blue-600 focus:outline-none after:absolute after:inset-0 after:z-[3] after:rounded-2xl focus-visible:text-blue-700 focus-visible:after:ring-2 focus-visible:after:ring-blue-600 focus-visible:after:ring-offset-4"
@@ -336,10 +337,10 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
         role={drawer ? "dialog" : undefined} aria-modal={drawer ? "true" : undefined} aria-label={drawer ? "Menu" : undefined}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         // Opening shows the menu at once (so focus can move into it); closing hides it only after it has slid away.
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white duration-200 lg:translate-x-0 ${open ? "translate-x-0 transition-transform" : "-translate-x-full transition-[transform,visibility] max-lg:invisible"}`}
+        className={`side-glass fixed inset-y-0 left-0 z-40 flex w-64 flex-col duration-200 lg:translate-x-0 ${open ? "translate-x-0 transition-transform" : "-translate-x-full transition-[transform,visibility] max-lg:invisible"}`}
       >
         <div className="flex h-16 shrink-0 items-center gap-2 pl-4 pr-3">
-          <button onClick={() => { onNav("explore"); onClose(); }} aria-label="AdDoctor: Explore Templates" className={`rounded-lg p-1 ${ring}`}>
+          <button onClick={() => { onNav("home"); onClose(); }} aria-label="AdDoctor: Home" className={`rounded-lg p-1 ${ring}`}>
             <img src={LOGO_SRC} alt="" width="141" height="26" className="block h-[26px] w-auto select-none" draggable={false} />
           </button>
           <button ref={closeRef} onClick={onClose} aria-label="Close menu" className={`ml-auto rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden ${ring}`}>
@@ -350,7 +351,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
         <div className="px-4 pt-1">
           <button
             onClick={() => { onExamine(); onClose(); }}
-            className={`btn-glow flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition active:scale-[.98] ${ring}`}
+            className={`btn-ink flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold active:scale-[.98] ${ring}`}
           >
             <Icon.Plus className="h-4 w-4" />
             Examine / Generate
@@ -360,8 +361,8 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
         <div className="mt-5 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3">
           <nav aria-label="Workspace" className="flex flex-col gap-5">
             {(bill && bill.on ? NAV.map((g) => (g.head === "Library" ? { ...g, items: [...g.items, { id: "plans", label: "Plans & credits", icon: Icon.Tag }] } : g)) : NAV).map((g) => (
-              <div key={g.head}>
-                <p className={navHead}>{g.head}</p>
+              <div key={g.head || "top"}>
+                {g.head && <p className={navHead}>{g.head}</p>}
                 <div className="flex flex-col gap-px">
                   {g.items.map((n) => {
                     const on = active === n.id;
@@ -372,7 +373,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
                         key={n.id}
                         onClick={() => { onNav(n.id); onClose(); }}
                         aria-current={on ? "page" : undefined}
-                        className={`group flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-left text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "bg-slate-100 font-semibold text-slate-900" : n.quiet ? "text-slate-500 hover:bg-slate-50 hover:text-slate-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                        className={`group flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "nav-on font-semibold text-slate-950" : n.quiet ? "text-slate-500 hover:bg-white/70 hover:text-slate-700" : "text-slate-600 hover:translate-x-0.5 hover:bg-white/70 hover:text-slate-950"}`}
                       >
                         <I className={`h-4 w-4 shrink-0 ${on ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
                         <span className="flex-1 truncate">{n.label}</span>
@@ -465,13 +466,13 @@ const TABS = [
 ];
 function BottomNav({ active, onNav, vaultCount }) {
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+    <nav aria-label="Main" className="glass fixed inset-x-0 bottom-0 z-30 shadow-[0_-1px_0_rgba(21,20,18,.08)] lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <div className="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
         {TABS.map((n) => {
           const on = active === n.id;
           const I = n.icon;
           return n.main ? (
-            <button key={n.id} onClick={() => onNav(n.id)} aria-label="Examine an ad" className="btn-glow mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-blue-500 to-blue-600 text-white ring-4 ring-white transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+            <button key={n.id} onClick={() => onNav(n.id)} aria-label="Examine an ad" className="btn-ink mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full ring-4 ring-[#f5f3ee] transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
               <I className="h-6 w-6" />
             </button>
           ) : (

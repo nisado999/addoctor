@@ -56,25 +56,25 @@ function AuthModal({ onClose, notify }) {
   const btn = "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center sm:p-6" onClick={onClose}>
+    <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" onClick={onClose}>
       <div
         id="auth" role="dialog" aria-modal="true" aria-labelledby="auth-title" onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        className="relative w-full max-w-sm rounded-t-3xl bg-white p-6 shadow-2xl shadow-slate-900/20 sm:rounded-3xl sm:p-7"
+        className="relative w-full max-w-sm dlg-panel rounded-t-[28px] p-6 sm:rounded-[28px] sm:p-7"
       >
-        <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 rounded-full border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+        <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
           <Icon.Close className="h-4 w-4" />
         </button>
 
         {sent ? (
           <>
-            <h2 id="auth-title" className="pr-10 text-xl font-semibold tracking-tight text-slate-900">Check your email</h2>
+            <h2 id="auth-title" className="pr-10 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">Check your email</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">We sent a confirmation link to <b className="font-semibold text-slate-900">{email.trim()}</b>. Open it to finish creating your account, then come back here.</p>
             <button onClick={onClose} className={`${btn} mt-6 bg-blue-600 text-white hover:bg-blue-700`}>Done</button>
           </>
         ) : (
           <>
-            <h2 id="auth-title" className="pr-10 text-xl font-semibold tracking-tight text-slate-900">{mode === "up" ? "Create your account" : "Sign in to AdDoctor"}</h2>
+            <h2 id="auth-title" className="pr-10 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">{mode === "up" ? "Create your account" : "Sign in to AdDoctor"}</h2>
             <p className="mt-1 text-[13px] text-slate-500">{mode === "up" ? "Free to start. No card needed." : "Welcome back."}</p>
 
             {opts.google && (

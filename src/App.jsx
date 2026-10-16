@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, use
 import { CATEGORIES, TEMPLATES } from "./data";
 import { Icon, TemplateCard, TemplateGrid, Sidebar, BottomNav, holdClips } from "./ui";
 import { Hero } from "./hero";
+import { Bento } from "./bento.jsx";
+import SplitText from "./components/bits/SplitText/SplitText.jsx";
 import { TONE, inputKey } from "./shared.js";
 import { track, setConsent, needsConsent } from "./track.js";
 import { authWanted, watchAuth, signOut, deleteAccount } from "./auth.js";
@@ -10,7 +12,7 @@ import { ErrorBoundary, lazyRetry } from "./boundary.jsx";
 import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
 import { SwipeView, useSwipe } from "./swipe.jsx";
 import { CommandPalette } from "./palette.jsx";
-import { scrollToEl } from "./motion.js";
+
 import { loadVault, sanitizeVault, loadFavs, loadCredits, saveCredits, writeJSON } from "./storage.js";
 import { ApiError } from "./api.js";
 
@@ -46,8 +48,8 @@ function ModalWait({ onClose }) {
   const panelRef = useRef(null);
   const { overlayProps, requestClose } = useDialog({ onClose, panelRef });
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-6" {...overlayProps}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Loading" className="flex w-full max-w-[15rem] flex-col items-center rounded-3xl bg-white px-6 py-7 text-center shadow-2xl shadow-slate-900/20">
+    <div className="dlg-veil fixed inset-0 z-50 grid place-items-center p-6" {...overlayProps}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Loading" className="flex w-full max-w-[15rem] flex-col items-center dlg-panel rounded-[28px] px-6 py-7 text-center">
         <span className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" aria-hidden="true" />
         <p role="status" className="mt-3 text-sm font-medium text-slate-600">Loading…</p>
         <button onClick={requestClose} className="mt-4 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Close</button>
@@ -122,6 +124,7 @@ function VaultView({ items, total, query, onClearSearch, onOpen, onRemove, onExa
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 
 const VIEWS = {
+  home: { title: "Home" },
   explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one, add your logo, or make a new one in its style." },
   video: { title: "Video Generator", studio: true },
   static: { title: "Static Ads", studio: true },
@@ -158,9 +161,9 @@ const OWNERS = String(import.meta.env.VITE_OWNER_EMAILS || "").split(",").map((s
 const isView = (id) => Object.prototype.hasOwnProperty.call(VIEWS, id) && id !== "video"; // not #constructor and the like
 function viewFromHash() {
   const id = typeof location !== "undefined" ? location.hash.slice(1) : "";
-  return isView(id) ? id : "explore";
+  return isView(id) ? id : "home";
 }
-const viewUrl = (id) => (id === "explore" ? location.pathname + location.search : "#" + id);
+const viewUrl = (id) => (id === "home" ? location.pathname + location.search : "#" + id);
 // A screen name that does not exist (#nope, #video) is dropped from the address. Anything else in the hash
 // (sign-in replies such as #error=...) is left alone.
 function tidyHash() {
@@ -313,7 +316,7 @@ function App() {
   }, [toast]);
 
   useEffect(() => {
-    document.title = view === "explore" ? "AdDoctor – ad creative audits and templates" : `${VIEWS[view].title} – AdDoctor`;
+    document.title = view === "home" ? "AdDoctor – ad creative audits and templates" : `${VIEWS[view].title} – AdDoctor`;
     // The app is one page, so each screen is reported as its own page view.
     track("screen_view", { screen_name: view, page_title: document.title, page_path: location.pathname + location.hash });
   }, [view]);
@@ -691,7 +694,7 @@ function App() {
   }, [askConsent]);
 
   const active = exam ? "examine" : view;
-  const isGrid = view !== "vault" && view !== "plans" && !KEEP.includes(view);
+  const isGrid = view !== "home" && view !== "vault" && view !== "plans" && !KEEP.includes(view);
   const V = VIEWS[view];
   const inStudio = !!V.studio;
   const inspect = useCallback((tp) => { if (inStudio) return setStudio(tp); track("template_open", tplInfo(tp)); setLook(tp); }, [inStudio]);
@@ -710,7 +713,7 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 antialiased">
+    <div className="app-bg min-h-screen font-sans text-slate-900 antialiased">
       <a
         href="#main" onClick={(e) => { e.preventDefault(); if (mainRef.current) mainRef.current.focus(); }}
         className="sr-only rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-lg ring-1 ring-slate-200 focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
@@ -724,32 +727,34 @@ function App() {
         pinned={pinned} pinnedTotal={favs.length} onPick={pickPinned} onShowPinned={showPinned}
       />
 
-      <div className="min-h-screen bg-slate-50/50 lg:pl-64">
-        <header className="sticky z-20 border-b border-slate-200/80 bg-white/95 lg:bg-white/85 lg:backdrop-blur" style={{ top: "env(safe-area-inset-top, 0px)" }}>
+      <div className="app-main min-h-screen lg:pl-64">
+        <header className="top-glass sticky z-20" style={{ top: "env(safe-area-inset-top, 0px)" }}>
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button onClick={() => setMenu(true)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Open menu" aria-expanded={menu}>
               <Icon.Menu className="h-5 w-5" />
             </button>
             {/* Below lg the sidebar (and its logo) is off-screen, so the name goes here. On a phone it makes room
                 while the visitor is typing a search. */}
-            <button onClick={() => goto("explore")} aria-label="AdDoctor: Explore Templates" className={`-ml-1 shrink-0 rounded-lg p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 lg:hidden ${searchOn ? "max-sm:hidden" : ""}`}>
+            <button onClick={() => goto("home")} aria-label="AdDoctor: Home" className={`-ml-1 shrink-0 rounded-lg p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 lg:hidden ${searchOn ? "max-sm:hidden" : ""}`}>
               <img src="./logo.png" alt="AdDoctor" width={98} height={18} className="block h-[18px] w-auto select-none sm:h-5" draggable={false} />
             </button>
-            <div className={`relative min-w-0 flex-1 md:max-w-md ${isGrid || view === "vault" ? "" : "invisible"}`}>
+            <div className={`relative min-w-0 flex-1 md:max-w-md ${isGrid || view === "vault" || view === "home" ? "" : "invisible"}`}>
               <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
-                id="search" ref={searchRef} type="search" value={q} onChange={(e) => setQ(e.target.value)}
+                id="search" ref={searchRef} type="search" value={q}
+                // Searching from Home takes you to the gallery, where the results are.
+                onChange={(e) => { setQ(e.target.value); if (view === "home" && e.target.value.trim()) goto("explore"); }}
                 onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
                 onFocus={() => setSearchOn(true)} onBlur={() => setSearchOn(false)}
                 placeholder={view === "vault" ? "Search saved reports..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search saved reports" : "Search templates, niches, formats"}
-                className="h-10 w-full rounded-full border border-slate-200 bg-slate-50/80 pl-10 pr-4 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                className="h-10 w-full rounded-full border border-slate-900/[.08] bg-white/75 pl-10 pr-4 shadow-[inset_0_1px_2px_rgba(21,20,18,.05)] text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
               {!q && <kbd className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 md:block">/</kbd>}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <button
                 onClick={() => setPalette(true)} aria-label="Jump to a page, action or template" aria-keyshortcuts="Control+K Meta+K"
-                className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition-colors duration-150 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 md:inline-flex"
+                className="btn-soft hidden h-9 items-center gap-2 rounded-full px-3.5 text-[13px] font-medium text-slate-700 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 md:inline-flex"
               >
                 Jump to
                 <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-px font-mono text-[10px] font-medium text-slate-500">{IS_MAC ? "⌘K" : "Ctrl K"}</kbd>
@@ -776,7 +781,7 @@ function App() {
                   )}
                 </div>
               ) : authReady ? (
-                <button id="signin" ref={signinRef} onClick={() => openSignIn("in")} className="inline-flex items-center rounded-full bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">Sign in</button>
+                <button id="signin" ref={signinRef} onClick={() => openSignIn("in")} className="btn-ink inline-flex h-9 items-center rounded-full px-4 text-[13px] font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">Sign in</button>
               ) : (
                 <span className="h-9 w-9" aria-hidden="true" />
               )}
@@ -787,12 +792,30 @@ function App() {
         <main id="main" ref={mainRef} tabIndex={-1} className="px-4 pb-28 pt-6 focus:outline-none sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
           <ErrorBoundary variant="view" label={view} resetKeys={[view]}>
           <div key={view} className={moved ? "view-in" : undefined}>
-          {view === "explore" ? (
-            <Hero onExamine={() => openExam({})} onSpy={() => goto("spy")} onPick={inspect} onBrowse={() => scrollToEl(gridRef.current)} />
+          {view === "home" ? (
+            <>
+              <Hero onExamine={() => openExam({})} onSpy={() => goto("spy")} onPick={inspect} onBrowse={() => goto("explore")} />
+              <Bento
+                onExamine={() => openExam({})} onSpy={() => goto("spy")} onPack={() => goto("pack")} onVault={() => goto("vault")}
+                onPalette={() => setPalette(true)} onBrowse={() => goto("explore")}
+              />
+            </>
+          ) : view === "explore" ? (
+            <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+              <div className="min-w-0 max-w-2xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600">Explore Templates</p>
+                {/* React Bits SplitText: the words rise out of a mask as the page opens. */}
+                <SplitText
+                  tag="h1" text="Start from an ad that already works." splitType="words" effect="rise" mask delay={45} duration={0.9} textAlign="left"
+                  className="font-display mt-3 text-[32px] font-extrabold leading-[1.02] tracking-[-0.04em] text-slate-950 sm:text-[46px]"
+                />
+              </div>
+              <p className="max-w-sm text-[15px] leading-relaxed text-slate-600">Pick a format, add your logo, or make a new one in its style with your own product.</p>
+            </div>
           ) : (
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[28px]">
+              <h1 className="font-display text-[30px] font-extrabold leading-[1.05] tracking-[-0.035em] text-slate-950 sm:text-[40px]">
                 {inStudio ? "Creative Studio" : V.title}
                 {inStudio && <span className="ml-3 inline-flex translate-y-[-3px] items-center rounded-full bg-blue-50 px-2.5 py-1 align-middle text-xs font-semibold text-blue-700 ring-1 ring-blue-100">{view === "video" ? "Video" : "Static"}</span>}
               </h1>
@@ -812,7 +835,7 @@ function App() {
                   return (
                     <button
                       key={c} onClick={() => setCat(c)} aria-pressed={on}
-                      className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition active:scale-95 [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-slate-900 bg-slate-900 text-white shadow-md shadow-slate-900/20" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900"}`}
+                      className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition active:scale-95 [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-slate-950 bg-slate-950 text-white shadow-[0_6px_16px_-6px_rgba(11,10,9,.5)]" : "border-slate-900/[.08] bg-white/80 text-slate-600 shadow-[0_1px_2px_rgba(21,20,18,.05)] hover:-translate-y-px hover:border-slate-900/20 hover:bg-white hover:text-slate-950"}`}
                     >
                       {c}
                       <span className={`ml-1.5 text-[11px] tabular-nums ${on ? "text-white/70" : "text-slate-500"}`}>{catCounts[c] || 0}</span>
@@ -859,7 +882,7 @@ function App() {
           {isGrid ? (
             list.length ? (
               <>
-              <TemplateGrid label={inStudio ? "Static templates" : "Templates"} className="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 xl:gap-x-5">
+              <TemplateGrid label={inStudio ? "Static templates" : "Templates"} className="mt-7 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-5 xl:gap-x-6">
                 {list.slice(0, shown).map((t, i) => <TemplateCard
                     key={t.id} t={t} i={i % 10} fav={favs.includes(t.id)} onFav={toggleFav}
                     {...(inStudio ? { verb: "Open Studio:", action: "Open Studio" } : {})}
@@ -955,7 +978,7 @@ function App() {
       {toTop && isGrid && !anyModal && (
         <button
           onClick={scrollTop} aria-label="Back to top"
-          className="fixed bottom-24 right-5 z-20 grid h-11 w-11 lg:bottom-6 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-lg shadow-slate-900/10 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+          className="glass fixed bottom-24 right-5 z-20 grid h-11 w-11 lg:bottom-6 place-items-center rounded-full text-slate-700 shadow-[0_0_0_1px_rgba(21,20,18,.08),0_12px_28px_-10px_rgba(21,20,18,.3)] transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
         >
           <Icon.Arrow className="h-4 w-4 -rotate-90" />
         </button>
@@ -963,7 +986,7 @@ function App() {
 
       {/* A notice, not a dialog: the page stays usable (and keyboard focus free) until it is answered. */}
       {askConsent && (
-        <div id="consent" ref={consentRef} role="region" aria-label="Analytics cookies" className="view-in fixed inset-x-3 bottom-24 z-[55] mx-auto max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-900/15 lg:bottom-5 lg:left-auto lg:right-5 lg:mx-0">
+        <div id="consent" ref={consentRef} role="region" aria-label="Analytics cookies" className="view-in glass fixed inset-x-3 bottom-24 z-[55] mx-auto max-w-md rounded-2xl p-4 shadow-[0_0_0_1px_rgba(21,20,18,.08),0_24px_48px_-16px_rgba(21,20,18,.3)] lg:bottom-5 lg:left-auto lg:right-5 lg:mx-0">
           <p className="text-[13px] leading-relaxed text-slate-600">AdDoctor would like to use analytics cookies to see which features get used. Nothing is loaded unless you accept. <a href="./privacy.html" className="font-semibold text-blue-600 hover:text-blue-700">Privacy</a></p>
           <div className="mt-3 flex justify-end gap-2">
             <button id="consent-no" onClick={() => answerConsent(false)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300">Decline</button>
@@ -978,7 +1001,7 @@ function App() {
         style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${askConsent && consentH ? consentH + 12 : 0}px)` }}
       >
         <div role="status" aria-live="polite" aria-atomic="true">
-          {toast && <div key={toast.id} className="toast-in pointer-events-auto rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-xl shadow-slate-900/25">{toast.msg}</div>}
+          {toast && <div key={toast.id} className="toast-in pointer-events-auto rounded-full bg-slate-950 px-5 py-2.5 text-sm font-medium text-white shadow-[0_0_0_1px_rgba(255,255,255,.08)_inset,0_18px_40px_-12px_rgba(11,10,9,.55)]">{toast.msg}</div>}
         </div>
       </div>
     </div>

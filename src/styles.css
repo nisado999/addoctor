@@ -2,14 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* AdDoctor: light clinical dashboard. Single deliberate light look. */
+/* AdDoctor: a warm, layered light theme. Stone page, white glass surfaces with crisp 1px edges and stacked soft
+   shadows, near-black type and one electric blue accent. */
 :root {
   color-scheme: light;
-  --ink: #0f172a;
+  --ink: #151412;
   --paper: #ffffff;
-  --sapphire: #2563eb;
+  --stone: #f5f3ee;
+  --accent: #2b59ff;
+  --accent-2: #7c5cff;
+  --edge: rgba(21, 20, 18, .08);
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 1px 2px rgba(21, 20, 18, .05), 0 2px 8px -2px rgba(21, 20, 18, .06);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 1px 2px rgba(21, 20, 18, .04), 0 8px 18px -8px rgba(21, 20, 18, .1), 0 28px 60px -24px rgba(21, 20, 18, .18);
+  --shadow-3: 0 1px 2px rgba(21, 20, 18, .05), 0 12px 24px -10px rgba(21, 20, 18, .14), 0 40px 80px -28px rgba(21, 20, 18, .26);
 }
-html, body { margin: 0; background: var(--paper); color: var(--ink); }
+html, body { margin: 0; background: var(--stone); color: var(--ink); }
+::selection { background: rgba(43, 89, 255, .18); }
 body { font-family: "Inter Tight", "Inter Tight Fallback", "Inter Tight Fallback Android", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
 
 /* ---------- Font fallbacks ----------
@@ -30,7 +38,7 @@ body { font-family: "Inter Tight", "Inter Tight Fallback", "Inter Tight Fallback
 
 /* ---------- Template media in cards (sized in container units) ---------- */
 .cr { position: absolute; inset: 0; container-type: size; overflow: hidden; }
-.cr-photo { background: #e2e8f0; }
+.cr-photo { background: #e7e4de; }
 .cr-photo-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 /* A video template still waiting for its clip shows the photo with a looping progress bar and a light sweep. */
 .cr-prog { position: absolute; left: 0; right: 0; bottom: 0; height: 1cqw; background: rgba(255,255,255,.2); }
@@ -46,8 +54,8 @@ body { font-family: "Inter Tight", "Inter Tight Fallback", "Inter Tight Fallback
 /* ---------- Scan animation ---------- */
 .scan-line {
   position: absolute; left: 0; right: 0; height: 3px; top: 0; z-index: 4;
-  background: linear-gradient(90deg, transparent, #2563eb, transparent);
-  box-shadow: 0 0 18px 4px rgba(37,99,235,.45); animation: scanmove .75s ease-in-out infinite alternate;
+  background: linear-gradient(90deg, transparent, #2b59ff, transparent);
+  box-shadow: 0 0 18px 4px rgba(43,89,255,.45); animation: scanmove .75s ease-in-out infinite alternate;
 }
 @keyframes scanmove { to { top: calc(100% - 3px); } }
 .scan-fill { width: 0; animation: scanfill 1.5s linear forwards; }
@@ -66,21 +74,71 @@ body { font-family: "Inter Tight", "Inter Tight Fallback", "Inter Tight Fallback
    Everything here animates transform or opacity only, so the browser can do it off the main thread. */
 html { -webkit-tap-highlight-color: transparent; }
 button, [role="button"], a, select { touch-action: manipulation; }
-:root { --ease: cubic-bezier(.2, .8, .2, 1); }
+:root { --ease: cubic-bezier(.2, .8, .2, 1); --spring: cubic-bezier(.34, 1.56, .64, 1); }
 
-.hero-title { font-family: "Archivo", "Archivo Fallback", "Archivo Fallback Android", "Inter Tight", system-ui, sans-serif; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; }
+/* The page: warm stone with faint pools of light, fixed so the content glides over it. */
+.app-bg { background: var(--stone); }
+.app-bg::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(42% 38% at 88% -4%, rgba(43, 89, 255, .09), transparent 70%),
+    radial-gradient(38% 34% at 18% 4%, rgba(255, 196, 150, .16), transparent 72%),
+    radial-gradient(50% 40% at 50% 110%, rgba(124, 92, 255, .06), transparent 70%);
+}
+.app-main { position: relative; }
+
+/* Frosted white glass: the sidebar, the top bar, chips and floating panels. */
+.glass { background: rgba(255, 255, 255, .72); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px); }
+.side-glass { background: rgba(255, 255, 255, .8); box-shadow: 1px 0 0 var(--edge), 12px 0 40px -28px rgba(21, 20, 18, .18); -webkit-backdrop-filter: saturate(160%) blur(20px); backdrop-filter: saturate(160%) blur(20px); }
+.top-glass { background: rgba(245, 243, 238, .74); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); box-shadow: 0 1px 0 var(--edge); }
+.surface { background: #fff; border: 1px solid var(--edge); box-shadow: var(--shadow-1); }
+.surface-lift { background: #fff; border: 1px solid var(--edge); box-shadow: var(--shadow-2); }
+
+/* Buttons. Ink: the black primary. Glow: the electric one. Both get a light sweep on hover. */
+.btn-ink, .btn-glow { position: relative; overflow: hidden; isolation: isolate; transition: transform .25s var(--ease), box-shadow .25s var(--ease), background-color .2s; }
+.btn-ink { background: linear-gradient(180deg, #2a2825, #0b0a09); color: #fff; box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 0 0 1px #0b0a09, 0 6px 16px -6px rgba(11, 10, 9, .5), 0 14px 32px -14px rgba(43, 89, 255, .45); }
+.btn-glow { background: linear-gradient(180deg, #4d77ff, #2b59ff 60%, #2448e8); color: #fff; box-shadow: 0 1px 0 rgba(255, 255, 255, .3) inset, 0 0 0 1px rgba(31, 67, 224, .9), 0 8px 22px -8px rgba(43, 89, 255, .7); }
+.btn-ink::after, .btn-glow::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%); transform: translateX(-120%); transition: transform .8s var(--ease); }
+.btn-ink:hover::after, .btn-glow:hover::after { transform: translateX(120%); }
+@media (hover: hover) { .btn-ink:hover, .btn-glow:hover { transform: translateY(-1px); } }
+.btn-soft { background: rgba(255, 255, 255, .85); border: 1px solid var(--edge); box-shadow: var(--shadow-1); transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .2s, color .2s; }
+@media (hover: hover) { .btn-soft:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); border-color: rgba(43, 89, 255, .25); } }
+
+/* Sidebar items: the current page is a small white tile that floats off the glass. */
+.nav-on { background: #fff; box-shadow: 0 0 0 1px var(--edge), 0 1px 2px rgba(21, 20, 18, .06), 0 4px 12px -6px rgba(21, 20, 18, .12); }
+
+/* ---------- Hero ---------- */
+.hero-title, .font-display { font-family: "Archivo", "Archivo Fallback", "Archivo Fallback Android", "Inter Tight", system-ui, sans-serif; }
+.hero-title { font-weight: 800; letter-spacing: -0.045em; text-wrap: balance; }
 .hero {
   background:
-    radial-gradient(60% 90% at 0% 0%, rgba(37, 99, 235, .13), transparent 70%),
-    radial-gradient(50% 80% at 100% 100%, rgba(16, 185, 129, .13), transparent 70%),
-    radial-gradient(rgba(15, 23, 42, .07) 1px, transparent 1.4px) 0 0 / 22px 22px,
-    #fff;
+    radial-gradient(55% 80% at 100% 0%, rgba(43, 89, 255, .10), transparent 70%),
+    radial-gradient(45% 70% at 80% 100%, rgba(124, 92, 255, .08), transparent 70%),
+    linear-gradient(180deg, #fff, #fbfaf8);
+  box-shadow: 0 0 0 1px var(--edge), var(--shadow-3);
 }
-.hero-ink { background: linear-gradient(100deg, #2563eb 10%, #10b981 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.hero-pulse { color: rgba(16, 185, 129, .45); }
-.hero-pulse path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: hero-draw 2.4s .3s var(--ease) forwards; }
-.hero-up { animation: rise .6s var(--d, 0ms) var(--ease) backwards; }
-.hero-dot { box-shadow: 0 0 0 4px rgba(16, 185, 129, .18); }
+/* The colour wash sits on the right and fades out before the headline; the dots fade at every edge. */
+.hero-bg { opacity: 0; animation: fade-to 1.6s .2s var(--ease) forwards; }
+.hero-bg-wash { -webkit-mask-image: linear-gradient(100deg, transparent 18%, rgba(0, 0, 0, .55) 48%, #000 78%); mask-image: linear-gradient(100deg, transparent 18%, rgba(0, 0, 0, .55) 48%, #000 78%); opacity: .9; }
+.hero-bg-dots { -webkit-mask-image: radial-gradient(75% 85% at 62% 45%, #000 30%, transparent 85%); mask-image: radial-gradient(75% 85% at 62% 45%, #000 30%, transparent 85%); }
+@keyframes fade-to { to { opacity: 1; } }
+
+.hero-ink {
+  background: linear-gradient(100deg, var(--accent) 0%, var(--accent-2) 30%, #2b59ff 55%, #00a3ff 80%, var(--accent) 100%) 0 0 / 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: ink-flow 8s linear infinite;
+}
+@keyframes ink-flow { to { background-position: -220% 0; } }
+.hero-scribble { color: var(--accent); }
+.hero-scribble path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: hero-draw 1.1s .8s var(--ease) forwards; }
+
+/* A silver sheen that runs across the eyebrow (React Bits ShinyText, done in CSS). */
+.shiny { background: linear-gradient(110deg, #3d3a35 40%, #b9b3a8 50%, #3d3a35 60%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 4.5s linear infinite; }
+@keyframes shine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+
+.hero-up { animation: rise .7s var(--d, 0ms) var(--ease) backwards; }
+.hero-dot { box-shadow: 0 0 0 4px rgba(16, 185, 129, .18); animation: pulse-dot 2.4s ease-in-out infinite; }
+@keyframes pulse-dot { 50% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); } }
 
 .hero-stage { perspective: 1100px; }
 .hero-fan {
@@ -91,52 +149,156 @@ button, [role="button"], a, select { touch-action: manipulation; }
 .hero-card, .hero-chip {
   position: absolute; left: 24%; top: 9%;
   transform: translate3d(var(--x), var(--y), var(--z)) rotateZ(var(--r, 0deg));
-  animation: hero-in .9s calc(var(--n) * 80ms + 150ms) var(--ease) backwards, hero-float 6s calc(var(--n) * -1.3s) ease-in-out infinite alternate;
+  animation: hero-in 1s calc(var(--n) * 90ms + 200ms) var(--spring) backwards, hero-float 6s calc(var(--n) * -1.3s) ease-in-out infinite alternate;
 }
-.hero-card { width: 39%; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #e2e8f0; box-shadow: 0 24px 48px -12px rgba(15, 23, 42, .35), 0 0 0 1px rgba(255, 255, 255, .6) inset; }
+.hero-card { width: 39%; aspect-ratio: 4 / 5; border-radius: 18px; overflow: hidden; background: #e7e4de; box-shadow: 0 0 0 1px rgba(255, 255, 255, .7) inset, 0 2px 4px rgba(21, 20, 18, .08), 0 30px 60px -18px rgba(21, 20, 18, .42); }
 .hero-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .hero-chip {
   left: var(--x); top: var(--y); transform: translateZ(var(--z)); display: flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px; border-radius: 16px;
-  background: rgba(255, 255, 255, .94); border: 1px solid rgba(226, 232, 240, .9); box-shadow: 0 18px 36px -10px rgba(15, 23, 42, .3);
-  font-size: 11px; font-weight: 500; color: #64748b; line-height: 1.25; white-space: nowrap;
+  background: rgba(255, 255, 255, .82); -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 0 0 1px var(--edge), 0 20px 40px -12px rgba(21, 20, 18, .3);
+  font-size: 11px; font-weight: 500; color: #6f6a62; line-height: 1.25; white-space: nowrap;
 }
-.hero-chip b { display: block; font-size: 14px; font-weight: 700; color: #0f172a; }
+.hero-chip b { display: block; font-size: 14px; font-weight: 700; color: #151412; }
 .hero-ring { stroke-dashoffset: 100; animation: hero-ring 1.4s .9s var(--ease) forwards; }
-.hero:not([data-live]) .hero-card, .hero:not([data-live]) .hero-chip { animation-play-state: paused; }
+.hero:not([data-live]) .hero-card, .hero:not([data-live]) .hero-chip, .hero:not([data-live]) .hero-ink, .hero:not([data-live]) .shiny { animation-play-state: paused; }
 /* Taking over from the static copy in index.html: the text is already on screen, so it does not fade in again. */
 .hero-calm .hero-up, .view-in:has(> .hero-calm) { animation: none; }
 
-@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
-@keyframes hero-in { from { opacity: 0; scale: .7; } }
-@keyframes hero-float { to { translate: 0 -10px; } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); filter: blur(6px); } }
+@keyframes hero-in { from { opacity: 0; scale: .6; } }
+@keyframes hero-float { to { translate: 0 -12px; } }
 @keyframes hero-draw { to { stroke-dashoffset: 0; } }
 @keyframes hero-ring { to { stroke-dashoffset: 8; } }
 
+/* ---------- Bento ---------- */
+.bento-tile { transition: transform .45s var(--ease), box-shadow .45s var(--ease); }
+@media (hover: hover) and (pointer: fine) {
+  .bento-tile:hover { transform: translateY(-5px); }
+}
+/* Cards that blend into the page instead of sitting on it: warm translucent white over a soft light field, a
+   top-lit edge (bright above, nearly gone below), a faint wash of the tile's own colour in its corner, and a wide,
+   low shadow. */
+:root { --shadow-soft: 0 1px 1px rgba(21, 20, 18, .03), 0 10px 24px -14px rgba(21, 20, 18, .14), 0 30px 60px -36px rgba(21, 20, 18, .2); }
+.bento-soft {
+  --spotlight-card-surface: transparent;
+  background:
+    radial-gradient(70% 60% at 100% 0%, rgba(var(--hue), .09), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .86), rgba(255, 255, 255, .62));
+  -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
+  transition: transform .45s var(--ease), box-shadow .45s var(--ease), background-color .45s;
+}
+.bento-soft:hover { box-shadow: 0 1px 1px rgba(21, 20, 18, .03), 0 18px 34px -16px rgba(var(--hue), .25), 0 40px 70px -36px rgba(21, 20, 18, .26) !important; }
+/* The light the cards sit in: a few soft colour pools behind the grid. */
+.bento-field {
+  background:
+    radial-gradient(30% 40% at 20% 30%, rgba(43, 89, 255, .08), transparent 70%),
+    radial-gradient(28% 36% at 62% 20%, rgba(124, 92, 255, .07), transparent 70%),
+    radial-gradient(30% 40% at 85% 75%, rgba(16, 185, 129, .06), transparent 70%),
+    radial-gradient(34% 40% at 40% 85%, rgba(255, 180, 120, .10), transparent 70%);
+  filter: blur(20px);
+}
+.bento-tile .bento-art { transition: transform .6s var(--ease); }
+.bento-tile:hover .bento-art { transform: scale(1.04) translateY(-2px); }
+.bento-lines { background-image: linear-gradient(rgba(21, 20, 18, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(21, 20, 18, .05) 1px, transparent 1px); background-size: 22px 22px; -webkit-mask-image: radial-gradient(80% 80% at 70% 30%, #000, transparent 75%); mask-image: radial-gradient(80% 80% at 70% 30%, #000, transparent 75%); }
+.scan-sweep { animation: scan-sweep 3.2s ease-in-out infinite; }
+@keyframes scan-sweep { 0%, 100% { transform: translateY(0); opacity: 0; } 10%, 90% { opacity: 1; } 50% { transform: translateY(var(--h, 120px)); } }
+.type-caret { animation: caret 1s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.bar-grow { transform-origin: left; animation: bar-grow 1.4s var(--d, 0ms) var(--ease) backwards; }
+@keyframes bar-grow { from { transform: scaleX(0); } }
+.kbd-3d { background: linear-gradient(180deg, #fff, #f3f1ed); border: 1px solid rgba(21, 20, 18, .12); box-shadow: 0 3px 0 rgba(21, 20, 18, .12), 0 8px 16px -8px rgba(21, 20, 18, .25); transition: transform .15s, box-shadow .15s; }
+.bento-tile:hover .kbd-3d { transform: translateY(2px); box-shadow: 0 1px 0 rgba(21, 20, 18, .12), 0 3px 8px -4px rgba(21, 20, 18, .2); }
+
+.marquee { -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.marquee-track { animation: marquee 40s linear infinite; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+
+/* Double bezel: the inset stone stage each picture sits in, with a faint dot field and an inner shadow. */
+.bento-stage {
+  background:
+    radial-gradient(rgba(21, 20, 18, .07) 1px, transparent 1.3px) 0 0 / 16px 16px,
+    radial-gradient(90% 80% at 80% 0%, rgba(43, 89, 255, .07), transparent 70%),
+    linear-gradient(180deg, #f7f5f1, #efece6);
+  box-shadow: inset 0 0 0 1px rgba(21, 20, 18, .06), inset 0 2px 6px rgba(21, 20, 18, .05);
+}
+.bento-tile:hover .bento-stage { background-position: 0 -8px, 0 0, 0 0; transition: background-position 1.2s var(--ease); }
+/* The one loud tile: solid electric blue with a glossy top. */
+.bento-accent { --spotlight-card-surface: #2b59ff !important; background: radial-gradient(120% 90% at 100% 0%, #7c5cff 0%, transparent 55%), linear-gradient(160deg, #4d77ff, #2b59ff 45%, #1f43e0) !important; }
+.bento-accent::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(255, 255, 255, .22), transparent 40%); pointer-events: none; }
+.bento-go { transition: transform .45s var(--spring), background-color .3s, color .3s; transform: rotate(0deg); }
+.bento-tile:hover .bento-go { transform: rotate(-45deg) scale(1.08); background: #151412; color: #fff; }
+.bento-accent:hover .bento-go { background: #fff; color: #2b59ff; }
+/* Pack: the three posts fan out further on hover. */
+.bento-fan { transform: translateX(var(--x)) rotate(var(--r)); transition: transform .6s var(--spring); }
+.bento-tile:hover .bento-fan { transform: translateX(var(--hx)) rotate(calc(var(--r) * 1.4)) translateY(-4px); }
+/* Examine: the checks slide in a step at a time on hover. */
+.bento-check { transform: translateX(var(--x)); transition: transform .5s calc(var(--i) * 60ms) var(--spring); }
+.bento-tile:hover .bento-check { transform: translateX(calc(var(--x) * -1 + 6px)); }
+/* Vault: the stack opens up on hover. */
+.bento-stack { transition: transform .5s var(--spring); }
+.bento-tile:hover .bento-stack { transform: translateY(calc(var(--i) * -10px - 4px)); }
+/* Gallery: a reel tilted back in 3D that straightens on hover. */
+.reel-3d { perspective: 900px; }
+.reel-tilt { transform: translateY(-50%) rotateX(22deg) rotateZ(-5deg); transform-style: preserve-3d; transition: transform .8s var(--ease); }
+.bento-tile:hover .reel-tilt { transform: translateY(-50%) rotateX(0deg) rotateZ(0deg); }
+@media (prefers-reduced-motion: reduce) {
+  .bento-go, .bento-fan, .bento-check, .bento-stack, .reel-tilt { transition: none; }
+}
+
+/* ---------- Popups ----------
+   Every dialog shares these: a warm blurred veil, a white panel with a crisp edge and deep layered shadow, a soft
+   header band, a black glossy icon tile, display-type titles and a round close button that turns on hover. */
+.dlg-veil { background: rgba(28, 25, 21, .32); -webkit-backdrop-filter: blur(10px) saturate(140%); backdrop-filter: blur(10px) saturate(140%); }
+.dlg-panel {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(21, 20, 18, .08), 0 1px 0 rgba(255, 255, 255, .9) inset, 0 2px 4px rgba(21, 20, 18, .06), 0 24px 48px -12px rgba(21, 20, 18, .28), 0 60px 120px -40px rgba(21, 20, 18, .4);
+}
+.dlg-head {
+  position: relative;
+  background: radial-gradient(60% 140% at 100% 0%, rgba(43, 89, 255, .07), transparent 70%), linear-gradient(180deg, #faf9f7, #fff);
+  box-shadow: 0 1px 0 rgba(21, 20, 18, .06);
+}
+.dlg-icon { background: linear-gradient(180deg, #2a2825, #0b0a09); color: #fff; box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 0 0 1px #0b0a09, 0 8px 18px -8px rgba(43, 89, 255, .55); }
+.dlg-close { background: rgba(255, 255, 255, .85); box-shadow: 0 0 0 1px rgba(21, 20, 18, .08), 0 2px 6px -2px rgba(21, 20, 18, .12); transition: transform .4s var(--spring), color .2s, background-color .2s; }
+.dlg-close:hover { transform: rotate(90deg); background: #fff; }
+/* Inside a popup: fields sit on warm off-white and turn white with an accent ring when used; the main blue buttons
+   get a glossy face, and drop zones a faint dot field. */
+[role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, select) { background-color: #fbfaf8; transition: background-color .2s, box-shadow .2s, border-color .2s; }
+[role="dialog"] :is(input, textarea, select):focus { background-color: #fff; }
+[role="dialog"] button.bg-blue-600:not(:disabled) { background-image: linear-gradient(180deg, #4d77ff, #2b59ff 60%, #2448e8); box-shadow: 0 1px 0 rgba(255, 255, 255, .3) inset, 0 0 0 1px rgba(31, 67, 224, .9), 0 10px 24px -10px rgba(43, 89, 255, .75); }
+[role="dialog"] button.bg-blue-600:not(:disabled):hover { filter: brightness(1.06); }
+[role="dialog"] .border-dashed { background-image: radial-gradient(rgba(43, 89, 255, .12) 1px, transparent 1.3px); background-size: 14px 14px; }
+
+/* Section headings that unblur word by word as they scroll in (React Bits ScrollReveal). */
+.scroll-reveal.section-head { margin: 0; }
+.section-head .scroll-reveal-text { font-family: "Archivo", "Archivo Fallback", "Archivo Fallback Android", system-ui, sans-serif; font-weight: 800; letter-spacing: -0.04em; line-height: 1.02; font-size: clamp(30px, 4.4vw, 54px); color: #151412; }
+
 /* Cards rise in as they are added, and lean toward the pointer on devices that have one. */
 .rise { animation: rise .5s calc(var(--i, 0) * 40ms) var(--ease) backwards; }
-.tilt-glare { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, .38), transparent 55%); }
+.card-frame { box-shadow: 0 0 0 1px var(--edge), 0 1px 2px rgba(21, 20, 18, .06), 0 10px 24px -14px rgba(21, 20, 18, .22); transition: box-shadow .35s var(--ease); }
+.group:hover .card-frame { box-shadow: 0 0 0 1px rgba(43, 89, 255, .25), 0 2px 4px rgba(21, 20, 18, .06), 0 30px 50px -20px rgba(21, 20, 18, .38), 0 18px 40px -20px rgba(43, 89, 255, .35); }
+.tilt-glare { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, .45), transparent 55%); }
 @media (hover: hover) and (pointer: fine) {
-  .tilt { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--lift, 1)); transition: transform .35s var(--ease); }
-  .tilt:hover { --lift: 1.03; z-index: 5; transition-duration: .12s; }
+  .tilt { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--ty, 0px)) scale(var(--lift, 1)); transition: transform .4s var(--ease); }
+  .tilt:hover { --lift: 1.025; --ty: -6px; z-index: 5; transition-duration: .15s; }
   .tilt:hover .tilt-glare { opacity: 1; }
 }
 
-.view-in { animation: rise .35s var(--ease) backwards; }
-/* Dialogs rise in over a fading backdrop. The menu drawer is a dialog only on small screens and slides in instead,
-   and the app's own wrapper (parent of the drawer and the cookie banner) never fades. */
-[role="dialog"]:not([data-drawer]) { animation: dialog-in .32s var(--ease) backwards; }
-div.fixed:has(> [role="dialog"]) { animation: fade-in .2s ease-out backwards; }
+.view-in { animation: rise .45s var(--ease) backwards; }
+/* Dialogs rise in over a fading, blurred backdrop. The menu drawer is a dialog only on small screens and slides in
+   instead, and the app's own wrapper (parent of the drawer and the cookie banner) never fades. */
+[role="dialog"]:not([data-drawer]) { animation: dialog-in .4s var(--ease) backwards; }
+div.fixed:has(> [role="dialog"]) { animation: fade-in .25s ease-out backwards; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(28px) scale(.97); } }
 @keyframes fade-in { from { opacity: 0; } }
 
-.btn-glow { position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(255, 255, 255, .3) inset, 0 8px 20px -6px rgba(37, 99, 235, .55); }
-.btn-glow::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%); transform: translateX(-120%); transition: transform .7s var(--ease); }
-.btn-glow:hover::after { transform: translateX(120%); }
-
 @media (prefers-reduced-motion: reduce) {
-  .hero-up, .hero-card, .hero-chip, .rise, .view-in, [role="dialog"], div.fixed:has(> [role="dialog"]) { animation: none; }
-  .hero-pulse path { animation: none; stroke-dashoffset: 0; }
+  .hero-up, .hero-card, .hero-chip, .rise, .view-in, [role="dialog"], div.fixed:has(> [role="dialog"]), .hero-ink, .shiny, .hero-dot, .scan-sweep, .type-caret, .bar-grow, .hero-bg { animation: none; }
+  .hero-bg { opacity: 1; }
+  .hero-scribble path { animation: none; stroke-dashoffset: 0; }
   .hero-ring { animation: none; stroke-dashoffset: 8; }
-  .hero-fan, .tilt, .btn-glow::after { transition: none; }
-  .tilt { transform: none; }
+  .hero-fan, .tilt, .btn-ink, .btn-glow, .btn-soft, .bento-tile, .bento-art, .btn-ink::after, .btn-glow::after { transition: none; }
+  .tilt, .bento-tile:hover, .bento-tile:hover .bento-art { transform: none; }
 }

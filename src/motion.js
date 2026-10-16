@@ -1,12 +1,14 @@
 import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
 /* Motion for the whole site: smooth scrolling (Lenis) driving GSAP's ScrollTrigger, and a scroll reveal for anything
    marked data-reveal (added at any time, e.g. as the gallery loads more). People who ask their system for less
    motion get the normal browser scroll and no reveals. */
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, useGSAP);
+if (import.meta.env.DEV) window.__ST = ScrollTrigger;
 
 const reduce = () => typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -27,6 +29,8 @@ export function initMotion() {
   lenis.on("scroll", ScrollTrigger.update);
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
+  // The display font changes line breaks once it arrives, which moves every scroll-linked start and end point.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ScrollTrigger.refresh());
   startReveals();
 }
 
