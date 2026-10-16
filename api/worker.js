@@ -89,6 +89,7 @@ function normalize(it) {
     libId: String(pick(it.adArchiveID, it.adArchiveId, it.ad_archive_id, it.adId, it.id, "")),
     advertiser, headline, body: rest, cta: clean(pick(snap.ctaText, snap.cta_text, card.ctaText, card.cta_text, "")),
     format, startMs, endMs: active === true ? null : (endMs || null), days, creator,
+    active: active === true || (active !== false && !endMs),
     img: imgs[0] || "", imgs, versions: Math.max(1, Math.min(Number(pick(it.collationCount, it.collation_count, 1)) || 1, 999)),
     link: linkOf(pick(snap.linkUrl, snap.link_url, card.linkUrl, card.link_url, "")),
     kind: df === "DPA" ? "product catalog ad" : df === "DCO" && cards.length > 1 ? "several versions of one ad" : "",
@@ -169,7 +170,7 @@ function normalizeMeta(it, format) {
     headline: wf((title || lines[0] || "").slice(0, 110)),
     body: wf((title ? lines : lines.slice(1)).join(" ").slice(0, 400)),
     cta: "", format: format === "Video" ? "Video" : new Set(titles).size > 1 ? "Carousel" : "Static", snap: String(it.ad_snapshot_url || ""),
-    startMs, endMs, days, creator: partner && partner.toLowerCase() !== advertiser.toLowerCase() ? partner : "",
+    startMs, endMs, days, active: !endMs, creator: partner && partner.toLowerCase() !== advertiser.toLowerCase() ? partner : "",
   };
 }
 

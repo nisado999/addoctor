@@ -28,6 +28,9 @@ const ROWS = [
 
 const cache = new Map();   // libId -> breakdown, kept while the page is open
 
+// Meta's own flag when the server sends it; otherwise an ad with no stop date is still running.
+const isActive = (ad) => (typeof ad.active === "boolean" ? ad.active : ad.endMs == null);
+
 // The Worker sends the landing page as "host/path" without a scheme. Only http(s) addresses are linked.
 function landing(link) {
   const s = String(link || "").trim();
@@ -361,6 +364,7 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
   const [sort, setSort] = useState("days");
   const [onlySaved, setOnlySaved] = useState(false);
   const [onlyLong, setOnlyLong] = useState(false);
+  const [status, setStatus] = useState("all");   // "all" | "active" | "inactive", like Meta's own filter
   const [shown, setShown] = useState(PAGE);
   const [saved, setSaved] = useState(loadSaved);
   const [open, setOpen] = useState(null);
@@ -375,13 +379,14 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
     let a = ads.filter((x) => x.img);
     if (format !== "All") a = a.filter((x) => x.format === format);
     if (onlyLong) a = a.filter((x) => x.days !== null && x.days !== undefined && x.days >= 30);
+    if (status !== "all") a = a.filter((x) => isActive(x) === (status === "active"));
     if (onlySaved) a = a.filter((x) => saved.includes(x.libId));
     a = [...a];
     if (sort === "days") a.sort((x, y) => (y.days ?? -1) - (x.days ?? -1));
     else if (sort === "new") a.sort((x, y) => (y.startMs || 0) - (x.startMs || 0));
     else a.sort((x, y) => (y.versions || 1) - (x.versions || 1));
     return a;
-  }, [ads, format, sort, onlyLong, onlySaved, saved]);
+  }, [ads, format, sort, onlyLong, onlySaved, status, saved]);
   useEffect(() => { setShown(PAGE); }, [format, sort, onlyLong, onlySaved, ads]);
 
   const toggleSave = (id) => setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id].slice(-300)));
@@ -408,6 +413,13 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
 
       <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter creatives">
         {formats.map((f) => <button key={f} onClick={() => setFormat(f)} aria-pressed={format === f} className={chip(format === f)}>{f}</button>)}
+        <span className="mx-1 self-center text-slate-300" aria-hidden="true">|</span>
+        {[["all", "All ads"], ["active", "Active ads"], ["inactive", "Inactive ads"]].map(([id, label]) => (
+          <button key={id} onClick={() => setStatus(id)} aria-pressed={status === id} className={chip(status === id)}>
+            {label}{id !== "all" ? ` (${ads.filter((x) => x.img && isActive(x) === (id === "active")).length})` : ""}
+          </button>
+        ))}
+        <span className="mx-1 self-center text-slate-300" aria-hidden="true">|</span>
         <button onClick={() => setOnlyLong((v) => !v)} aria-pressed={onlyLong} className={chip(onlyLong)}>Running 30+ days</button>
         <button onClick={() => setOnlySaved((v) => !v)} aria-pressed={onlySaved} className={chip(onlySaved)}>Saved{saved.length ? ` (${saved.filter((id) => ads.some((a) => a.libId === id)).length})` : ""}</button>
       </div>
