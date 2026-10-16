@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "./ui";
 import { copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { imageCost } from "./billing.js";
 import { apiFetch } from "./api.js";
 
 /* ------------------------------ Social Pack ------------------------------ */
@@ -170,8 +171,8 @@ function PackView({ notify, credits, onSpend }) {
     return () => { l.abort(); };
   }, []);
 
-  const unitOf = () => (qualityRef.current === "premium" ? 2 : 1);
-  const unit = quality === "premium" ? 2 : 1;
+  const unitOf = () => imageCost(qualityRef.current === "premium");
+  const unit = imageCost(quality === "premium");
   const cost = size * unit;
   const setP = (idx, patch) => { postsRef.current = postsRef.current.map((p) => (p.index === idx ? { ...p, ...patch } : p)); setPosts(postsRef.current); };
 

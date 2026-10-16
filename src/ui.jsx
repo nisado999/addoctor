@@ -320,7 +320,7 @@ function useWide() {
   return wide;
 }
 
-function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerDay = 15, vaultCount, pinned = [], pinnedTotal = 0, onPick, onShowPinned }) {
+function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerDay = 15, bill, vaultCount, pinned = [], pinnedTotal = 0, onPick, onShowPinned }) {
   const asideRef = useRef(null);
   const closeRef = useRef(null);
   const wide = useWide();
@@ -359,7 +359,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
 
         <div className="mt-5 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3">
           <nav aria-label="Workspace" className="flex flex-col gap-5">
-            {NAV.map((g) => (
+            {(bill && bill.on ? NAV.map((g) => (g.head === "Library" ? { ...g, items: [...g.items, { id: "plans", label: "Plans & credits", icon: Icon.Tag }] } : g)) : NAV).map((g) => (
               <div key={g.head}>
                 <p className={navHead}>{g.head}</p>
                 <div className="flex flex-col gap-px">
@@ -422,7 +422,22 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
 
         <div className="shrink-0 border-t border-slate-200/80 px-5 py-4">
           {/* The free allowance as it really is: kept on this device and topped up each day. Nothing to buy yet. */}
-          {left !== null && (
+          {bill && bill.on && (
+            bill.account ? (
+              <>
+                <p className="text-xs font-medium text-slate-600">
+                  <span className={`font-semibold tabular-nums ${bill.account.total > 0 ? "text-slate-900" : "text-rose-700"}`}>{bill.account.total}</span> credits · {bill.account.plan === "free" ? "Free" : bill.account.plan.charAt(0).toUpperCase() + bill.account.plan.slice(1)} plan
+                </p>
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                  <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.min(100, (bill.account.total / Math.max(1, { free: 25, starter: 300, pro: 900, agency: 2500 }[bill.account.plan] || 25)) * 100)}%` }} />
+                </div>
+                <button onClick={() => onNav("plans")} className={`mt-2 block rounded text-[11px] font-semibold text-blue-600 transition hover:text-blue-700 ${ring}`}>{bill.account.plan === "free" ? "Upgrade plan →" : "Plans and top-ups →"}</button>
+              </>
+            ) : (
+              <p className="text-xs font-medium text-slate-600">{bill.signedIn ? "Loading your credits…" : "Sign in for 25 free credits a month."}</p>
+            )
+          )}
+          {!(bill && bill.on) && left !== null && (
             <>
               <p className="text-xs font-medium text-slate-600">
                 <span className={`font-semibold tabular-nums ${left > 0 ? "text-slate-900" : "text-rose-700"}`}>{left}</span> of {creditsPerDay} free credits today

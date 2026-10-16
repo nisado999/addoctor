@@ -7,7 +7,8 @@
          no other inline script. GTM (loaded after consent) and Google Analytics, Supabase sign-in and the AdDoctor
          Worker are the only other hosts. data: and blob: in connect-src let the app read back images it made itself.
          In development Vite's own scripts sit above this tag, so the policy does not apply to them. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc=' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' data: blob: https://*.supabase.co https://*.workers.dev https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc=' https://www.googletagmanager.com https://cdn.paddle.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' data: blob: https://*.paddle.com https://*.supabase.co https://*.workers.dev https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://*.paddle.com;
+  object-src 'none'; base-uri 'self'; form-action 'self'" />
     <title>AdDoctor – ad creative audits and templates</title>
     <meta name="description" content="Audit your ads for conversion leaks, browse 263 direct-response ad templates, spy on a competitor's Meta ads and build a Social Pack. Free to try." />
     <meta name="theme-color" content="#2563EB" />

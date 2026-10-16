@@ -13,6 +13,7 @@ const MESSAGES = {
   daily_cap: "Today's limit for this feature has been reached. Try again tomorrow.",
   signin_required: "Sign in to use this feature.",
   owner_only: "Only the site owner can use this.",
+  no_credits: "You are out of credits for this. Top up or upgrade your plan.",
   server: "The AdDoctor server had a problem. Try again in a moment.",
   bad_response: "The AdDoctor server sent an answer this page can't read. Try again.",
   api: "The AdDoctor server couldn't do that.",
@@ -70,6 +71,7 @@ function toError(r, j) {
   const extra = { status, data: j || undefined };
   if (code === "signin_required") return new ApiError("signin_required", said, extra);
   if (code === "owner_only") return new ApiError("owner_only", said, extra);
+  if (code === "no_credits") return new ApiError("no_credits", said, extra);
   if (code === "daily_cap") return new ApiError("daily_cap", said, extra);
   if (status === 429 || code === "rate_limited") {
     const wait = retryAfter(r, j);
@@ -161,7 +163,9 @@ async function apiFetch(path, opts = {}) {
   let tries = 0, waited429 = false;
   for (;;) {
     try {
-      return await once(SPY_API + path, init, signal, timeout);
+      const out = await once(SPY_API + path, init, signal, timeout);
+      if (method === "POST" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("addoctor:credits-changed"));
+      return out;
     } catch (err) {
       let wait = -1;
       if (err.code === "rate_limited" && !waited429 && err.retryAfter != null && err.retryAfter <= 20) {
@@ -173,6 +177,7 @@ async function apiFetch(path, opts = {}) {
       }
       if (wait < 0) {
         if (err.code === "signin_required" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("addoctor:signin-required"));
+        if (err.code === "no_credits" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("addoctor:no-credits"));
         throw err;
       }
       await sleep(wait, signal);

@@ -5,6 +5,7 @@ import { Hero } from "./hero";
 import { TONE, inputKey } from "./shared.js";
 import { track, setConsent, needsConsent } from "./track.js";
 import { authWanted, watchAuth, signOut, deleteAccount } from "./auth.js";
+import { useBilling } from "./billing.js";
 import { ErrorBoundary, lazyRetry } from "./boundary.jsx";
 import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
 import { loadVault, sanitizeVault, loadFavs, loadCredits, saveCredits, writeJSON } from "./storage.js";
@@ -24,6 +25,7 @@ const InspireModal = lazyRetry(() => import("./use"), (m) => m.InspireModal);
 const ProductModal = lazyRetry(() => import("./use"), (m) => m.ProductModal);
 const AuthModal = lazyRetry(() => import("./account"), (m) => m.AuthModal);
 const SpyView = lazyRetry(() => import("./spy"), (m) => m.SpyView);
+const PlansView = lazyRetry(() => import("./plans"), (m) => m.PlansView);
 const PackView = lazyRetry(() => import("./pack"), (m) => m.PackView);
 const LabView = lazyRetry(() => import("./lab"), (m) => m.LabView);
 
@@ -122,6 +124,7 @@ const VIEWS = {
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Spy", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
   vault: { title: "Saved Vault", sub: "Prescriptions you saved. Reopen one to re-read it or copy it again." },
+  plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
 const KEEP = ["spy", "pack", "lab"];
@@ -230,6 +233,7 @@ function App() {
   const [brand, setBrand] = useState(null); // template getting the user's logo
   const [inspire, setInspire] = useState(null); // video template being briefed as a new version
   const [user, setUser] = useState(null);                 // the signed-in visitor, or null
+  const billing = useBilling(user);                       // plans and the server-side credit balance, once billing is switched on
   const [authRun, setAuthRun] = useState(() => (authWanted() ? 1 : 0)); // 0 = no reason to load the sign-in library yet
   const [authReady, setAuthReady] = useState(() => !authWanted());
   const [authOpen, setAuthOpen] = useState(false);
@@ -474,14 +478,18 @@ function App() {
     return () => { dead = true; watching.current = false; if (off) off(); };
   }, [authRun, notify]);
 
+  const gotoRef = useRef(null);   // always the latest goto, for listeners that are registered once
+
   // A paid feature the server only gives signed-in visitors.
   useEffect(() => {
     const onNeed = () => {
       if (!openRef.current.includes("auth")) openSignIn("in");
       notify("Sign in to use this feature.", 3200);
     };
+    const onNoCredits = () => { notify("You are out of credits for that. Pick a plan or top up.", 3600); if (gotoRef.current) gotoRef.current("plans"); };
     window.addEventListener("addoctor:signin-required", onNeed);
-    return () => window.removeEventListener("addoctor:signin-required", onNeed);
+    window.addEventListener("addoctor:no-credits", onNoCredits);
+    return () => { window.removeEventListener("addoctor:signin-required", onNeed); window.removeEventListener("addoctor:no-credits", onNoCredits); };
   }, [openSignIn, notify]);
 
   useEffect(() => {
@@ -565,6 +573,7 @@ function App() {
     scrollTop();
     return true;
   };
+  gotoRef.current = goto;
 
   const rebuild = (tplId) => {
     // A competitor's creative becomes your own ad: the closest template opens in "Make it with my product".
@@ -668,17 +677,21 @@ function App() {
   }, [askConsent]);
 
   const active = exam ? "examine" : view;
-  const isGrid = view !== "vault" && !KEEP.includes(view);
+  const isGrid = view !== "vault" && view !== "plans" && !KEEP.includes(view);
   const V = VIEWS[view];
   const inStudio = !!V.studio;
   const inspect = useCallback((tp) => { if (inStudio) return setStudio(tp); track("template_open", tplInfo(tp)); setLook(tp); }, [inStudio]);
   const isOwner = !!(user && user.email && OWNERS.includes(user.email.toLowerCase()));
+  // With billing on, credits live on the server: this device's daily allowance is not used, and actions that run
+  // in the browser (Examine) cost nothing.
+  const shownCredits = billing.on ? (billing.account ? billing.account.total : 0) : credits;
+  const doSpend = billing.on ? () => {} : spend;
   const quickChips = view === "static" ? QUICK.filter(([id]) => id !== "video") : QUICK;
   const noFavs = quick === "favs" && !favs.length;
 
   const screen = (id) => (
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
-    : id === "pack" ? <PackView notify={notify} credits={credits} onSpend={spend} active={view === "pack"} />
+    : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} />
     : <SpyView notify={notify} onRebuild={rebuild} active={view === "spy"} />
   );
 
@@ -693,7 +706,7 @@ function App() {
 
       <Sidebar
         active={active} onNav={goto} open={menu} onClose={closeMenu} onExamine={() => openExam({})}
-        credits={credits} creditsPerDay={PER_DAY} vaultCount={vault.length}
+        credits={credits} creditsPerDay={PER_DAY} bill={{ on: billing.on, account: billing.account, signedIn: !!user }} vaultCount={vault.length}
         pinned={pinned} pinnedTotal={favs.length} onPick={pickPinned} onShowPinned={showPinned}
       />
 
@@ -859,6 +872,8 @@ function App() {
               onRemove={removeSaved}
               onExamine={() => openExam({})}
             />
+          ) : view === "plans" ? (
+            <Suspense fallback={viewWait}><PlansView user={user} onSignIn={() => openSignIn("in")} notify={notify} /></Suspense>
           ) : null}
           </div>
           </ErrorBoundary>
@@ -875,7 +890,7 @@ function App() {
 
       {exam && (
         <DialogSlot key={examKey} label="examine" onClose={closeExam}>
-          <ExamineModal init={exam} onClose={closeExam} credits={credits} onSpend={spend} onSave={saveReport} savedKeys={savedKeys} notify={notify} />
+          <ExamineModal init={exam} onClose={closeExam} credits={billing.on ? 999 : credits} onSpend={doSpend} onSave={saveReport} savedKeys={savedKeys} notify={notify} />
         </DialogSlot>
       )}
 
@@ -892,8 +907,8 @@ function App() {
       )}
 
       {brand && <DialogSlot key={brand.id} label="brand" onClose={closeBrand}><BrandModal tpl={brand} onClose={closeBrand} notify={notify} /></DialogSlot>}
-      {inspire && <DialogSlot key={inspire.id} label="inspire" onClose={closeInspire}><InspireModal tpl={inspire} onClose={closeInspire} notify={notify} credits={credits} onSpend={spend} /></DialogSlot>}
-      {product && <DialogSlot key={product.id} label="product" onClose={closeProduct}><ProductModal tpl={product} onClose={closeProduct} notify={notify} credits={credits} onSpend={spend} /></DialogSlot>}
+      {inspire && <DialogSlot key={inspire.id} label="inspire" onClose={closeInspire}><InspireModal tpl={inspire} onClose={closeInspire} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
+      {product && <DialogSlot key={product.id} label="product" onClose={closeProduct}><ProductModal tpl={product} onClose={closeProduct} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
       {studio && <DialogSlot key={studio.id} label="studio" onClose={closeStudio}><StudioModal tpl={studio} onClose={closeStudio} notify={notify} /></DialogSlot>}
       {authOpen && <DialogSlot key={authMode} label="auth" onClose={closeAuth}><AuthModal onClose={closeAuth} notify={notify} initialMode={authMode} /></DialogSlot>}
 

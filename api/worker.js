@@ -953,8 +953,119 @@ function allowedOrigin(req, env) {
   return list.includes(origin) ? origin : null;
 }
 
-export default {
-  async fetch(req, rawEnv) {
+/* ------------------------------ Billing ------------------------------ */
+// Server-side credits: one balance per signed-in account in Supabase (supabase/billing.sql), spent before each paid
+// action and refunded if the action fails. Off until BILLING=on, so the code can ship before Paddle is set up.
+//   BILLING                 "on" to charge credits and require sign-in for paid actions
+//   SUPABASE_SERVICE_ROLE   already used by /account/delete; also runs the credit functions
+//   PADDLE_WEBHOOK_SECRET   the notification destination's secret key (Paddle > Developer tools > Notifications)
+//   PADDLE_CLIENT_TOKEN     Paddle's client-side token (safe to expose)
+//   PADDLE_ENV              "sandbox" while testing, otherwise leave unset
+//   PADDLE_PRICES           JSON mapping our price keys to Paddle price ids, for example
+//                           {"starter_month":"pri_..","starter_year":"pri_..","pro_month":"pri_..","pro_year":"pri_..",
+//                            "agency_month":"pri_..","agency_year":"pri_..","topup":"pri_.."}
+const billingOn = (env) => String(env.BILLING || "").toLowerCase() === "on";
+const TOPUP_CREDITS = 250;   // per top-up unit; keep in step with src/plans.js
+
+// What one action costs, in credits. Keep in step with src/plans.js. /start is free but needs a balance of
+// START_NEEDS, because the paid read (ScrapeCreators) happens before the analysis that is charged.
+const START_NEEDS = 15;
+function creditCost(path, b) {
+  const premium = !!b && b.quality === "premium";
+  switch (path) {
+    case "/analyze": return 15;
+    case "/creative": return 1;
+    case "/ask": return 3;
+    case "/organic": return 3;
+    case "/make/ad": return premium ? 12 : 5;
+    case "/make/review": return 1;
+    case "/pack/image": return premium ? 12 : 5;
+    case "/pack/brief": case "/pack/posts": return 2;
+    case "/pack/store": case "/pack/review": return 1;
+    default: return 0;
+  }
+}
+
+async function dbRpc(env, fn, args) {
+  if (!env.SUPABASE_SERVICE_ROLE) throw Object.assign(new Error("Billing is not set up on the server yet."), { status: 502 });
+  const r = await fetch(supaBase(env) + "/rest/v1/rpc/" + fn, {
+    method: "POST",
+    headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: "Bearer " + env.SUPABASE_SERVICE_ROLE, "content-type": "application/json" },
+    body: JSON.stringify(args),
+  });
+  const j = await r.json().catch(() => null);
+  if (!r.ok) { console.log("rpc " + fn + " failed", r.status, JSON.stringify(j).slice(0, 200)); throw Object.assign(new Error("Could not reach your credit balance. Try again."), { status: 502 }); }
+  return j;
+}
+
+const accountView = (a) => ({
+  plan: a.plan, status: a.status, interval: a.billing_interval || null, periodEnd: a.current_period_end || null, refillAt: a.refill_at || null,
+  planCredits: a.plan_credits, extraCredits: a.extra_credits, total: a.plan_credits + a.extra_credits, segment: a.segment || null,
+});
+
+const priceKeys = (env) => { try { const m = JSON.parse(env.PADDLE_PRICES || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } };
+
+async function billingRoute(env, req, u) {
+  const p = u.pathname;
+  if (p === "/billing/config" && req.method === "GET") {
+    const prices = priceKeys(env);
+    return json(env, { enabled: billingOn(env), checkout: !!(env.PADDLE_CLIENT_TOKEN && Object.keys(prices).length), paddle: { env: env.PADDLE_ENV === "sandbox" ? "sandbox" : "production", token: env.PADDLE_CLIENT_TOKEN || "" }, prices });
+  }
+  const who = await supaUser(env, req.headers.get("Authorization") || "");
+  if (!who) throw Object.assign(new Error("Sign in first."), { status: 401, code: "signin_required" });
+  if (p === "/billing/me" && req.method === "GET") return json(env, accountView(await dbRpc(env, "billing_refresh", { uid: who.id })));
+  if (p === "/billing/segment" && req.method === "POST") {
+    const b = await req.json().catch(() => ({}));
+    await dbRpc(env, "billing_set_segment", { uid: who.id, seg: String(b.segment || "") });
+    return json(env, { ok: true });
+  }
+  return json(env, { error: "not found" }, 404);
+}
+
+// Paddle posts here when someone pays, renews, upgrades or cancels. The signature is the only thing that proves it
+// came from Paddle, so nothing is read before it checks out.
+async function paddleWebhook(env, req) {
+  if (!env.PADDLE_WEBHOOK_SECRET) return json(env, { error: "Webhook secret not set" }, 500);
+  const raw = await req.text();
+  const sig = req.headers.get("Paddle-Signature") || "";
+  const ts = (sig.match(/ts=(\d+)/) || [])[1], h1 = (sig.match(/h1=([a-f0-9]+)/i) || [])[1];
+  if (!ts || !h1 || Math.abs(Date.now() / 1000 - Number(ts)) > 600) return json(env, { error: "Invalid signature" }, 400);
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(env.PADDLE_WEBHOOK_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(ts + ":" + raw)));
+  const want = [...mac].map((x) => x.toString(16).padStart(2, "0")).join("");
+  let diff = want.length ^ h1.length;
+  for (let i = 0; i < want.length && i < h1.length; i++) diff |= want.charCodeAt(i) ^ h1.toLowerCase().charCodeAt(i);
+  if (diff !== 0) return json(env, { error: "Invalid signature" }, 400);
+
+  let ev; try { ev = JSON.parse(raw); } catch (e) { return json(env, { error: "Bad body" }, 400); }
+  const d = ev.data || {};
+  const uid = String((d.custom_data && d.custom_data.user_id) || "");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)) return json(env, { ok: true, ignored: "no account on this event" });
+
+  const byId = Object.fromEntries(Object.entries(priceKeys(env)).map(([k, v]) => [String(v), k]));
+  const found = (d.items || []).map((i) => ({ key: byId[String((i.price && i.price.id) || i.price_id || "")], qty: Number(i.quantity) || 1 })).filter((x) => x.key);
+  const planItem = found.find((x) => /^(starter|pro|agency)_(month|year)$/.test(x.key));
+  const [plan, interval] = planItem ? planItem.key.split("_") : [null, null];
+  const t = String(ev.event_type || "");
+  const evId = String(ev.event_id || "");
+  const customer = d.customer_id || null;
+
+  if (t === "transaction.completed") {
+    const top = found.find((x) => x.key === "topup");
+    if (top) await dbRpc(env, "billing_add_extra", { uid, amount: TOPUP_CREDITS * top.qty, ref_id: "txn:" + String(d.id || evId) });
+    if (planItem) await dbRpc(env, "billing_set_plan", { uid, new_plan: plan, new_status: "active", new_interval: interval, period_end: (d.billing_period && d.billing_period.ends_at) || null, customer, subscription: d.subscription_id || null, reset: true, ref_id: "evt:" + evId });
+  } else if (/^subscription\.(created|updated|activated|resumed|past_due|paused|canceled)$/.test(t)) {
+    const cancelling = (d.scheduled_change && d.scheduled_change.action === "cancel") || t === "subscription.canceled";
+    const status = cancelling ? "canceled" : t === "subscription.paused" ? "paused" : t === "subscription.past_due" ? "past_due" : "active";
+    const end = cancelling ? ((d.scheduled_change && d.scheduled_change.effective_at) || (d.current_billing_period && d.current_billing_period.ends_at) || new Date().toISOString()) : ((d.current_billing_period && d.current_billing_period.ends_at) || null);
+    await dbRpc(env, "billing_set_plan", { uid, new_plan: plan, new_status: status, new_interval: interval, period_end: end, customer, subscription: d.id || null, reset: false, ref_id: "evt:" + evId });
+  }
+  return json(env, { ok: true });
+}
+
+async function handle(req, rawEnv, hooks) {
+    if (req.method === "POST" && new URL(req.url).pathname === "/billing/webhook") return paddleWebhook(Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: "*" }), req);
     const origin = allowedOrigin(req, rawEnv);
     // json() reads ALLOW_ORIGIN for the CORS header; give it the one origin that matched.
     const env = Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
@@ -964,6 +1075,10 @@ export default {
     const u = new URL(req.url);
     if (u.pathname === "/account/delete" && req.method === "POST") {
       try { return await deleteAccount(env, req); } catch (e) { return json(env, { error: "Could not delete the account. Try again." }, 502); }
+    }
+    if (u.pathname.startsWith("/billing/")) {
+      try { return await billingRoute(env, req, u); }
+      catch (e) { return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String((e && e.message) || e).slice(0, 240) }, e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500); }
     }
     let who = null;
     if (PAID.test(u.pathname)) {
@@ -985,6 +1100,27 @@ export default {
         if ((await bump(`ip/${ip}/${Math.floor(now / 3600000)}`, 3600)) > (Number(env.RATE_PER_HOUR) || 60)) return json(env, { error: "Too many requests from this connection. Try again in an hour.", code: "rate_limited" }, 429);
       }
       if ((await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > (Number(env.DAILY_CAP) || 300)) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow.", code: "daily_cap" }, 429);
+    }
+    // Credits: with BILLING on, a paid action needs a signed-in account and is charged before it runs; the wrapper
+    // below gives the credits back if the action fails. The site owners are never charged.
+    if (PAID.test(u.pathname) && billingOn(env)) {
+      if (!who) return json(env, { error: "Sign in to use this. Your free credits are tied to your account.", code: "signin_required" }, 401);
+      if (!isOwner(env, who)) {
+        try {
+          let peek = {};
+          if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/pack/image")) peek = await req.clone().json().catch(() => ({}));
+          const cost = creditCost(u.pathname, peek);
+          if (cost > 0) {
+            const ref = `spend:${who.id}:${crypto.randomUUID()}`;
+            const r = await dbRpc(env, "billing_spend", { uid: who.id, amount: cost, why: u.pathname, ref_id: ref });
+            if (!r.ok) return json(env, { error: `This needs ${cost} credits and you have ${(r.plan_credits || 0) + (r.extra_credits || 0)}. Top up or upgrade your plan.`, code: "no_credits", needed: cost }, 402);
+            hooks.charge = { uid: who.id, ref };
+          } else if (u.pathname === "/start") {
+            const a = await dbRpc(env, "billing_refresh", { uid: who.id });
+            if (a.plan_credits + a.extra_credits < START_NEEDS) return json(env, { error: `A competitor analysis uses ${START_NEEDS} credits and you have ${a.plan_credits + a.extra_credits}. Top up or upgrade your plan.`, code: "no_credits", needed: START_NEEDS }, 402);
+          }
+        } catch (e) { return json(env, { error: String((e && e.message) || e).slice(0, 240) }, 502); }
+      }
     }
     const apify = (path) => `https://api.apify.com/v2/${path}${path.includes("?") ? "&" : "?"}token=${env.APIFY_TOKEN}`;
     try {
@@ -1093,5 +1229,16 @@ export default {
       const st = e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500;
       return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String(e.message || e).slice(0, 240) }, st);
     }
+}
+
+export default {
+  async fetch(req, rawEnv) {
+    const hooks = {};
+    const res = await handle(req, rawEnv, hooks);
+    // A charged action that did not succeed costs nothing: give the credits back (safe to repeat).
+    if (hooks.charge && res.status >= 400) {
+      try { await dbRpc(rawEnv, "billing_refund", { uid: hooks.charge.uid, ref_id: hooks.charge.ref }); } catch (e) { console.log("refund failed", hooks.charge.ref); }
+    }
+    return res;
   },
 };

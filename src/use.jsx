@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Icon } from "./ui";
 import { field, copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { makeCost } from "./billing.js";
 import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 
@@ -407,7 +408,6 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
 /* The template is the style, the visitor's photos are the product. The server returns a new 4:5 ad, which can then
    be changed with a typed instruction, scored, and fixed from the score. */
 
-const MAKE_COST = 2;
 
 /* A photo as a JPEG data URL no wider or taller than max, so uploads stay small. */
 function shrinkPhoto(src, max = 1400, q = 0.9) {
@@ -468,7 +468,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
       setAd(`data:${out.mime};base64,${out.data}`);
       setReview(null); setFix("");
       track(body.base ? "ad_edited" : "ad_generated", { template_id: tpl.id, template_category: tpl.category, quality: premium ? "premium" : "standard", product_photos: photos.length, has_headline: !!headline.trim() });
-      if (spendNow && onSpend) onSpend(MAKE_COST);
+      if (spendNow && onSpend) onSpend(makeCost(premium));
     } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
     setBusy("");
   };
@@ -510,7 +510,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
           {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 hover:text-slate-800">Undo last change</button>}
           {ad && <button onClick={download} disabled={!!busy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
           <button id="make-go" onClick={generate} disabled={!photos.length || !!busy} className={primaryBtn}>
-            <Icon.Sparkle className="h-4 w-4" /> {busy ? "Working…" : ad ? "Make another version" : `Generate my ad · ${MAKE_COST} credits`}
+            <Icon.Sparkle className="h-4 w-4" /> {busy ? "Working…" : ad ? "Make another version" : `Generate my ad · ${makeCost(premium)} credits`}
           </button>
         </>
       }

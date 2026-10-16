@@ -73,3 +73,9 @@ The build is split into several files (2026-10-06): the gallery loads first (ind
 Publish: build, then copy dist/ into a checkout of the gh-pages branch and push. Live at https://nisado999.github.io/addoctor/
 More videos: Google Flow (flow.google.com, same Google account) is set to 9:16, Veo 3.1 Fast, confirm before generating. A clip costs 20 credits; The monthly credits were used up on 2026-10-05 (10 left); they refill monthly. Download at 720p from the card menu. The Gemini app itself allows only 2 to 3 videos a day.
 When a video or image is replaced, give it a new file name (new id). GitHub Pages and browsers cache the old file under the same name, so visitors keep seeing the old clip.
+
+## Billing (built, off by default)
+- Hybrid model: free tier (25/mo) + Starter $19, Pro $49, Agency $129 (yearly = 10x monthly) + $15 top-up (250 credits). Paddle is merchant of record.
+- Server: `api/worker.js` (`billingRoute`, `paddleWebhook`, charge block, refund wrapper; `BILLING=on` switches it on). DB: `supabase/billing.sql` (ledger, idempotent refs, service_role-only functions). Client: `src/billing.js`, `src/plans.jsx`.
+- Prices in credits live in three places that must change together: `creditCost()` in the Worker, `COSTS` in `src/billing.js`, `plan_allowance()` in the SQL.
+- Setup and rollout steps: `docs/BILLING-SETUP.md`. Terms and Refunds pages are drafts needing legal review.

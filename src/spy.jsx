@@ -5,6 +5,7 @@ import { apiFetch, isCancel } from "./api.js";
 import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
 import { CreativeGallery } from "./creatives.jsx";
+import { useBillingOn, COSTS } from "./billing.js";
 
 /* ============================ Competitor Spy ============================ */
 
@@ -612,6 +613,7 @@ function SpyView({ onRebuild, notify }) {
   const lib = useMemo(() => (libRaw.trim() ? spyParseLib(libRaw) : null), [libRaw]);
   const libOk = lib && !lib.error;
   const [dateMsg, setDateMsg] = useState("");
+  const billingOn = useBillingOn();
   const datesMatch = !!libOk && lib.from === from && lib.to === to;
   // Puts the chosen dates into the pasted link, so the link and the date range never disagree. Only the two date
   // values change; the advertiser, country and everything else in the link stay as pasted.
@@ -966,7 +968,7 @@ ${spyCompact(ads)}`;
           {running ? (
             <button onClick={() => crawlCtl.current && crawlCtl.current.abort()} className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 hover:border-slate-300">Stop</button>
           ) : (
-            <button id="spy-analyze" onClick={runCrawl} disabled={!libOk} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:opacity-50"><Icon.Sparkle className="h-4 w-4" />Analyze</button>
+            <button id="spy-analyze" onClick={runCrawl} disabled={!libOk} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:opacity-50"><Icon.Sparkle className="h-4 w-4" />Analyze{billingOn ? ` · ${COSTS.analyze} credits` : ""}</button>
           )}
         </div>
         {lib && lib.error && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{lib.error}</p>}

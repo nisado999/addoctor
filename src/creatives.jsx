@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { Icon } from "./ui";
 import { copyText, SPY_API, hasFeature } from "./shared.js";
 import { apiFetch, need, isCancel } from "./api.js";
+import { useBillingOn, COSTS } from "./billing.js";
 import { track } from "./track.js";
 import { useDialog } from "./dialog.jsx";
 
@@ -79,6 +80,7 @@ function breakdownText(ad, b, brand) {
 
 function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify }) {
   const { data, err, busy } = useBreakdown(ad, brand);
+  const billingOn = useBillingOn();
   const closeRef = useRef(null);
   const panelRef = useRef(null);
   // The app's shared dialog behaviour: Escape closes only the top dialog, Tab stays inside, the page behind stops
@@ -116,7 +118,7 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
           </div>
           {ad.body && <p className="mt-3 text-[13px] leading-relaxed text-slate-500">{ad.body}</p>}
 
-          <h3 className="mt-6 text-sm font-semibold text-slate-900">Creative breakdown <span className="font-normal text-slate-500">· read by Claude</span></h3>
+          <h3 className="mt-6 text-sm font-semibold text-slate-900">Creative breakdown <span className="font-normal text-slate-500">· read by Claude{billingOn ? ` · ${COSTS.breakdown} credit` : ""}</span></h3>
           {busy && (
             <div className="mt-3 space-y-3" role="status"><p className="sr-only">Reading this creative…</p>
               {ROWS.map(([k]) => <div key={k} className="h-9 motion-safe:animate-pulse rounded-lg bg-slate-100" />)}
@@ -204,6 +206,7 @@ function Answer({ text }) {
 
 function AdsChat({ ads, brand, onOpen }) {
   const [q, setQ] = useState("");
+  const billingOn = useBillingOn();
   const [thread, setThread] = useState([]);   // [{ q, a, evidence: [libId], err }]
   const [busy, setBusy] = useState(false);
   const byId = useMemo(() => new Map(ads.map((a) => [a.libId, a])), [ads]);
@@ -275,7 +278,7 @@ function AdsChat({ ads, brand, onOpen }) {
       )}
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); ask(q); }}>
         <input id="spy-ask-input" value={q} onChange={(e) => setQ(e.target.value)} maxLength={400} placeholder={`e.g. What hooks does ${brand || "this brand"} repeat most?`} aria-label="Your question" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
-        <button type="submit" disabled={!q.trim() || busy} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{busy ? "Thinking…" : "Ask"}</button>
+        <button type="submit" disabled={!q.trim() || busy} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{busy ? "Thinking…" : billingOn ? `Ask · ${COSTS.ask} credits` : "Ask"}</button>
       </form>
     </section>
   );
@@ -298,6 +301,7 @@ function postAsAd(p) {
 }
 
 function OrganicPosts({ brand, hint, onOpen }) {
+  const billingOn = useBillingOn();
   const [ig, setIg] = useState(hint || "");
   const [tt, setTt] = useState("");
   const [st, setSt] = useState({ busy: false, err: "", posts: null, notes: [] });
@@ -326,7 +330,7 @@ function OrganicPosts({ brand, hint, onOpen }) {
       <form className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" onSubmit={(e) => { e.preventDefault(); load(); }}>
         <input value={ig} onChange={(e) => setIg(e.target.value)} placeholder="Instagram handle, e.g. glossier" aria-label="Instagram handle" className={field} />
         <input value={tt} onChange={(e) => setTt(e.target.value)} placeholder="TikTok handle, e.g. glossier" aria-label="TikTok handle" className={field} />
-        <button type="submit" disabled={st.busy || (!ig.trim() && !tt.trim())} className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{st.busy ? "Loading…" : "Find top posts"}</button>
+        <button type="submit" disabled={st.busy || (!ig.trim() && !tt.trim())} className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{st.busy ? "Loading…" : `Find top posts${billingOn ? ` · ${COSTS.organic} credits` : ""}`}</button>
       </form>
       {st.busy && <p className="mt-2 text-xs text-slate-500">Reading the profiles. This takes about 15 seconds.</p>}
       <p role="status" className="sr-only">{st.busy ? "Loading posts" : st.posts ? st.posts.length + " posts found" : ""}</p>
