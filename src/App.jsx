@@ -697,7 +697,7 @@ function App() {
   const isGrid = view !== "home" && view !== "vault" && view !== "plans" && !KEEP.includes(view);
   const V = VIEWS[view];
   const inStudio = !!V.studio;
-  const inspect = useCallback((tp) => { if (inStudio) return setStudio(tp); track("template_open", tplInfo(tp)); setLook(tp); }, [inStudio]);
+  const inspect = useCallback((tp) => { track("template_open", tplInfo(tp)); setLook(tp); }, []);
   const isOwner = !!(user && user.email && OWNERS.includes(user.email.toLowerCase()));
   // With billing on, credits live on the server: this device's daily allowance is not used, and actions that run
   // in the browser (Examine) cost nothing.
@@ -816,11 +816,10 @@ function App() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <h1 className="font-display text-[30px] font-extrabold leading-[1.05] tracking-[-0.035em] text-slate-950 sm:text-[40px]">
-                {inStudio ? "Creative Studio" : V.title}
-                {inStudio && <span className="ml-3 inline-flex translate-y-[-3px] items-center rounded-full bg-blue-50 px-2.5 py-1 align-middle text-xs font-semibold text-blue-700 ring-1 ring-blue-100">{view === "video" ? "Video" : "Static"}</span>}
+                {inStudio ? "Static Ads" : V.title}
               </h1>
               <p className="mt-1 max-w-xl text-sm text-slate-500">
-                {inStudio ? "Choose a direct-response template to synthesize a high-converting creative with your product photo." : V.sub}
+                {inStudio ? "Proven static formats. Open one to add your logo or make it with your own product." : V.sub}
               </p>
             </div>
             {view === "vault" && vaultTab === "reports" && <p className="text-xs font-medium tabular-nums text-slate-500">{s ? `${vaultList.length} of ${vault.length}` : vault.length} saved</p>}
@@ -885,7 +884,6 @@ function App() {
               <TemplateGrid label={inStudio ? "Static templates" : "Templates"} className="mt-7 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-5 xl:gap-x-6">
                 {list.slice(0, shown).map((t, i) => <TemplateCard
                     key={t.id} t={t} i={i % 10} fav={favs.includes(t.id)} onFav={toggleFav}
-                    {...(inStudio ? { verb: "Open Studio:", action: "Open Studio" } : {})}
                     onInspect={inspect}
                   />)}
               </TemplateGrid>

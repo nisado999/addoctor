@@ -96,20 +96,20 @@ function LookModal({ tpl, onClose, onBrand, onInspire, onExamine, onProduct }) {
                   <span className="mt-0.5 block text-xs leading-snug text-blue-100">Upload a product photo and get {isVideo ? "an image ad" : "this ad"} in this style with your real product in it. Then edit it and score it.</span>
                 </span>
               </button>
-              <button onClick={() => onBrand(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300`}>
+              <button onClick={() => onBrand(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300 ${isVideo ? "" : "sm:col-span-2"}`}>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Image className="h-[18px] w-[18px]" /></span>
                 <span>
                   <span className="block text-sm font-semibold">Add my logo</span>
                   <span className="mt-0.5 block text-xs leading-snug text-slate-500">Put your logo straight onto this {isVideo ? "video" : "image"} and download it.</span>
                 </span>
               </button>
-              <button onClick={() => onInspire(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300`}>
+              {isVideo && <button onClick={() => onInspire(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300`}>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Wand className="h-[18px] w-[18px]" /></span>
                 <span>
                   <span className="block text-sm font-semibold">Make a new one inspired by it</span>
                   <span className="mt-0.5 block text-xs leading-snug text-slate-500">A new {isVideo ? "video" : "creative"} in this style with your brand, product and logo.</span>
                 </span>
-              </button>
+              </button>}
             </div>
             <button onClick={() => onExamine(tpl)} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
               <Icon.Stethoscope className="h-3.5 w-3.5" /> Or examine an ad of mine against this template
