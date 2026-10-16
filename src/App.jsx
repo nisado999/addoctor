@@ -567,9 +567,10 @@ function App() {
   };
 
   const rebuild = (tplId) => {
+    // A competitor's creative becomes your own ad: the closest template opens in "Make it with my product".
     const t = TEMPLATES.find((x) => x.id === tplId) || TEMPLATES[0];
-    setStudio(t);
-    notify(`Opened "${t.title}", the closest match to this ad's angle.`, 2600);
+    setProduct(t);
+    notify(`Started from "${t.title}", the closest style to this ad. Add your product photo.`, 3200);
   };
 
   // True only when the report is really stored, so Examine never says "Saved" for one that will be gone on reload.
@@ -753,7 +754,7 @@ function App() {
           <ErrorBoundary variant="view" label={view} resetKeys={[view]}>
           <div key={view} className={moved ? "view-in" : undefined}>
           {view === "explore" ? (
-            <Hero onExamine={() => openExam({})} onPick={inspect} onBrowse={() => gridRef.current && gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" })} />
+            <Hero onExamine={() => openExam({})} onSpy={() => goto("spy")} onPick={inspect} onBrowse={() => gridRef.current && gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" })} />
           ) : (
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">

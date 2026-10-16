@@ -163,7 +163,7 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
           )}
 
           <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-            {ad.kind !== "organic" && <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Wand className="h-3.5 w-3.5" /> Rebuild this angle</button>}
+            {ad.kind !== "organic" && <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Wand className="h-3.5 w-3.5" /> Make mine in this style</button>}
             <button onClick={onSave} aria-pressed={saved} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Bookmark className="h-3.5 w-3.5" /> {saved ? "Saved" : "Save"}</button>
             {data && <button onClick={async () => { const ok = await copyText(breakdownText(ad, data, brand)); notify(ok === false ? "Couldn't copy. Select the text manually." : "Breakdown copied"); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Copy className="h-3.5 w-3.5" /> Copy breakdown</button>}
             {landing(ad.link) && <a href={landing(ad.link)} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><span className="truncate">{ad.kind === "organic" ? "Open the original post · " : "Landing page · "}{String(ad.link).replace(/^https?:\/\//i, "").split("/")[0]}</span><span className="sr-only"> (opens in a new tab)</span></a>}
@@ -252,7 +252,7 @@ function AdsChat({ ads, brand, onOpen }) {
                   <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                     {x.evidence.map((id) => byId.get(id)).filter(Boolean).map((a) => (
                       <button key={a.libId} onClick={() => onOpen(a)} title={a.headline} className="relative h-24 w-[76px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
-                        {a.img ? <img src={a.img} alt={a.headline} loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <span className="block p-1.5 text-left text-[11px] leading-tight text-slate-600">{a.headline}</span>}
+                        {a.img ? <img src={a.img} alt={a.headline} loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <span className="block p-1.5 text-left text-[11px] leading-tight text-slate-600">{a.headline}</span>}
                         {a.days !== null && a.days !== undefined && <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-[11px] font-semibold text-slate-700">{a.days}d</span>}
                       </button>
                     ))}
@@ -284,7 +284,8 @@ const fmtNum = (n) => (n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n 
 function postAsAd(p) {
   const lines = String(p.caption || "").split("\n").map((l) => l.trim()).filter(Boolean);
   const first = (lines[0] || "").slice(0, 110);
-  const days = p.ts ? Math.max(0, Math.round((Date.now() - p.ts) / 86400000)) : null;
+  const age = p.ts ? Math.max(0, Math.round((Date.now() - p.ts) / 86400000)) : null;
+  const days = Number.isFinite(age) ? age : null;
   return {
     id: p.platform + ":" + p.id, libId: p.platform + ":" + p.id, img: p.thumb, headline: first || "(no caption)",
     body: lines.slice(1).join(" ").slice(0, 400), cta: "", versions: 1, link: p.url, kind: "organic", advertiser: "@" + p.handle, days,
@@ -305,7 +306,7 @@ function OrganicPosts({ brand, hint, onOpen }) {
     if (st.busy || (!ig.trim() && !tt.trim())) return;
     setSt({ busy: true, err: "", posts: null, notes: [] }); setPlat("All"); setShown(PAGE);
     try {
-      const j = await apiFetch("/organic", { body: { instagram: ig.trim(), tiktok: tt.trim() }, timeout: 60000 });
+      const j = await apiFetch("/organic", { body: { instagram: ig.trim(), tiktok: tt.trim() }, timeout: 100000 });
       const posts = (Array.isArray(j.posts) ? j.posts : []).map((p) => ({ ...p, ad: postAsAd(p) }));
       setSt({ busy: false, err: "", posts, notes: Array.isArray(j.notes) ? j.notes : [] });
       track("organic_loaded", { instagram: !!ig.trim(), tiktok: !!tt.trim(), posts: posts.length });
@@ -324,9 +325,10 @@ function OrganicPosts({ brand, hint, onOpen }) {
         <input value={tt} onChange={(e) => setTt(e.target.value)} placeholder="TikTok handle, e.g. glossier" aria-label="TikTok handle" className={field} />
         <button type="submit" disabled={st.busy || (!ig.trim() && !tt.trim())} className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{st.busy ? "Loading…" : "Find top posts"}</button>
       </form>
+      {st.busy && <p className="mt-2 text-xs text-slate-500">Reading the profiles. This takes about 15 seconds.</p>}
       <p role="status" className="sr-only">{st.busy ? "Loading posts" : st.posts ? st.posts.length + " posts found" : ""}</p>
       {st.err && <p role="alert" className="mt-3 rounded-xl bg-rose-50 px-3.5 py-2.5 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{st.err}</p>}
-      {st.notes.map((t) => <p key={t} role="alert" className="mt-3 rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] font-medium text-amber-800 ring-1 ring-amber-100">{t}</p>)}
+      {st.notes.map((t, i) => <p key={i + t} role="alert" className="mt-3 rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] font-medium text-amber-800 ring-1 ring-amber-100">{t}</p>)}
       {st.posts && st.posts.length > 0 && (
         <>
           <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter posts">
@@ -336,7 +338,7 @@ function OrganicPosts({ brand, hint, onOpen }) {
             {list.slice(0, shown).map((p) => (
               <button key={p.platform + p.id} onClick={() => { onOpen(p.ad); track("creative_opened", { format: p.ad.format, from: "organic" }); }} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                 <span className="relative block aspect-[4/5] w-full bg-slate-100">
-                  {p.thumb && <img src={p.thumb} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="absolute inset-0 h-full w-full object-cover" />}
+                  {p.thumb && <img src={p.thumb} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="absolute inset-0 h-full w-full object-cover" />}
                   <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-700 shadow-sm">{p.ad.format}</span>
                   <span className="absolute bottom-2 left-2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-semibold text-white">{p.views ? fmtNum(p.views) + " views" : fmtNum(p.likes) + " likes"}</span>
                 </span>
@@ -419,7 +421,7 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
             return (
               <button key={a.libId} onClick={() => { setOpen(a); track("creative_opened", { format: a.format, days: a.days }); }} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                 <span className="relative block aspect-[4/5] w-full bg-slate-100">
-                  <img src={a.img} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="absolute inset-0 h-full w-full object-cover" />
+                  <img src={a.img} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="absolute inset-0 h-full w-full object-cover" />
                   <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-700 shadow-sm">{a.format}</span>
                   {saved.includes(a.libId) && <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm"><Icon.Bookmark className="h-3 w-3" /><span className="sr-only">Saved</span></span>}
                   {a.days !== null && a.days !== undefined && <span className={`absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${winner ? "bg-emerald-700 text-white" : "bg-white/90 text-slate-700"}`}>{a.days}d live</span>}

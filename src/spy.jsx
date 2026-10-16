@@ -512,7 +512,7 @@ function SpyAdCard({ ad, onRebuild }) {
   const winner = ad.days !== null && ad.days >= 30;
   return (
     <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      {ad.img && <img src={ad.img} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} className="mb-3 aspect-[4/3] w-full rounded-xl bg-slate-100 object-cover" />}
+      {ad.img && <img src={ad.img} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} className="mb-3 aspect-[4/3] w-full rounded-xl bg-slate-100 object-cover" />}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{ad.format}</span>
         {ad.days !== null && (
@@ -582,7 +582,7 @@ function SpyView({ onRebuild, notify }) {
   const [state, setState] = useState(null);
   const [helper, setHelper] = useState(false);
   const [find, setFind] = useState({ q: "", busy: false, err: "", list: null });
-  const [pickedIg, setPickedIg] = useState("");   // the Instagram handle of the brand picked from the search
+  const [pickedIg, setPickedIg] = useState({ id: "", ig: "" });   // the brand picked from the search and its Instagram handle
   const [canFind, setCanFind] = useState(false);   // brand search shows only once the server says it has it
   useEffect(() => { let dead = false; hasFeature("brands").then((ok) => { if (!dead) setCanFind(ok); }); return () => { dead = true; }; }, []);
   const helperLink = useRef(null);
@@ -856,11 +856,11 @@ ${spyCompact(ads)}`;
   };
 
   // Find an advertiser by name (1 ScrapeCreators credit), then fill in its Ad Library link.
-  const searchBrands = async () => {
-    const q = find.q.trim();
+  const searchBrands = async (override) => {
+    const q = (typeof override === "string" ? override : find.q).trim();
     if (q.length < 2 || find.busy) return;
     if (!SPY_API) { setFind((f) => ({ ...f, err: "Brand search needs the AdDoctor server. Paste an Ad Library link instead.", list: null })); return; }
-    setFind((f) => ({ ...f, busy: true, err: "", list: null }));
+    setFind((f) => ({ ...f, q, busy: true, err: "", list: null }));
     try {
       const j = await apiFetch("/brands", { body: { q }, timeout: 30000 });
       setFind((f) => ({ ...f, busy: false, list: Array.isArray(j.brands) ? j.brands : [] }));
@@ -870,7 +870,7 @@ ${spyCompact(ads)}`;
   const pickBrand = (b) => {
     setLibRaw(spyUrl(b.id, country || "ALL", from, to));
     setBrand(b.name);
-    setPickedIg(b.ig || "");
+    setPickedIg({ id: b.id, ig: b.ig || "" });
     setFind({ q: "", busy: false, err: "", list: null });
     setCrawl({ phase: "idle", i: 0, n: 0, found: 0, msg: "" });
   };
@@ -915,6 +915,14 @@ ${spyCompact(ads)}`;
           </div>
           <button type="submit" disabled={find.q.trim().length < 2 || find.busy} className="h-12 shrink-0 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50">{find.busy ? "Searching…" : "Search"}</button>
         </form>
+        {!find.list && !find.busy && !state && (
+          <p className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+            Try
+            {["Glossier", "Gymshark", "Rhode", "Allbirds"].map((b) => (
+              <button key={b} type="button" onClick={() => searchBrands(b)} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">{b}</button>
+            ))}
+          </p>
+        )}
         {find.err && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{find.err}</p>}
         <p role="status" className="sr-only">{find.list ? (find.list.length ? `${find.list.length} advertisers found` : "No advertisers found") : ""}</p>
         {find.list && (
@@ -1030,7 +1038,7 @@ ${spyCompact(ads)}`;
             <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
               {res.creatives.map((c, i) => (
                 <figure key={i} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                  {c.img && <img src={c.img} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} className="aspect-square w-full bg-slate-100 object-cover" />}
+                  {c.img && <img src={c.img} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = "none"; }} className="aspect-square w-full bg-slate-100 object-cover" />}
                   <figcaption className="p-3">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">{c.format} · {spyPlural(c.n, "ad")}</span>
                     <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">{c.sees}</p>
@@ -1052,7 +1060,7 @@ ${spyCompact(ads)}`;
           )}
         </div>
 
-        <CreativeGallery ads={res.ads} brand={state.brand} organicHint={pickedIg} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
+        <CreativeGallery key={state.active + "|" + state.brand + "|" + res.ads.length} ads={res.ads} brand={state.brand} organicHint={libOk && lib.id === pickedIg.id ? pickedIg.ig : ""} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>

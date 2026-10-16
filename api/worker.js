@@ -278,6 +278,8 @@ async function readAdImages(env, ads) {
 }
 
 // Slicing text can cut an emoji in half (a lone surrogate), which makes the request invalid JSON. Remove any such halves.
+// An error the visitor can act on: answered as 422, which the page shows as written.
+const bad = (msg) => Object.assign(new Error(msg), { status: 422 });
 const wf = (t) => String(t).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "");
 
 // One line per group of near-identical ads. When there are too many to fit, every line's ad text is shortened
@@ -383,7 +385,7 @@ function repairJson(s) {
       if (k >= s.length || /[,:}\]]/.test(s[k])) { inStr = false; out += c; } else out += '\\"';
       continue;
     }
-    out += inStr && c === "\n" ? "\\n" : c;
+    out += inStr && c === "\n" ? "\\n" : inStr && c === "\r" ? "\\r" : inStr && c === "\t" ? "\\t" : c;
   }
   return out;
 }
@@ -689,7 +691,7 @@ const AWARENESS = ["unaware", "problem", "solution", "product", "most"];
 async function creativeBreakdown(env, b) {
   let host = "";
   try { host = new URL(String(b.img || "")).hostname; } catch (e) { /* handled below */ }
-  if (!AD_IMG_HOST.test(host)) throw new Error("That creative image can't be read");
+  if (!AD_IMG_HOST.test(host)) throw bad("That creative image can't be read");
   const ref = await loadRef({ url: b.img }, AD_IMG_HOST);
   const organic = b.kind === "organic";
   const prompt = `You are a senior direct-response creative strategist breaking down ONE competitor ${organic ? "organic social post (not a paid ad, so there is no button)" : "ad (Meta, " + (clip(b.format, 20) || "unknown format") + ")"}. If it is a video you only see its cover frame, so do not describe motion or audio you cannot see.
@@ -713,8 +715,8 @@ Inside JSON strings use single quotes when you quote words, never double quotes.
 // ScrapeCreators' Ad Library company search: 1 credit per search, returns the page id the Spy needs.
 async function brandSearch(env, b) {
   const q = clip(b.q, 80).trim();
-  if (q.length < 2) throw new Error("Type at least 2 letters");
-  if (!env.SCRAPECREATORS_KEY) throw new Error("Brand search is not set up on the server. Paste an Ad Library link instead.");
+  if (q.length < 2) throw bad("Type at least 2 letters");
+  if (!env.SCRAPECREATORS_KEY) throw bad("Brand search is not set up on the server. Paste an Ad Library link instead.");
   const r = await fetch("https://api.scrapecreators.com/v1/facebook/adLibrary/search/companies?" + new URLSearchParams({ query: q }), { headers: { "x-api-key": env.SCRAPECREATORS_KEY } });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || j.success === false) throw new Error("Brand search failed: " + String(j.message || j.error || r.status).slice(0, 120));
@@ -723,7 +725,7 @@ async function brandSearch(env, b) {
     brands: (Array.isArray(j.searchResults) ? j.searchResults : []).filter((x) => x && x.page_id && !x.page_is_deleted).slice(0, 12).map((x) => ({
       id: String(x.page_id).replace(/\D/g, ""), name: clip(x.name, 120), category: clip(x.category, 60),
       likes: num(x.likes), ig: clip(x.ig_username, 60), igFollowers: num(x.ig_followers),
-      verified: /VERIFIED/.test(String(x.verification || "")), avatar: AD_IMG_HOST.test((() => { try { return new URL(x.image_uri).hostname; } catch (e) { return ""; } })()) ? String(x.image_uri) : "",
+      verified: /^(BLUE|GRAY|GREY)_VERIFIED$/i.test(String(x.verification || "")), avatar: AD_IMG_HOST.test((() => { try { return new URL(x.image_uri).hostname; } catch (e) { return ""; } })()) ? String(x.image_uri) : "",
     })),
   };
 }
@@ -737,6 +739,7 @@ const cleanHandle = (v) => {
   const m = s.match(/(?:instagram\.com|tiktok\.com)\/@?([A-Za-z0-9._]+)/i);   // a pasted profile link
   if (m) s = m[1];
   s = s.replace(/^@+/, "").replace(/[/?#].*$/, "");
+  if (/^(p|reel|reels|tv|explore|stories|accounts|video|tag|share)$/i.test(s)) return "";
   return HANDLE_RE.test(s) ? s : "";
 };
 const nz = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.round(Number(v)) : 0);
@@ -778,9 +781,9 @@ function ttPost(it, handle) {
 }
 
 async function organicPosts(env, b) {
-  if (!env.SCRAPECREATORS_KEY) throw new Error("Organic research is not set up on the server.");
+  if (!env.SCRAPECREATORS_KEY) throw bad("Organic research is not set up on the server.");
   const ig = cleanHandle(b.instagram), tt = cleanHandle(b.tiktok);
-  if (!ig && !tt) throw new Error("Add an Instagram or TikTok handle");
+  if (!ig && !tt) throw bad("Add an Instagram or TikTok handle, or a profile link");
   const out = { posts: [], notes: [] };
   const jobs = [];
   if (ig) jobs.push((async () => {
@@ -800,7 +803,8 @@ async function organicPosts(env, b) {
   await Promise.all(jobs);
   // Views exist only for videos (and Instagram photos have none), so ranking by engagement keeps both comparable.
   const score = (p) => p.likes + p.comments * 5 + p.shares * 3;
-  out.posts = out.posts.filter((p) => p.id && (p.thumb || p.caption)).sort((a, c) => score(c) - score(a)).slice(0, 48);
+  const seen = new Set();
+  out.posts = out.posts.filter((p) => p.id && (p.thumb || p.caption) && !seen.has(p.platform + ":" + p.id) && seen.add(p.platform + ":" + p.id)).sort((a, c) => score(c) - score(a)).slice(0, 48);
   if (!out.posts.length && !out.notes.length) out.notes.push("No public posts came back for that handle.");
   return out;
 }
@@ -810,9 +814,9 @@ async function organicPosts(env, b) {
 // and names the ads it used as evidence, which the page shows as thumbnails.
 async function askAds(env, b) {
   const question = clip(b.question, 400).trim();
-  if (!question) throw new Error("Ask a question first");
+  if (!question) throw bad("Ask a question first");
   const ads = (Array.isArray(b.ads) ? b.ads : []).filter((a) => a && typeof a === "object").slice(0, 400);
-  if (!ads.length) throw new Error("Analyze an advertiser first");
+  if (!ads.length) throw bad("Analyze an advertiser first");
   const lines = ads.map((a, i) => `${i + 1} | ${clip(a.format, 12)} | ${Number.isFinite(Number(a.days)) ? Number(a.days) + "d" : "?"} | ${clip(a.start, 10) || "?"} | ${clip(a.headline, 140)}${a.body ? " / " + clip(a.body, 220) : ""}${a.cta ? " [" + clip(a.cta, 30) + "]" : ""}`).join("\n");
   const history = (Array.isArray(b.history) ? b.history : []).filter((h) => h && typeof h === "object").slice(-4).map((h) => `Q: ${clip(h.q, 300)}\nA: ${clip(h.a, 700)}`).join("\n\n");
   const prompt = `You are a senior paid-social strategist answering a question about ONE advertiser's Meta ads. Today is ${new Date().toISOString().slice(0, 10)}. Advertiser: ${clip(b.brand, 80) || "unknown"}.

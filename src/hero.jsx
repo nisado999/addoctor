@@ -27,7 +27,7 @@ let fromShell = typeof document !== "undefined" && !!document.querySelector("[da
 const WIDE = "(min-width: 768px)"; // Tailwind's md, where the stack replaces the strip
 const wideNow = () => typeof window !== "undefined" && !!window.matchMedia && window.matchMedia(WIDE).matches;
 
-function Hero({ onExamine, onBrowse, onPick }) {
+function Hero({ onExamine, onBrowse, onPick, onSpy }) {
   const ref = useRef(null);
   const [calm] = useState(() => { const c = fromShell; fromShell = false; return c; });
   // Only the layout on screen is rendered, so a phone never downloads the stack's photos and a desktop never the strip's.
@@ -82,7 +82,7 @@ function Hero({ onExamine, onBrowse, onPick }) {
             Ads that stop the scroll, <span className="hero-ink">diagnosed and rebuilt.</span>
           </h1>
           <p className="hero-up mt-4 max-w-md text-[15px] leading-relaxed text-slate-600" style={{ "--d": "120ms" }}>
-            Pick a proven direct-response format, add your logo, or make a new one in its style. Then examine any ad for conversion leaks.
+            Spy on what a competitor runs, start from a proven direct-response format, and make a new ad in its style with your own product. Then examine any ad for conversion leaks.
           </p>
           <div className="hero-up mt-6 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center" style={{ "--d": "180ms" }}>
             <button onClick={onExamine} className={`btn-glow inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-b from-blue-500 to-blue-600 px-4 text-sm font-semibold text-white transition active:scale-[.97] sm:px-5 ${ring}`}>
@@ -91,6 +91,11 @@ function Hero({ onExamine, onBrowse, onPick }) {
             <button onClick={onBrowse} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 active:scale-[.97] sm:px-5 ${ring}`}>
               Browse templates <Icon.Arrow className="hidden h-4 w-4 rotate-90 sm:block" />
             </button>
+            {onSpy && (
+              <button onClick={onSpy} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 active:scale-[.97] sm:px-5 ${ring}`}>
+                <Icon.Eye className="h-4 w-4" /> Spy on a competitor
+              </button>
+            )}
           </div>
 
           {!wide && (

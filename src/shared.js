@@ -46,8 +46,11 @@ const SPY_KEY = (typeof window !== "undefined" && window.ADDOCTOR_KEY) || (SPY_A
 // What the AdDoctor server can do, read once per page load, so a feature whose route is not deployed yet stays hidden.
 let capsP = null;
 function serverCaps() {
-  if (!capsP) capsP = SPY_API ? fetch(SPY_API + "/caps", { headers: SPY_KEY ? { "X-App-Key": SPY_KEY } : {} }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})) : Promise.resolve({});
-  return capsP;
+  if (!capsP) {
+    capsP = SPY_API ? fetch(SPY_API + "/caps", { headers: SPY_KEY ? { "X-App-Key": SPY_KEY } : {} }).then((r) => (r.ok ? r.json() : Promise.reject(new Error("caps")))) : Promise.resolve({});
+    capsP.catch(() => { capsP = null; });   // try again next time instead of remembering the failure
+  }
+  return capsP.catch(() => ({}));
 }
 const hasFeature = async (name) => { const c = await serverCaps(); return Array.isArray(c.features) && c.features.includes(name); };
 
