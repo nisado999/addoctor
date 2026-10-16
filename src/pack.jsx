@@ -435,7 +435,7 @@ function PackView({ notify, credits, onSpend }) {
                 className={`rounded-full px-4 py-1.5 text-sm font-semibold ${quality === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>{l}</button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-slate-500">Premium uses the best image model: sharper text on images, 2 credits per post.</p>
+          <p className="mt-2 text-xs text-slate-500">Premium uses the best image model: sharper text on images, {imageCost(true)} credits per post instead of {imageCost(false)}.</p>
 
           {err && <p className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">{err}</p>}
 
