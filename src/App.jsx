@@ -9,6 +9,7 @@ import { useBilling } from "./billing.js";
 import { ErrorBoundary, lazyRetry } from "./boundary.jsx";
 import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
 import { SwipeView, useSwipe } from "./swipe.jsx";
+import { CommandPalette } from "./palette.jsx";
 import { loadVault, sanitizeVault, loadFavs, loadCredits, saveCredits, writeJSON } from "./storage.js";
 import { ApiError } from "./api.js";
 
@@ -117,6 +118,8 @@ function VaultView({ items, total, query, onClearSearch, onOpen, onRemove, onExa
 
 /* --------------------------------- App --------------------------------- */
 
+const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+
 const VIEWS = {
   explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one, add your logo, or make a new one in its style." },
   video: { title: "Video Generator", studio: true },
@@ -220,6 +223,7 @@ function useCredits() {
 
 function App() {
   const [view, setView] = useState(viewFromHash);
+  const [palette, setPalette] = useState(false);   // Ctrl/Cmd+K: jump to any page, action or template
   const [vaultTab, setVaultTab] = useState("reports");   // "reports" (examined ads) | "ads" (competitor ads saved from Spy)
   const swipeCount = useSwipe().length;
   const [exam, setExam] = useState(null); // null = closed, else init object
@@ -283,6 +287,12 @@ function App() {
   /* "/" jumps to search, like most galleries. Ignored while typing or when a dialog is open. */
   useEffect(() => {
     const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === "k" || e.key === "K")) {
+        if (openDialogCount() > 0) return;
+        e.preventDefault();
+        setPalette(true);
+        return;
+      }
       if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
       const el = document.activeElement;
       if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
@@ -736,6 +746,13 @@ function App() {
               {!q && <kbd className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 md:block">/</kbd>}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
+              <button
+                onClick={() => setPalette(true)} aria-label="Jump to a page, action or template" aria-keyshortcuts="Control+K Meta+K"
+                className="hidden h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition-colors duration-150 hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 md:inline-flex"
+              >
+                Jump to
+                <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-px font-mono text-[10px] font-medium text-slate-500">{IS_MAC ? "⌘K" : "Ctrl K"}</kbd>
+              </button>
               {user ? (
                 <div className="relative">
                   <button
@@ -927,6 +944,12 @@ function App() {
       {authOpen && <DialogSlot key={authMode} label="auth" onClose={closeAuth}><AuthModal onClose={closeAuth} notify={notify} initialMode={authMode} /></DialogSlot>}
 
       <BottomNav active={active} onNav={goto} vaultCount={vault.length} />
+      {palette && (
+        <CommandPalette
+          onClose={() => setPalette(false)} onGo={goto} onExamine={() => openExam({})} onTemplate={inspect}
+          extra={billing.on ? [{ id: "plans", label: "Plans & credits", hint: "Your balance, plans and top-ups", icon: Icon.Tag, keys: "billing pricing credits upgrade" }] : []}
+        />
+      )}
 
       {toTop && isGrid && !anyModal && (
         <button
