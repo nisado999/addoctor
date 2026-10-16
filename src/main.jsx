@@ -4,6 +4,7 @@ import { installGlobalHandlers } from "./report.js";
 import { ErrorBoundary } from "./boundary.jsx";
 import "./styles.css";
 import { App } from "./App";
+import { initMotion } from "./motion.js";
 
 initTracking();
 installGlobalHandlers();
@@ -23,6 +24,7 @@ createRoot(document.getElementById("root")).render(
     <App />
   </ErrorBoundary>
 );
+initMotion();
 
 /* The host caches index.html for ten minutes, so a visitor can be handed an old build right after a publish.
    Ask for the page fresh, and if it points at a different script than the one running, reload once, but only in the

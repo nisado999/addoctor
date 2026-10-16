@@ -215,7 +215,7 @@ const showTrending = (t) => {
 const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use this template", verb = "Use", fav = false, onFav, i = 0 }) {
   const cta = verb === "Use" ? "Use template" : "Open Studio";
   return (
-    <li data-tilt className="tilt rise group relative list-none" style={{ "--i": i }}>
+    <li data-tilt data-reveal className="tilt group relative list-none" style={{ "--i": i }}>
       <article className="group/card relative flex flex-col">
         <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10">
           <Creative t={t} lazy />
