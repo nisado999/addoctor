@@ -138,12 +138,13 @@ create or replace function public.billing_set_plan(
   customer text, subscription text, reset boolean, ref_id text
 ) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare a public.billing_accounts;
+declare a public.billing_accounts; was_pc integer;
 begin
   a := public.billing_refresh(uid);
   if exists (select 1 from public.credit_ledger where ref = ref_id) then
     return jsonb_build_object('ok', true, 'duplicate', true);
   end if;
+  was_pc := a.plan_credits;
   update public.billing_accounts
      set plan = coalesce(new_plan, plan), status = coalesce(new_status, status), billing_interval = coalesce(new_interval, billing_interval),
          current_period_end = coalesce(period_end, current_period_end),
@@ -153,8 +154,8 @@ begin
          updated_at = now()
    where user_id = uid
   returning * into a;
-  insert into public.credit_ledger (user_id, delta, reason, ref)
-  values (uid, 0, 'plan ' || a.plan || ' (' || a.status || ')' || case when reset then ', credits reset' else '' end, ref_id);
+  insert into public.credit_ledger (user_id, delta, plan_delta, reason, ref)
+  values (uid, a.plan_credits - was_pc, a.plan_credits - was_pc, 'plan ' || a.plan || ' (' || a.status || ')' || case when reset then ', credits reset' else '' end, ref_id);
   return jsonb_build_object('ok', true, 'plan', a.plan, 'plan_credits', a.plan_credits);
 end $$;
 
