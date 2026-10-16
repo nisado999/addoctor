@@ -26,7 +26,7 @@
     <main>
       <a href="./"><img class="logo" src="./logo.png" alt="AdDoctor" /></a>
       <h1>Privacy</h1>
-      <p class="muted">Last updated 7 October 2026. This page describes what the site does today. It will be updated before payments are added.</p>
+      <p class="muted">Last updated 16 October 2026. This page describes what the site does today. It will be updated before payments are added.</p>
 
       <h2>The short version</h2>
       <ul>
@@ -40,7 +40,8 @@
       <p>Accounts are handled by Supabase, on servers in Frankfurt, Germany. If you sign up with email, Supabase stores your email address and a scrambled (hashed) form of your password; we never see the password itself. If you sign in with Google, Google tells us your email address, name and profile picture, and nothing else from your Google account. Your browser keeps a sign-in token in local storage so you stay signed in; signing out removes it.</p>
 
       <h2>What stays in your browser</h2>
-      <p>Your favourite templates, the reports you save to the Vault and your free credits are kept in your browser's local storage on this device. They are never sent to a server and are not linked to your account, so signing in on another browser does not bring them along. Clearing your browser data removes them.</p>
+      <p>Your favourite templates, the reports you save to the Vault and your free credits are kept in your browser's local storage on this device. They are not sent to a server and are not linked to your account, so signing in on another browser does not bring them along. Clearing your browser data removes them.</p>
+      <p>The creatives you save in Competitor Spy are kept the same way: only a short list of Ad Library ad numbers, in this browser, so the page can show which ones you marked. The ads themselves are not stored.</p>
       <p>Each device gets 15 free credits a day. The count is kept in this browser and refills to 15 at midnight your time; there is nothing to buy.</p>
       <p>Browsing templates, Examine Ad, the Static Ads studio and "Add my logo" all run in your browser. A logo or ad you load there does not leave your device.</p>
 
@@ -49,6 +50,8 @@
         <table>
           <tr><th>Feature</th><th>What is sent</th><th>Who processes it</th></tr>
           <tr><td>Competitor Spy</td><td>The advertiser's Ad Library link, and the public ads read from Meta's Ad Library (text, dates, image links)</td><td>Cloudflare (our server), ScrapeCreators (reads the public Ad Library when you paste a link), Anthropic (writes the analysis and looks at the ad images)</td></tr>
+          <tr><td>Competitor Spy: search a brand by name</td><td>The brand name you type</td><td>Cloudflare, ScrapeCreators (looks the name up in Meta's public Ad Library)</td></tr>
+          <tr><td>Competitor Spy: open a creative, or ask about the ads</td><td>For a creative: the public ad's image link, text and how long it has run. For a question: your question, your earlier questions in that session, and the text of the public ads already read</td><td>Cloudflare, Anthropic (reads the ad image and writes the breakdown or the answer)</td></tr>
           <tr><td>Make it with my product</td><td>The product photos you upload, your headline and note, and the ad being edited or scored</td><td>Cloudflare, Google (Gemini generates the image), Anthropic (scores the ad)</td></tr>
           <tr><td>Social Pack</td><td>Your product description, product photos or store link, and the posts being checked</td><td>Cloudflare, Google (Gemini generates the images), Anthropic (writes the brief, captions and checks)</td></tr>
         </table>

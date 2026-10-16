@@ -582,6 +582,7 @@ function SpyView({ onRebuild, notify }) {
   const [state, setState] = useState(null);
   const [helper, setHelper] = useState(false);
   const [find, setFind] = useState({ q: "", busy: false, err: "", list: null });
+  const [pickedIg, setPickedIg] = useState("");   // the Instagram handle of the brand picked from the search
   const [canFind, setCanFind] = useState(false);   // brand search shows only once the server says it has it
   useEffect(() => { let dead = false; hasFeature("brands").then((ok) => { if (!dead) setCanFind(ok); }); return () => { dead = true; }; }, []);
   const helperLink = useRef(null);
@@ -869,6 +870,7 @@ ${spyCompact(ads)}`;
   const pickBrand = (b) => {
     setLibRaw(spyUrl(b.id, country || "ALL", from, to));
     setBrand(b.name);
+    setPickedIg(b.ig || "");
     setFind({ q: "", busy: false, err: "", list: null });
     setCrawl({ phase: "idle", i: 0, n: 0, found: 0, msg: "" });
   };
@@ -909,19 +911,20 @@ ${spyCompact(ads)}`;
         <form className="mt-4 flex gap-2" onSubmit={(e) => { e.preventDefault(); searchBrands(); }} role="search">
           <div className="relative min-w-0 flex-1">
             <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input id="spy-find" value={find.q} onChange={(e) => setFind((f) => ({ ...f, q: e.target.value }))} placeholder="Search a brand, e.g. Glossier" aria-label="Search a brand by name" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
+            <input id="spy-find" value={find.q} onChange={(e) => setFind((f) => ({ ...f, q: e.target.value }))} placeholder="Search a brand, e.g. Glossier" aria-label="Search a brand by name" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
           </div>
           <button type="submit" disabled={find.q.trim().length < 2 || find.busy} className="h-12 shrink-0 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50">{find.busy ? "Searching…" : "Search"}</button>
         </form>
         {find.err && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{find.err}</p>}
+        <p role="status" className="sr-only">{find.list ? (find.list.length ? `${find.list.length} advertisers found` : "No advertisers found") : ""}</p>
         {find.list && (
           <div className="mt-2 overflow-hidden rounded-xl border border-slate-200" id="spy-brands">
             {find.list.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">No advertisers found with that name.</p>}
             {find.list.map((b) => (
-              <button key={b.id} onClick={() => pickBrand(b)} className="flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-2.5 text-left transition last:border-b-0 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none">
+              <button key={b.id} onClick={() => pickBrand(b)} className="flex w-full items-center gap-3 border-b border-slate-100 px-3.5 py-2.5 text-left transition last:border-b-0 hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600">
                 {b.avatar ? <img src={b.avatar} alt="" referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-full bg-slate-100 object-cover" /> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-semibold text-slate-500">{(b.name || "?").slice(0, 1)}</span>}
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1 truncate text-sm font-semibold text-slate-900">{b.name}{b.verified && <Icon.Check className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-label="Verified" />}</span>
+                  <span className="flex items-center gap-1 truncate text-sm font-semibold text-slate-900">{b.name}{b.verified && <><Icon.Check className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden="true" /><span className="sr-only">Verified</span></>}</span>
                   <span className="block truncate text-xs text-slate-500">{[b.category, b.likes ? fmtCount(b.likes) + " likes" : "", b.ig ? "@" + b.ig : ""].filter(Boolean).join(" · ")}</span>
                 </span>
                 <span className="shrink-0 text-xs font-semibold text-blue-600">Select</span>
@@ -929,7 +932,7 @@ ${spyCompact(ads)}`;
             ))}
           </div>
         )}
-        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">or paste a link</p>
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">or paste a link</p>
         </>}
         <div className={`${canFind ? "mt-2" : "mt-4"} flex flex-col gap-3 sm:flex-row`}>
           <input id="spy-lib" value={libRaw} onChange={(e) => setLibRaw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && libOk && !running) runCrawl(); }} placeholder="https://www.facebook.com/ads/library/?…view_all_page_id=…" aria-label="Ad Library link" className="h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
@@ -1049,7 +1052,7 @@ ${spyCompact(ads)}`;
           )}
         </div>
 
-        <CreativeGallery ads={res.ads} brand={state.brand} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
+        <CreativeGallery ads={res.ads} brand={state.brand} organicHint={pickedIg} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>

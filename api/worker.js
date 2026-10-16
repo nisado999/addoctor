@@ -353,7 +353,15 @@ const MIX_HELP = {
 };
 
 const stripFence = (t) => String(t || "").replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
-const parseJson = (text) => { const m = stripFence(text).match(/[\[{][\s\S]*[\]}]/); return JSON.parse(m ? m[0] : text); };
+// The outermost {...} or [...] in the text. indexOf/lastIndexOf keep this linear however the model's reply looks.
+const jsonSpan = (text) => {
+  const s = stripFence(text);
+  const a = [s.indexOf("{"), s.indexOf("[")].filter((i) => i >= 0).sort((x, y) => x - y)[0];
+  if (a === undefined) return s;
+  const e = Math.max(s.lastIndexOf("}"), s.lastIndexOf("]"));
+  return e > a ? s.slice(a, e + 1) : s;
+};
+const parseJson = (text) => JSON.parse(jsonSpan(text));
 const clip = (v, n) => wf(String(v == null ? "" : v)).slice(0, n);
 
 // The answer is asked for as a call to a "reply" tool, which arrives as an already-parsed object, so a stray double
@@ -370,8 +378,9 @@ function repairJson(s) {
     if (inStr && c === "\\") { out += c + (s[i + 1] || ""); i++; continue; }
     if (c === '"') {
       if (!inStr) { inStr = true; out += c; continue; }
-      const rest = s.slice(i + 1).match(/^\s*(.)/);
-      if (!rest || /[,:}\]]/.test(rest[1])) { inStr = false; out += c; } else out += '\\"';
+      let k = i + 1;
+      while (k < s.length && /\s/.test(s[k])) k++;
+      if (k >= s.length || /[,:}\]]/.test(s[k])) { inStr = false; out += c; } else out += '\\"';
       continue;
     }
     out += inStr && c === "\n" ? "\\n" : c;
@@ -379,7 +388,7 @@ function repairJson(s) {
   return out;
 }
 
-const parseLoose = (text) => { try { return parseJson(text); } catch (e) { const m = stripFence(text).match(/[\[{][\s\S]*[\]}]/); return JSON.parse(repairJson(m ? m[0] : text)); } };
+const parseLoose = (text) => { try { return parseJson(text); } catch (e) { return JSON.parse(repairJson(jsonSpan(text))); } };
 
 async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
   const parts = typeof content === "string" ? [{ type: "text", text: content }] : content;
@@ -508,16 +517,28 @@ Return ONLY JSON: {"name":"brand or store name","description":"2-3 plain sentenc
 }
 
 function b64(buf) { const a = new Uint8Array(buf); let s = ""; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); }
-async function loadRef(r) {
+async function loadRef(r, hostOk) {
   if (r && r.data) {
     const d = String(r.data); const m = d.match(/^data:([^;,]+)/);
     const data = d.replace(/^data:[^,]+,/, "");
     if (data.length > 4500000) throw new Error("A photo is too large");
     return { mime: (m && m[1]) || r.mime || "image/jpeg", data };
   }
-  const u = safeUrl(r && r.url);
-  const resp = await fetch(u.href, { headers: UA, redirect: "follow" });
+  // Redirects are followed by hand, so every hop is checked again: a trusted host can't bounce this fetch elsewhere.
+  // "hostOk" (optional) is a pattern the host of each hop must match.
+  let u = safeUrl(r && r.url), resp = null;
+  for (let hop = 0; hop < 4; hop++) {
+    if (hostOk && !hostOk.test(u.hostname)) throw new Error("That image can't be read");
+    resp = await fetch(u.href, { headers: UA, redirect: "manual" });
+    if (resp.status >= 300 && resp.status < 400 && resp.headers.get("location")) {
+      if (hop === 3) throw new Error("Could not load a product photo (too many redirects)");
+      try { u = safeUrl(new URL(resp.headers.get("location"), u).href); } catch (e) { throw new Error("Could not load a product photo"); }
+      continue;
+    }
+    break;
+  }
   if (!resp.ok) throw new Error("Could not load a product photo (" + resp.status + ")");
+  if (Number(resp.headers.get("content-length")) > 6000000) throw new Error("A product photo is too large");
   const buf = await resp.arrayBuffer();
   if (buf.byteLength > 6000000) throw new Error("A product photo is too large");
   let mime = (resp.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
@@ -662,17 +683,18 @@ ${text}` }], b.quality);
 /* ------------------------ One competitor creative, broken down ------------------------ */
 // Claude reads one ad image (plus its text) and returns the pieces a creative strategist would note.
 // Only Meta's own image hosts are fetched, so this route can't be used to reach anything else.
-const AD_IMG_HOST = /(^|\.)(fbcdn\.net|facebook\.com|fbsbx\.com|cdninstagram\.com)$/i;
+const AD_IMG_HOST = /(^|\.)(fbcdn\.net|facebook\.com|fbsbx\.com|cdninstagram\.com|tiktokcdn\.com|tiktokcdn-us\.com)$/i;
 const AWARENESS = ["unaware", "problem", "solution", "product", "most"];
 
 async function creativeBreakdown(env, b) {
   let host = "";
   try { host = new URL(String(b.img || "")).hostname; } catch (e) { /* handled below */ }
   if (!AD_IMG_HOST.test(host)) throw new Error("That creative image can't be read");
-  const ref = await loadRef({ url: b.img });
-  const prompt = `You are a senior direct-response creative strategist breaking down ONE competitor ad (Meta, ${clip(b.format, 20) || "unknown format"}). If it is a video you only see its cover frame, so do not describe motion or audio you cannot see.
-Brand: ${clip(b.brand, 80) || "unknown"}. Running for ${Number(b.days) >= 0 ? Number(b.days) + " days" : "an unknown time"}.
-Ad text: headline "${clip(b.headline, 160)}"${b.body ? `, body "${clip(b.body, 500)}"` : ""}${b.cta ? `, button "${clip(b.cta, 40)}"` : ""}.
+  const ref = await loadRef({ url: b.img }, AD_IMG_HOST);
+  const organic = b.kind === "organic";
+  const prompt = `You are a senior direct-response creative strategist breaking down ONE competitor ${organic ? "organic social post (not a paid ad, so there is no button)" : "ad (Meta, " + (clip(b.format, 20) || "unknown format") + ")"}. If it is a video you only see its cover frame, so do not describe motion or audio you cannot see.
+Brand: ${clip(b.brand, 80) || "unknown"}. ${organic ? "Posted" : "Running for"} ${Number(b.days) >= 0 ? Number(b.days) + (organic ? " days ago" : " days") : "an unknown time" + (organic ? " ago" : "")}.
+${organic ? "Post caption" : "Ad text"}: headline "${clip(b.headline, 160)}"${b.body ? `, body "${clip(b.body, 500)}"` : ""}${b.cta ? `, button "${clip(b.cta, 40)}"` : ""}.
 Describe only what is visible in the image or written in the ad text. Never invent claims, prices, results or reviews. If an element is not present write "Not shown".
 Return ONLY JSON: {"hook":"how it grabs attention in the first second, one sentence","problem":"the problem or desire it points at","solution":"how the product answers it","proof":"social proof, demo, result or authority shown","offer":"discount, bundle, guarantee or urgency","cta":"the call to action","visual":"what the image shows and how it is composed, one sentence","angle":"the creative angle in 2 to 5 words","awareness":"unaware | problem | solution | product | most","persona":"who this speaks to, one short line","tags":["max 5 short tags such as UGC, text overlay, before and after, founder, demo"],"why":"one sentence on why this may be working"}
 Inside JSON strings use single quotes when you quote words, never double quotes.`;
@@ -706,16 +728,92 @@ async function brandSearch(env, b) {
   };
 }
 
+/* ------------------------ A brand's organic posts (Instagram + TikTok) ------------------------ */
+// ScrapeCreators, 1 credit per request: two pages of Instagram posts and one page of TikTok's most popular videos.
+// Posts are returned in one shape, best first, so the page can show them like ads.
+const HANDLE_RE = /^[A-Za-z0-9._]{1,40}$/;
+const cleanHandle = (v) => {
+  let s = String(v || "").trim();
+  const m = s.match(/(?:instagram\.com|tiktok\.com)\/@?([A-Za-z0-9._]+)/i);   // a pasted profile link
+  if (m) s = m[1];
+  s = s.replace(/^@+/, "").replace(/[/?#].*$/, "");
+  return HANDLE_RE.test(s) ? s : "";
+};
+const nz = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.round(Number(v)) : 0);
+
+async function scGet(env, path, params) {
+  const r = await fetch("https://api.scrapecreators.com" + path + "?" + new URLSearchParams(params), { headers: { "x-api-key": env.SCRAPECREATORS_KEY } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.success === false) throw new Error(String(j.message || j.error || "ScrapeCreators " + r.status).slice(0, 140));
+  return j;
+}
+
+function igPost(it, handle) {
+  const cap = it.caption && typeof it.caption === "object" ? it.caption.text : it.caption;
+  const cand = (m) => (m && m.image_versions2 && Array.isArray(m.image_versions2.candidates) && m.image_versions2.candidates[0] && m.image_versions2.candidates[0].url) || "";
+  const thumb = cand(it) || (Array.isArray(it.carousel_media) && cand(it.carousel_media[0])) || String(it.thumbnail_url || "");
+  const video = it.media_type === 2 || (Array.isArray(it.video_versions) && it.video_versions.length > 0);
+  const code = String(it.code || "").replace(/[^A-Za-z0-9_-]/g, "");
+  return {
+    platform: "instagram", id: String(it.pk || it.id || code), handle,
+    url: code ? `https://www.instagram.com/${video ? "reel" : "p"}/${code}/` : "",
+    caption: clip(cap, 600), likes: nz(it.like_count), comments: nz(it.comment_count),
+    views: nz(it.play_count || it.view_count || it.ig_play_count), shares: 0,
+    thumb: String(thumb), ts: nz(it.taken_at) * 1000 || Date.parse(it.created_at) || 0, video, carousel: Array.isArray(it.carousel_media) && it.carousel_media.length > 1,
+  };
+}
+
+function ttPost(it, handle) {
+  const s = it.statistics || {};
+  const v = it.video || {};
+  const first = (o) => (o && Array.isArray(o.url_list) && o.url_list[0]) || "";
+  const slide = it.image_post_info && Array.isArray(it.image_post_info.images) && it.image_post_info.images[0];
+  const thumb = first(v.dynamic_cover) || first(v.cover) || first(v.origin_cover) || (slide && (first(slide.display_image) || first(slide.thumbnail))) || "";
+  const id = String(it.aweme_id || "").replace(/\D/g, "");
+  return {
+    platform: "tiktok", id, handle, url: id ? `https://www.tiktok.com/@${handle}/video/${id}` : "",
+    caption: clip(it.desc, 600), likes: nz(s.digg_count), comments: nz(s.comment_count), views: nz(s.play_count), shares: nz(s.share_count),
+    thumb: String(thumb), ts: nz(it.create_time) * 1000, video: !slide, carousel: !!slide, pinned: it.is_top === 1, ad: !!it.is_ad,
+  };
+}
+
+async function organicPosts(env, b) {
+  if (!env.SCRAPECREATORS_KEY) throw new Error("Organic research is not set up on the server.");
+  const ig = cleanHandle(b.instagram), tt = cleanHandle(b.tiktok);
+  if (!ig && !tt) throw new Error("Add an Instagram or TikTok handle");
+  const out = { posts: [], notes: [] };
+  const jobs = [];
+  if (ig) jobs.push((async () => {
+    let cursor = "";
+    for (let page = 0; page < 2; page++) {
+      const j = await scGet(env, "/v2/instagram/user/posts", { handle: ig, ...(cursor ? { next_max_id: cursor } : {}) });
+      const items = Array.isArray(j.items) ? j.items : [];
+      items.forEach((it) => out.posts.push(igPost(it, ig)));
+      cursor = String(j.next_max_id || "");
+      if (!j.more_available || !cursor || !items.length) break;
+    }
+  })().catch((e) => out.notes.push("Instagram: " + e.message)));
+  if (tt) jobs.push((async () => {
+    const j = await scGet(env, "/v3/tiktok/profile/videos", { handle: tt, sort_by: "popular" });
+    (Array.isArray(j.aweme_list) ? j.aweme_list : []).forEach((it) => { const p = ttPost(it, tt); if (p.id && !p.ad) out.posts.push(p); });
+  })().catch((e) => out.notes.push("TikTok: " + e.message)));
+  await Promise.all(jobs);
+  const score = (p) => (p.views || p.likes * 20) + p.comments * 50 + p.shares * 30;
+  out.posts = out.posts.filter((p) => p.id && (p.thumb || p.caption)).sort((a, c) => score(c) - score(a)).slice(0, 48);
+  if (!out.posts.length && !out.notes.length) out.notes.push("No public posts came back for that handle.");
+  return out;
+}
+
 /* ------------------------ Ask a question about one advertiser's ads ------------------------ */
 // The page sends the ads it already has (compact), so nothing is fetched again. Claude answers from them only
 // and names the ads it used as evidence, which the page shows as thumbnails.
 async function askAds(env, b) {
   const question = clip(b.question, 400).trim();
   if (!question) throw new Error("Ask a question first");
-  const ads = (Array.isArray(b.ads) ? b.ads : []).slice(0, 400);
+  const ads = (Array.isArray(b.ads) ? b.ads : []).filter((a) => a && typeof a === "object").slice(0, 400);
   if (!ads.length) throw new Error("Analyze an advertiser first");
   const lines = ads.map((a, i) => `${i + 1} | ${clip(a.format, 12)} | ${Number.isFinite(Number(a.days)) ? Number(a.days) + "d" : "?"} | ${clip(a.start, 10) || "?"} | ${clip(a.headline, 140)}${a.body ? " / " + clip(a.body, 220) : ""}${a.cta ? " [" + clip(a.cta, 30) + "]" : ""}`).join("\n");
-  const history = (Array.isArray(b.history) ? b.history : []).slice(-4).map((h) => `Q: ${clip(h.q, 300)}\nA: ${clip(h.a, 700)}`).join("\n\n");
+  const history = (Array.isArray(b.history) ? b.history : []).filter((h) => h && typeof h === "object").slice(-4).map((h) => `Q: ${clip(h.q, 300)}\nA: ${clip(h.a, 700)}`).join("\n\n");
   const prompt = `You are a senior paid-social strategist answering a question about ONE advertiser's Meta ads. Today is ${new Date().toISOString().slice(0, 10)}. Advertiser: ${clip(b.brand, 80) || "unknown"}.
 Each line is one ad: number | format | days running | first seen (YYYY-MM-DD) | headline / body [button].
 Answer only from these ads. Do not mention ad numbers in the answer; list them only in "evidence". Ad libraries show what runs, not spend or results, so treat long-running ads as likely winners and say so plainly when that matters. Never invent numbers, products or claims. If the ads cannot answer the question, say what is missing.
@@ -828,7 +926,7 @@ async function deleteAccount(env, req) {
   return json(env, { ok: true });
 }
 
-const PAID = /^\/(start|page|analyze|creative|brands|ask|pack\/|make\/)/;
+const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -876,7 +974,8 @@ export default {
           if ((await bump(`userday/${who.id}/${Math.floor(now / 86400000)}`, 86400)) > perDay) return json(env, { error: "You have reached today's limit for your account. Try again tomorrow.", code: "daily_cap" }, 429);
         }
       } else {
-        const ip = req.headers.get("CF-Connecting-IP") || "unknown";
+        const rawIp = req.headers.get("CF-Connecting-IP") || "unknown";
+      const ip = rawIp.includes(":") ? rawIp.split(":").slice(0, 4).join(":") : rawIp;   // an IPv6 caller counts as its whole /64
         if ((await bump(`ip/${ip}/${Math.floor(now / 3600000)}`, 3600)) > (Number(env.RATE_PER_HOUR) || 60)) return json(env, { error: "Too many requests from this connection. Try again in an hour.", code: "rate_limited" }, 429);
       }
       if ((await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > (Number(env.DAILY_CAP) || 300)) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow.", code: "daily_cap" }, 429);
@@ -964,9 +1063,10 @@ export default {
       if (u.pathname === "/creative" && req.method === "POST") return json(env, await creativeBreakdown(env, await req.json()));
       // 5. find an advertiser by name, and 6. ask a question about the ads already read
       if (u.pathname === "/brands" && req.method === "POST") return json(env, await brandSearch(env, await req.json()));
+      if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await req.json()));
       if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await req.json()));
       // what this server can do, so the page can offer the right way to read the Ad Library
-      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", ...(env.SCRAPECREATORS_KEY ? ["brands"] : [])] });
+      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic"] : [])] });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
         const b = await req.json();

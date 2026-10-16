@@ -3,6 +3,7 @@ import { Icon } from "./ui";
 import { copyText, SPY_API, hasFeature } from "./shared.js";
 import { apiFetch, need, isCancel } from "./api.js";
 import { track } from "./track.js";
+import { useDialog } from "./dialog.jsx";
 
 /* A competitor's creatives as a media-first gallery, with a per-creative breakdown opened on demand.
    The breakdown is one Claude call per ad (POST /creative), made only when a creative is opened. */
@@ -49,7 +50,7 @@ function useBreakdown(ad, brand) {
     setSt({ data: null, err: "", busy: true });
     (async () => {
       try {
-        const j = need(await apiFetch("/creative", { signal: c.signal, timeout: 60000, body: { img: ad.img, headline: ad.headline, body: ad.body, cta: ad.cta, format: ad.format, days: ad.days, brand } }), ["hook", "tags[]"]);
+        const j = need(await apiFetch("/creative", { signal: c.signal, timeout: 60000, body: { img: ad.img, headline: ad.headline, body: ad.body, cta: ad.cta, format: ad.format, days: ad.days, brand, kind: ad.kind || "ad" } }), ["hook", "tags[]"]);
         cache.set(ad.libId, j);
         setSt({ data: j, err: "", busy: false });
         track("creative_breakdown", { format: ad.format, days: ad.days });
@@ -76,49 +77,49 @@ function breakdownText(ad, b, brand) {
 function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify }) {
   const { data, err, busy } = useBreakdown(ad, brand);
   const closeRef = useRef(null);
-  useEffect(() => {
-    const k = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", k);
-    if (closeRef.current) closeRef.current.focus();
-    return () => window.removeEventListener("keydown", k);
-  }, [onClose]);
+  const panelRef = useRef(null);
+  // The app's shared dialog behaviour: Escape closes only the top dialog, Tab stays inside, the page behind stops
+  // scrolling and focus goes back to the card that opened it.
+  const { overlayProps } = useDialog({ onClose, panelRef, initialFocusRef: closeRef });
   const aw = data ? AWARENESS.findIndex((a) => a[0] === data.awareness) : -1;
   const winner = ad.days !== null && ad.days !== undefined && ad.days >= 30;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div role="dialog" aria-modal="true" aria-label="Creative breakdown" className="flex h-full w-full max-w-[980px] flex-col overflow-y-auto bg-white shadow-2xl md:flex-row">
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]" {...overlayProps}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="creative-title" className="flex h-full w-full max-w-[980px] flex-col overflow-y-auto bg-white shadow-2xl md:flex-row">
         <div className="shrink-0 bg-slate-100 md:sticky md:top-0 md:h-full md:w-[42%]">
           <div className="grid h-full place-items-center p-4 md:p-6">
-            {ad.img ? <img src={ad.img} alt={ad.headline} referrerPolicy="no-referrer" className="max-h-[70vh] w-full rounded-xl object-contain md:max-h-[88vh]" /> : <p className="text-sm text-slate-500">No image for this ad.</p>}
+            {ad.img ? <img src={ad.img} alt={`Ad creative from ${brand || ad.advertiser || "a competitor"}`} referrerPolicy="no-referrer" className="max-h-[70vh] w-full rounded-xl object-contain md:max-h-[88vh]" /> : <p className="text-sm text-slate-500">No image for this ad.</p>}
           </div>
         </div>
 
         <div className="min-w-0 flex-1 p-5 md:p-7">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">{brand || ad.advertiser || "Competitor"}</p>
-              <h2 className="mt-1 text-lg font-semibold leading-snug tracking-tight text-slate-900">{ad.headline}</h2>
+              <p className="truncate text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{brand || ad.advertiser || "Competitor"}</p>
+              <h2 id="creative-title" className="mt-1 text-lg font-semibold leading-snug tracking-tight text-slate-900">{ad.headline}</h2>
             </div>
-            <button ref={closeRef} onClick={onClose} aria-label="Close" className="shrink-0 rounded-full p-2 text-slate-500 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><Icon.Close className="h-5 w-5" /></button>
+            <button ref={closeRef} onClick={onClose} aria-label="Close" className="shrink-0 rounded-full p-2 text-slate-500 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Close className="h-5 w-5" /></button>
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{ad.format}</span>
             {ad.days !== null && ad.days !== undefined && (
-              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${winner ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-white text-slate-500 ring-slate-200"}`}>{winner && <Icon.Trophy className="h-3 w-3" />}{ad.days}d live</span>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${winner ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : "bg-white text-slate-500 ring-slate-200"}`}>{winner && <Icon.Trophy className="h-3 w-3" />}{ad.kind === "organic" ? (ad.days === 0 ? "today" : ad.days + "d ago") : ad.days + "d live"}</span>
             )}
             {ad.versions > 1 && <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">{ad.versions} versions</span>}
             {ad.cta && <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">{ad.cta}</span>}
+            {(ad.stats || []).map((t) => <span key={t} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">{t}</span>)}
           </div>
           {ad.body && <p className="mt-3 text-[13px] leading-relaxed text-slate-500">{ad.body}</p>}
 
-          <h3 className="mt-6 text-sm font-semibold text-slate-900">Creative breakdown <span className="font-normal text-slate-400">· read by Claude</span></h3>
+          <h3 className="mt-6 text-sm font-semibold text-slate-900">Creative breakdown <span className="font-normal text-slate-500">· read by Claude</span></h3>
           {busy && (
-            <div className="mt-3 space-y-3" role="status" aria-label="Reading this creative">
-              {ROWS.map(([k]) => <div key={k} className="h-9 animate-pulse rounded-lg bg-slate-100" />)}
+            <div className="mt-3 space-y-3" role="status"><p className="sr-only">Reading this creative…</p>
+              {ROWS.map(([k]) => <div key={k} className="h-9 motion-safe:animate-pulse rounded-lg bg-slate-100" />)}
             </div>
           )}
+          <p role="status" className="sr-only">{data ? "Breakdown ready" : ""}</p>
           {err && <p role="alert" className="mt-3 rounded-xl bg-rose-50 px-3.5 py-3 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{err}</p>}
           {data && (
             <>
@@ -126,7 +127,7 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
                 {ROWS.map(([k, l]) => (
                   <div key={k} className="grid grid-cols-[96px_1fr] gap-3 px-3.5 py-2.5">
                     <dt className="text-xs font-semibold text-slate-500">{l}</dt>
-                    <dd className={`text-[13px] leading-snug ${/^not shown/i.test(data[k]) ? "text-slate-400" : "text-slate-800"}`}>{data[k]}</dd>
+                    <dd className={`text-[13px] leading-snug ${/^not shown/i.test(data[k]) ? "text-slate-500" : "text-slate-800"}`}>{data[k]}</dd>
                   </div>
                 ))}
               </dl>
@@ -162,10 +163,10 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
           )}
 
           <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-            <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"><Icon.Wand className="h-3.5 w-3.5" /> Rebuild this angle</button>
-            <button onClick={onSave} aria-pressed={saved} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><Icon.Bookmark className="h-3.5 w-3.5" /> {saved ? "Saved" : "Save"}</button>
-            {data && <button onClick={async () => { const ok = await copyText(breakdownText(ad, data, brand)); notify(ok === false ? "Couldn't copy. Select the text manually." : "Breakdown copied"); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><Icon.Copy className="h-3.5 w-3.5" /> Copy breakdown</button>}
-            {landing(ad.link) && <a href={landing(ad.link)} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><span className="truncate">Landing page · {String(ad.link).replace(/^https?:\/\//i, "").split("/")[0]}</span></a>}
+            {ad.kind !== "organic" && <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Wand className="h-3.5 w-3.5" /> Rebuild this angle</button>}
+            <button onClick={onSave} aria-pressed={saved} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Bookmark className="h-3.5 w-3.5" /> {saved ? "Saved" : "Save"}</button>
+            {data && <button onClick={async () => { const ok = await copyText(breakdownText(ad, data, brand)); notify(ok === false ? "Couldn't copy. Select the text manually." : "Breakdown copied"); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Copy className="h-3.5 w-3.5" /> Copy breakdown</button>}
+            {landing(ad.link) && <a href={landing(ad.link)} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><span className="truncate">{ad.kind === "organic" ? "Open the original post · " : "Landing page · "}{String(ad.link).replace(/^https?:\/\//i, "").split("/")[0]}</span><span className="sr-only"> (opens in a new tab)</span></a>}
           </div>
         </div>
       </div>
@@ -223,7 +224,9 @@ function AdsChat({ ads, brand, onOpen }) {
       setThread((t) => t.map((x, i) => (i === t.length - 1 ? { q: text, a: "", evidence: [], err: e.message || "The question failed. Try again." } : x)));
     }
     setBusy(false);
-    setTimeout(() => { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 50);
+    const box = document.getElementById("spy-ask-input");
+    if (box) box.focus({ preventScroll: true });
+    setTimeout(() => { if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ behavior: window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" }); }, 50);
   };
 
   return (
@@ -237,20 +240,20 @@ function AdsChat({ ads, brand, onOpen }) {
       </div>
 
       {thread.length > 0 && (
-        <div className="mt-4 space-y-5">
+        <div className="mt-4 space-y-5" role="log" aria-live="polite" aria-label="Answers">
           {thread.map((x, i) => (
             <div key={i}>
               <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-slate-100 px-3.5 py-2 text-[13px] font-medium text-slate-800">{x.q}</p>
               <div className="mt-2.5">
-                {x.pending && <div className="space-y-2" role="status" aria-label="Thinking"><div className="h-3 w-3/4 animate-pulse rounded bg-slate-100" /><div className="h-3 w-2/3 animate-pulse rounded bg-slate-100" /><div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" /></div>}
+                {x.pending && <div className="space-y-2" role="status"><span className="sr-only">Thinking…</span><div className="h-3 w-3/4 motion-safe:animate-pulse rounded bg-slate-100" /><div className="h-3 w-2/3 motion-safe:animate-pulse rounded bg-slate-100" /><div className="h-3 w-1/2 motion-safe:animate-pulse rounded bg-slate-100" /></div>}
                 {x.err && <p role="alert" className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{x.err}</p>}
                 {x.a && <Answer text={x.a} />}
                 {x.evidence.length > 0 && (
                   <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                     {x.evidence.map((id) => byId.get(id)).filter(Boolean).map((a) => (
-                      <button key={a.libId} onClick={() => onOpen(a)} title={a.headline} className="relative h-24 w-[76px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-blue-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
-                        {a.img ? <img src={a.img} alt={a.headline} loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <span className="block p-1.5 text-left text-[10px] leading-tight text-slate-600">{a.headline}</span>}
-                        {a.days !== null && a.days !== undefined && <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-[9px] font-semibold text-slate-700">{a.days}d</span>}
+                      <button key={a.libId} onClick={() => onOpen(a)} title={a.headline} className="relative h-24 w-[76px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+                        {a.img ? <img src={a.img} alt={a.headline} loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <span className="block p-1.5 text-left text-[11px] leading-tight text-slate-600">{a.headline}</span>}
+                        {a.days !== null && a.days !== undefined && <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-[11px] font-semibold text-slate-700">{a.days}d</span>}
                       </button>
                     ))}
                   </div>
@@ -264,18 +267,94 @@ function AdsChat({ ads, brand, onOpen }) {
 
       {thread.length === 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {ASK_IDEAS.map((s) => <button key={s} onClick={() => ask(s)} disabled={busy} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-700 disabled:opacity-50">{s}</button>)}
+          {ASK_IDEAS.map((s) => <button key={s} onClick={() => { ask(s); const box = document.getElementById("spy-ask-input"); if (box) box.focus({ preventScroll: true }); }} disabled={busy} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-700 disabled:opacity-50">{s}</button>)}
         </div>
       )}
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); ask(q); }}>
-        <input id="spy-ask-input" value={q} onChange={(e) => setQ(e.target.value)} maxLength={400} placeholder={`e.g. What hooks does ${brand || "this brand"} repeat most?`} aria-label="Your question" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
+        <input id="spy-ask-input" value={q} onChange={(e) => setQ(e.target.value)} maxLength={400} placeholder={`e.g. What hooks does ${brand || "this brand"} repeat most?`} aria-label="Your question" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
         <button type="submit" disabled={!q.trim() || busy} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{busy ? "Thinking…" : "Ask"}</button>
       </form>
     </section>
   );
 }
 
-function CreativeGallery({ ads, brand, onRebuild, notify }) {
+const fmtNum = (n) => (n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + "K" : String(n || 0));
+
+// A post shaped like an ad, so the same panel can open it.
+function postAsAd(p) {
+  const lines = String(p.caption || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  const first = (lines[0] || "").slice(0, 110);
+  const days = p.ts ? Math.max(0, Math.round((Date.now() - p.ts) / 86400000)) : null;
+  return {
+    id: p.platform + ":" + p.id, libId: p.platform + ":" + p.id, img: p.thumb, headline: first || "(no caption)",
+    body: lines.slice(1).join(" ").slice(0, 400), cta: "", versions: 1, link: p.url, kind: "organic", advertiser: "@" + p.handle, days,
+    format: p.platform === "tiktok" ? (p.carousel ? "TikTok slideshow" : "TikTok") : p.video ? "Reel" : p.carousel ? "Carousel" : "Photo",
+    stats: [p.views ? fmtNum(p.views) + " views" : "", p.likes ? fmtNum(p.likes) + " likes" : "", p.comments ? fmtNum(p.comments) + " comments" : "", p.shares ? fmtNum(p.shares) + " shares" : ""].filter(Boolean),
+  };
+}
+
+function OrganicPosts({ brand, hint, onOpen }) {
+  const [ig, setIg] = useState(hint || "");
+  const [tt, setTt] = useState("");
+  const [st, setSt] = useState({ busy: false, err: "", posts: null, notes: [] });
+  const [plat, setPlat] = useState("All");
+  const [shown, setShown] = useState(PAGE);
+  useEffect(() => { if (hint) setIg((v) => v || hint); }, [hint]);
+
+  const load = async () => {
+    if (st.busy || (!ig.trim() && !tt.trim())) return;
+    setSt({ busy: true, err: "", posts: null, notes: [] }); setPlat("All"); setShown(PAGE);
+    try {
+      const j = await apiFetch("/organic", { body: { instagram: ig.trim(), tiktok: tt.trim() }, timeout: 60000 });
+      const posts = (Array.isArray(j.posts) ? j.posts : []).map((p) => ({ ...p, ad: postAsAd(p) }));
+      setSt({ busy: false, err: "", posts, notes: Array.isArray(j.notes) ? j.notes : [] });
+      track("organic_loaded", { instagram: !!ig.trim(), tiktok: !!tt.trim(), posts: posts.length });
+    } catch (e) { setSt({ busy: false, err: e.message || "Couldn't load posts. Try again.", posts: null, notes: [] }); }
+  };
+  const field = "h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
+  const list = (st.posts || []).filter((p) => plat === "All" || p.platform === plat.toLowerCase());
+  const chip = (on) => "rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 " + (on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300");
+
+  return (
+    <section className="mt-10" id="spy-organic" aria-label="Organic posts">
+      <h3 className="text-base font-semibold text-slate-900">Organic posts</h3>
+      <p className="text-xs text-slate-500">Their best Instagram and TikTok posts, ranked by views and engagement. Add a handle or a profile link.</p>
+      <form className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" onSubmit={(e) => { e.preventDefault(); load(); }}>
+        <input value={ig} onChange={(e) => setIg(e.target.value)} placeholder="Instagram handle, e.g. glossier" aria-label="Instagram handle" className={field} />
+        <input value={tt} onChange={(e) => setTt(e.target.value)} placeholder="TikTok handle, e.g. glossier" aria-label="TikTok handle" className={field} />
+        <button type="submit" disabled={st.busy || (!ig.trim() && !tt.trim())} className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{st.busy ? "Loading…" : "Find top posts"}</button>
+      </form>
+      <p role="status" className="sr-only">{st.busy ? "Loading posts" : st.posts ? st.posts.length + " posts found" : ""}</p>
+      {st.err && <p role="alert" className="mt-3 rounded-xl bg-rose-50 px-3.5 py-2.5 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{st.err}</p>}
+      {st.notes.map((t) => <p key={t} role="alert" className="mt-3 rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] font-medium text-amber-800 ring-1 ring-amber-100">{t}</p>)}
+      {st.posts && st.posts.length > 0 && (
+        <>
+          <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter posts">
+            {["All", "Instagram", "TikTok"].filter((p) => p === "All" || st.posts.some((x) => x.platform === p.toLowerCase())).map((p) => <button key={p} onClick={() => { setPlat(p); setShown(PAGE); }} aria-pressed={plat === p} className={chip(plat === p)}>{p}</button>)}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+            {list.slice(0, shown).map((p) => (
+              <button key={p.platform + p.id} onClick={() => { onOpen(p.ad); track("creative_opened", { format: p.ad.format, from: "organic" }); }} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+                <span className="relative block aspect-[4/5] w-full bg-slate-100">
+                  {p.thumb && <img src={p.thumb} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="absolute inset-0 h-full w-full object-cover" />}
+                  <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-700 shadow-sm">{p.ad.format}</span>
+                  <span className="absolute bottom-2 left-2 rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-semibold text-white">{p.views ? fmtNum(p.views) + " views" : fmtNum(p.likes) + " likes"}</span>
+                </span>
+                <span className="p-3">
+                  <span className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900">{p.ad.headline}</span>
+                  <span className="mt-1 block truncate text-[11px] text-slate-500">{p.ad.advertiser}{p.ts ? " · " + (p.ad.days === 0 ? "today" : p.ad.days + "d ago") : ""}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {list.length > shown && <div className="mt-5 text-center"><button onClick={() => setShown((x) => x + PAGE)} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300">Show more ({list.length - shown} left)</button></div>}
+        </>
+      )}
+    </section>
+  );
+}
+
+function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
   const [format, setFormat] = useState("All");
   const [sort, setSort] = useState("days");
   const [onlySaved, setOnlySaved] = useState(false);
@@ -283,6 +362,8 @@ function CreativeGallery({ ads, brand, onRebuild, notify }) {
   const [shown, setShown] = useState(PAGE);
   const [saved, setSaved] = useState(loadSaved);
   const [open, setOpen] = useState(null);
+  const [canOrganic, setCanOrganic] = useState(false);
+  useEffect(() => { let dead = false; hasFeature("organic").then((ok) => { if (!dead) setCanOrganic(ok); }); return () => { dead = true; }; }, []);
   const [canAsk, setCanAsk] = useState(false);   // the question box shows only once the server says it can answer
   useEffect(() => { let dead = false; hasFeature("ask").then((ok) => { if (!dead) setCanAsk(ok); }); return () => { dead = true; }; }, []);
   useEffect(() => { try { localStorage.setItem(SAVED_KEY, JSON.stringify(saved)); } catch (e) { /* storage unavailable */ } }, [saved]);
@@ -302,7 +383,7 @@ function CreativeGallery({ ads, brand, onRebuild, notify }) {
   useEffect(() => { setShown(PAGE); }, [format, sort, onlyLong, onlySaved, ads]);
 
   const toggleSave = (id) => setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id].slice(-300)));
-  const chip = (on) => `rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`;
+  const chip = (on) => `rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`;
   const withImg = ads.filter((x) => x.img).length;
 
   return (
@@ -315,7 +396,7 @@ function CreativeGallery({ ads, brand, onRebuild, notify }) {
         </div>
         <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500">
           Sort
-          <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+          <select value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
             <option value="days">Longest live</option>
             <option value="new">Newest</option>
             <option value="versions">Most versions</option>
@@ -336,16 +417,16 @@ function CreativeGallery({ ads, brand, onRebuild, notify }) {
           {list.slice(0, shown).map((a) => {
             const winner = a.days !== null && a.days !== undefined && a.days >= 30;
             return (
-              <button key={a.libId} onClick={() => { setOpen(a); track("creative_opened", { format: a.format, days: a.days }); }} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+              <button key={a.libId} onClick={() => { setOpen(a); track("creative_opened", { format: a.format, days: a.days }); }} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:border-slate-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                 <span className="relative block aspect-[4/5] w-full bg-slate-100">
                   <img src={a.img} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="absolute inset-0 h-full w-full object-cover" />
-                  <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm">{a.format}</span>
-                  {saved.includes(a.libId) && <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm"><Icon.Bookmark className="h-3 w-3" /></span>}
-                  {a.days !== null && a.days !== undefined && <span className={`absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm ${winner ? "bg-emerald-600 text-white" : "bg-white/90 text-slate-700"}`}>{a.days}d live</span>}
+                  <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-700 shadow-sm">{a.format}</span>
+                  {saved.includes(a.libId) && <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm"><Icon.Bookmark className="h-3 w-3" /><span className="sr-only">Saved</span></span>}
+                  {a.days !== null && a.days !== undefined && <span className={`absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${winner ? "bg-emerald-700 text-white" : "bg-white/90 text-slate-700"}`}>{a.days}d live</span>}
                 </span>
                 <span className="p-3">
                   <span className="line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900">{a.headline}</span>
-                  {a.cta && <span className="mt-1 block truncate text-[11px] text-slate-400">{a.cta}</span>}
+                  {a.cta && <span className="mt-1 block truncate text-[11px] text-slate-500">{a.cta}</span>}
                 </span>
               </button>
             );
@@ -354,9 +435,11 @@ function CreativeGallery({ ads, brand, onRebuild, notify }) {
       )}
       {list.length > shown && (
         <div className="mt-5 text-center">
-          <button onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Show more ({list.length - shown} left)</button>
+          <button onClick={() => setShown((n) => n + PAGE)} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">Show more ({list.length - shown} left)</button>
         </div>
       )}
+
+      {canOrganic && <OrganicPosts brand={brand} hint={organicHint} onOpen={setOpen} />}
 
       {open && (
         <CreativePanel
