@@ -353,8 +353,8 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
             onClick={() => { onExamine(); onClose(); }}
             className={`btn-ink flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold active:scale-[.98] ${ring}`}
           >
-            <Icon.Plus className="h-4 w-4" />
-            Examine / Generate
+            <Icon.Stethoscope className="h-4 w-4" />
+            Examine an ad
           </button>
         </div>
 
