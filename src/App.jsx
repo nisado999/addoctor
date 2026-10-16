@@ -713,7 +713,7 @@ function App() {
         pinned={pinned} pinnedTotal={favs.length} onPick={pickPinned} onShowPinned={showPinned}
       />
 
-      <div className="min-h-screen bg-slate-50/50 lg:pl-64">
+      <div className="app-canvas min-h-screen lg:pl-64">
         <header className="sticky z-20 border-b border-slate-200/80 bg-white/95 lg:bg-white/85 lg:backdrop-blur" style={{ top: "env(safe-area-inset-top, 0px)" }}>
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button onClick={() => setMenu(true)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Open menu" aria-expanded={menu}>

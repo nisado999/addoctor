@@ -3,7 +3,7 @@ import { TEMPLATES } from "./data";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 import { useDialog } from "./dialog.jsx";
 
-const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
+const LOGO_LIGHT_SRC = import.meta.env.BASE_URL + "logo-light.png";   // white letters, for the dark sidebar
 
 /* ------------------------------- Icons --------------------------------- */
 
@@ -216,8 +216,8 @@ const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use th
   const cta = verb === "Use" ? "Use template" : "Open Studio";
   return (
     <li data-tilt className="tilt rise group relative list-none" style={{ "--i": i }}>
-      <article className="group/card relative flex flex-col">
-        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm transition duration-300 group-hover:shadow-xl group-hover:shadow-slate-900/10">
+      <article className="group/card relative flex flex-col rounded-xl border border-slate-200/90 bg-white p-1.5 shadow-[0_1px_2px_rgba(15,23,42,.04),0_4px_12px_rgba(15,23,42,.03)] transition-[border-color,box-shadow] duration-150 ease-out group-hover:border-slate-300 group-hover:shadow-[0_1px_2px_rgba(15,23,42,.05),0_10px_24px_-8px_rgba(15,23,42,.14)]">
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg bg-slate-100 ring-1 ring-inset ring-slate-900/5">
           <Creative t={t} lazy />
           <span className="tilt-glare" />
 
@@ -239,12 +239,12 @@ const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use th
           </div>
         </div>
 
-        <div className="px-1 pt-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{t.label}</p>
+        <div className="px-1.5 pb-1.5 pt-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{t.label}</p>
           <h3 className="mt-1 text-[14px] font-semibold leading-snug tracking-tight text-slate-900">{t.title}</h3>
           <button
             type="button" onClick={() => onInspect(t)}
-            className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-blue-600 focus:outline-none after:absolute after:inset-0 after:z-[3] after:rounded-2xl focus-visible:text-blue-700 focus-visible:after:ring-2 focus-visible:after:ring-blue-600 focus-visible:after:ring-offset-4"
+            className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition group-hover:text-blue-600 focus:outline-none after:absolute after:inset-0 after:z-[3] after:rounded-xl focus-visible:text-blue-700 focus-visible:after:ring-2 focus-visible:after:ring-blue-600 focus-visible:after:ring-offset-4"
           >
             {cta}<span className="sr-only">: {t.title}</span> <Icon.Arrow className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
           </button>
@@ -253,7 +253,7 @@ const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use th
 
       {/* Laid over the photo, above the card's own button, so it is a control of its own. */}
       {onFav && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[4] aspect-[4/5]">
+        <div className="pointer-events-none absolute inset-x-1.5 top-1.5 z-[4] aspect-[4/5]">
           <button
             onClick={() => onFav(t.id)}
             aria-pressed={fav} aria-label={`${fav ? "Remove" : "Add"} ${t.title} ${fav ? "from" : "to"} favourites`}
@@ -336,13 +336,13 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
         role={drawer ? "dialog" : undefined} aria-modal={drawer ? "true" : undefined} aria-label={drawer ? "Menu" : undefined}
         style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         // Opening shows the menu at once (so focus can move into it); closing hides it only after it has slid away.
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white duration-200 lg:translate-x-0 ${open ? "translate-x-0 transition-transform" : "-translate-x-full transition-[transform,visibility] max-lg:invisible"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/[0.06] bg-[#0b0f17] duration-200 lg:translate-x-0 ${open ? "translate-x-0 transition-transform" : "-translate-x-full transition-[transform,visibility] max-lg:invisible"}`}
       >
         <div className="flex h-16 shrink-0 items-center gap-2 pl-4 pr-3">
           <button onClick={() => { onNav("explore"); onClose(); }} aria-label="AdDoctor: Explore Templates" className={`rounded-lg p-1 ${ring}`}>
-            <img src={LOGO_SRC} alt="" width="141" height="26" className="block h-[26px] w-auto select-none" draggable={false} />
+            <img src={LOGO_LIGHT_SRC} alt="" width="141" height="26" className="block h-[26px] w-auto select-none" draggable={false} />
           </button>
-          <button ref={closeRef} onClick={onClose} aria-label="Close menu" className={`ml-auto rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden ${ring}`}>
+          <button ref={closeRef} onClick={onClose} aria-label="Close menu" className={`ml-auto rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden ${ring}`}>
             <Icon.Close className="h-5 w-5" />
           </button>
         </div>
@@ -372,11 +372,11 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
                         key={n.id}
                         onClick={() => { onNav(n.id); onClose(); }}
                         aria-current={on ? "page" : undefined}
-                        className={`group flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-left text-[13px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "bg-slate-100 font-semibold text-slate-900" : n.quiet ? "text-slate-500 hover:bg-slate-50 hover:text-slate-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                        className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-[7px] text-left text-[13px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "bg-white/[0.07] font-semibold text-white before:absolute before:inset-y-1.5 before:left-0 before:w-[2px] before:rounded-full before:bg-blue-600" : n.quiet ? "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300" : "text-slate-400 hover:bg-white/[0.04] hover:text-white"}`}
                       >
-                        <I className={`h-4 w-4 shrink-0 ${on ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+                        <I className={`h-4 w-4 shrink-0 ${on ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}`} />
                         <span className="flex-1 truncate">{n.label}</span>
-                        {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-500" : "text-blue-600"}`}>{n.note}</span>}
+                        {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-600" : "text-blue-400"}`}>{n.note}</span>}
                         {count > 0 && <span className="text-[11px] font-semibold tabular-nums text-slate-500">{count}</span>}
                       </button>
                     );
@@ -391,7 +391,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
             <div className="flex items-center justify-between pr-2">
               <p className={navHead}>Favourites</p>
               {pinnedTotal > pinned.length && (
-                <button onClick={() => { onShowPinned(); onClose(); }} className={`mb-1.5 rounded text-[11px] font-semibold text-blue-600 hover:text-blue-700 ${ring}`}>All {pinnedTotal}</button>
+                <button onClick={() => { onShowPinned(); onClose(); }} className={`mb-1.5 rounded text-[11px] font-semibold text-blue-400 hover:text-blue-300 ${ring}`}>All {pinnedTotal}</button>
               )}
             </div>
             {pinned.length ? (
@@ -399,13 +399,13 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
                 {pinned.map((t) => (
                   <button
                     key={t.id} onClick={() => { onPick(t); onClose(); }}
-                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600"
+                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left transition-colors hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600"
                   >
-                    <span className="relative h-8 w-[26px] shrink-0 overflow-hidden rounded-[5px] border border-slate-200 bg-slate-100">
+                    <span className="relative h-8 w-[26px] shrink-0 overflow-hidden rounded-[5px] border border-white/10 bg-white/5">
                       <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium text-slate-700 group-hover:text-slate-900">{t.title}</span>
+                      <span className="block truncate text-[13px] font-medium text-slate-300 group-hover:text-white">{t.title}</span>
                       <span className="block truncate text-[11px] text-slate-500">{t.label}</span>
                     </span>
                   </button>
@@ -420,35 +420,35 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-slate-200/80 px-5 py-4">
+        <div className="shrink-0 border-t border-white/[0.06] px-5 py-4">
           {/* The free allowance as it really is: kept on this device and topped up each day. Nothing to buy yet. */}
           {bill && bill.on && (
             bill.account ? (
               <>
-                <p className="text-xs font-medium text-slate-600">
-                  <span className={`font-semibold tabular-nums ${bill.account.total > 0 ? "text-slate-900" : "text-rose-700"}`}>{bill.account.total}</span> credits · {bill.account.plan === "free" ? "Free" : bill.account.plan.charAt(0).toUpperCase() + bill.account.plan.slice(1)} plan
+                <p className="text-xs font-medium text-slate-400">
+                  <span className={`font-semibold tabular-nums ${bill.account.total > 0 ? "text-white" : "text-rose-400"}`}>{bill.account.total}</span> credits · {bill.account.plan === "free" ? "Free" : bill.account.plan.charAt(0).toUpperCase() + bill.account.plan.slice(1)} plan
                 </p>
-                <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                  <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.min(100, (bill.account.total / Math.max(1, { free: 25, starter: 300, pro: 900, agency: 2500 }[bill.account.plan] || 25)) * 100)}%` }} />
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                  <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${Math.min(100, (bill.account.total / Math.max(1, { free: 25, starter: 300, pro: 900, agency: 2500 }[bill.account.plan] || 25)) * 100)}%` }} />
                 </div>
-                <button onClick={() => onNav("plans")} className={`mt-2 block rounded text-[11px] font-semibold text-blue-600 transition hover:text-blue-700 ${ring}`}>{bill.account.plan === "free" ? "Upgrade plan →" : "Plans and top-ups →"}</button>
+                <button onClick={() => onNav("plans")} className={`mt-2 block rounded text-[11px] font-semibold text-blue-400 transition hover:text-blue-300 ${ring}`}>{bill.account.plan === "free" ? "Upgrade plan →" : "Plans and top-ups →"}</button>
               </>
             ) : (
-              <p className="text-xs font-medium text-slate-600">{bill.signedIn ? "Loading your credits…" : "Sign in for 25 free credits a month."}</p>
+              <p className="text-xs font-medium text-slate-400">{bill.signedIn ? "Loading your credits…" : "Sign in for 25 free credits a month."}</p>
             )
           )}
           {!(bill && bill.on) && left !== null && (
             <>
-              <p className="text-xs font-medium text-slate-600">
-                <span className={`font-semibold tabular-nums ${left > 0 ? "text-slate-900" : "text-rose-700"}`}>{left}</span> of {creditsPerDay} free credits today
+              <p className="text-xs font-medium text-slate-400">
+                <span className={`font-semibold tabular-nums ${left > 0 ? "text-white" : "text-rose-400"}`}>{left}</span> of {creditsPerDay} free credits today
               </p>
-              <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.min(100, (left / creditsPerDay) * 100)}%` }} />
+              <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: `${Math.min(100, (left / creditsPerDay) * 100)}%` }} />
               </div>
-              <p className={`mt-2 text-[11px] font-medium ${left > 0 ? "text-slate-500" : "text-rose-700"}`}>{left > 0 ? "Kept on this device. Refills daily." : "Refills tomorrow."}</p>
+              <p className={`mt-2 text-[11px] font-medium ${left > 0 ? "text-slate-500" : "text-rose-400"}`}>{left > 0 ? "Kept on this device. Refills daily." : "Refills tomorrow."}</p>
             </>
           )}
-          <a href="./privacy.html" className={`mt-2 inline-block rounded text-[11px] font-medium text-slate-500 transition hover:text-slate-700 ${ring}`}>Privacy</a>
+          <a href="./privacy.html" className={`mt-2 inline-block rounded text-[11px] font-medium text-slate-500 transition hover:text-slate-300 ${ring}`}>Privacy</a>
         </div>
       </aside>
     </>
