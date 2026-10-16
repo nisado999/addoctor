@@ -1,10 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from "node:url";
 
 // base "./" keeps asset paths relative, so the build works on any static host or sub-folder.
 export default defineConfig({
   base: "./",
   plugins: [react()],
+  // "@/..." points at src/, so components added with the shadcn CLI (React Bits registry) import as they are written.
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   build: {
     rollupOptions: {
       output: {

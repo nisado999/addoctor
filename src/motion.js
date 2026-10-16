@@ -36,6 +36,18 @@ export const scrollToEl = (el, offset = -72) => {
   else el.scrollIntoView({ behavior: reduce() ? "auto" : "smooth", block: "start" });
 };
 
+/* Apple-style hand-off: as the page scrolls past el, it shrinks a little, rounds off and dims, so the next section
+   seems to slide over it. Tied to the scroll position (scrub), so it reverses exactly when scrolling back.
+   Returns a cleanup for React effects. */
+export function scrollAway(el, { scale = 0.94, opacity = 0.35, y = 40 } = {}) {
+  if (!el || typeof window === "undefined" || reduce()) return () => {};
+  const tween = gsap.to(el, {
+    scale, opacity, y, ease: "none", transformOrigin: "50% 0%",
+    scrollTrigger: { trigger: el, start: "top top+=72", end: "bottom top+=72", scrub: true },
+  });
+  return () => { tween.scrollTrigger && tween.scrollTrigger.kill(); tween.kill(); gsap.set(el, { clearProps: "transform,opacity" }); };
+}
+
 /* data-reveal="up" (default) | "fade" | "scale". data-reveal-delay in seconds. Elements next to each other that enter
    together are staggered, so a row of cards ripples in rather than popping. */
 function startReveals() {

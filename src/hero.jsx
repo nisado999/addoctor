@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { TEMPLATES } from "./data";
 import { Icon, TemplateImage } from "./ui";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
+import { HeroBackdrop } from "./heroBg.jsx";
+import Counter from "./components/bits/Counter.jsx";
+import { scrollAway } from "./motion.js";
 
 /* The Explore header: the pitch on the left, a fanned 3D stack of real templates on the right.
    The stack leans toward the pointer. Its slow float stops while the hero is off screen.
@@ -39,6 +42,7 @@ function Hero({ onExamine, onBrowse, onPick, onSpy }) {
     if (m.addEventListener) m.addEventListener("change", on); else m.addListener(on);
     return () => { if (m.removeEventListener) m.removeEventListener("change", on); else m.removeListener(on); };
   }, []);
+  useEffect(() => scrollAway(ref.current), []);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -69,6 +73,9 @@ function Hero({ onExamine, onBrowse, onPick, onSpy }) {
 
   return (
     <section ref={ref} aria-labelledby="hero-title" className={`hero relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm ${calm ? "hero-calm" : ""}`}>
+      <HeroBackdrop />
+      {/* A white wash on the reading side keeps the headline crisp over the moving colour. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/90 via-white/55 to-white/0 md:via-white/40" aria-hidden="true" />
       <svg className="hero-pulse pointer-events-none absolute inset-x-0 bottom-0 h-14 w-full" viewBox="0 0 1200 96" preserveAspectRatio="none" aria-hidden="true">
         <path pathLength="1" d="M0 60h330l22-34 26 62 30-80 28 70 18-18h250l20-26 22 44 26-58 24 40h404" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
       </svg>
@@ -116,7 +123,7 @@ function Hero({ onExamine, onBrowse, onPick, onSpy }) {
           <ul role="list" aria-label="In the gallery" className="hero-up mt-6 flex flex-wrap gap-x-5 gap-y-2 sm:mt-7 sm:gap-x-7" style={{ "--d": "240ms" }}>
             {[[TEMPLATES.length, "templates"], [VIDEOS, "video clips"], [NICHES, "niches"]].map(([n, l]) => (
               <li key={l} className="flex items-baseline gap-1.5">
-                <span className="hero-title text-2xl tabular-nums text-slate-900">{n}</span>
+                <span className="hero-title text-2xl tabular-nums text-slate-900"><Counter value={n} fontSize="1em" fade={0.15} duration={1.1} stagger={0.08} /></span>
                 <span className="text-xs font-medium text-slate-500">{l}</span>
               </li>
             ))}
