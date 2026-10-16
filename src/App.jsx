@@ -8,6 +8,7 @@ import { authWanted, watchAuth, signOut, deleteAccount } from "./auth.js";
 import { useBilling } from "./billing.js";
 import { ErrorBoundary, lazyRetry } from "./boundary.jsx";
 import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
+import { SwipeView, useSwipe } from "./swipe.jsx";
 import { loadVault, sanitizeVault, loadFavs, loadCredits, saveCredits, writeJSON } from "./storage.js";
 import { ApiError } from "./api.js";
 
@@ -123,7 +124,7 @@ const VIEWS = {
   pack: { title: "Social Pack", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Spy", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
-  vault: { title: "Saved Vault", sub: "Prescriptions you saved. Reopen one to re-read it or copy it again." },
+  vault: { title: "Saved Vault", sub: "Prescriptions you saved, and competitor ads you kept from Spy." },
   plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
@@ -219,6 +220,8 @@ function useCredits() {
 
 function App() {
   const [view, setView] = useState(viewFromHash);
+  const [vaultTab, setVaultTab] = useState("reports");   // "reports" (examined ads) | "ads" (competitor ads saved from Spy)
+  const swipeCount = useSwipe().length;
   const [exam, setExam] = useState(null); // null = closed, else init object
   const [examKey, setExamKey] = useState(0);
   const [cat, setCat] = useState("All");
@@ -779,7 +782,7 @@ function App() {
                 {inStudio ? "Choose a direct-response template to synthesize a high-converting creative with your product photo." : V.sub}
               </p>
             </div>
-            {view === "vault" && <p className="text-xs font-medium tabular-nums text-slate-500">{s ? `${vaultList.length} of ${vault.length}` : vault.length} saved</p>}
+            {view === "vault" && vaultTab === "reports" && <p className="text-xs font-medium tabular-nums text-slate-500">{s ? `${vaultList.length} of ${vault.length}` : vault.length} saved</p>}
           </div>
           )}
 
@@ -863,15 +866,26 @@ function App() {
               </div>
             )
           ) : view === "vault" ? (
-            <VaultView
-              items={vaultList}
-              total={vault.length}
-              query={q.trim()}
-              onClearSearch={() => setQ("")}
-              onOpen={(it) => openExam({ input: { brand: it.brand, headline: it.headline, copy: it.copy, type: it.type, asset: it.asset || null } })}
-              onRemove={removeSaved}
-              onExamine={() => openExam({})}
-            />
+            <>
+              <div className="mt-2 inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Saved items">
+                {[["reports", "Reports", vault.length], ["ads", "Competitor ads", swipeCount]].map(([id, label, count]) => (
+                  <button key={id} onClick={() => setVaultTab(id)} aria-pressed={vaultTab === id} className={`rounded-full px-4 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${vaultTab === id ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>{label}<span className="ml-1.5 tabular-nums text-slate-400">{count}</span></button>
+                ))}
+              </div>
+              {vaultTab === "reports" ? (
+                <VaultView
+                  items={vaultList}
+                  total={vault.length}
+                  query={q.trim()}
+                  onClearSearch={() => setQ("")}
+                  onOpen={(it) => openExam({ input: { brand: it.brand, headline: it.headline, copy: it.copy, type: it.type, asset: it.asset || null } })}
+                  onRemove={removeSaved}
+                  onExamine={() => openExam({})}
+                />
+              ) : (
+                <SwipeView query={q} onSpy={() => goto("spy")} />
+              )}
+            </>
           ) : view === "plans" ? (
             <Suspense fallback={viewWait}><PlansView user={user} onSignIn={() => openSignIn("in")} notify={notify} /></Suspense>
           ) : null}

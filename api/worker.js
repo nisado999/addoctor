@@ -1203,6 +1203,15 @@ async function handle(req, rawEnv, hooks) {
       }
       // 4. one creative broken down (hook, problem, solution, proof, offer, awareness stage)
       if (u.pathname === "/creative" && req.method === "POST") return json(env, await creativeBreakdown(env, await req.json()));
+      // a saved ad keeps its picture: Meta's image links expire, so the page asks for the bytes once and keeps a small copy
+      if (u.pathname === "/thumb" && req.method === "POST") {
+        const b = await req.json();
+        let host = "";
+        try { host = new URL(String(b.img || "")).hostname; } catch (e) { /* handled below */ }
+        if (!AD_IMG_HOST.test(host)) throw bad("That creative image can't be read");
+        const ref = await loadRef({ url: b.img }, AD_IMG_HOST);
+        return json(env, { mime: ref.mime, data: ref.data });
+      }
       // 5. find an advertiser by name, and 6. ask a question about the ads already read
       if (u.pathname === "/brands" && req.method === "POST") return json(env, await brandSearch(env, await req.json()));
       if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await req.json()));

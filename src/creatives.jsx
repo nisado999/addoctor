@@ -5,11 +5,11 @@ import { apiFetch, need, isCancel } from "./api.js";
 import { useBillingOn, COSTS } from "./billing.js";
 import { track } from "./track.js";
 import { useDialog } from "./dialog.jsx";
+import { useSwipe, toggleSwipe } from "./swipe.jsx";
 
 /* A competitor's creatives as a media-first gallery, with a per-creative breakdown opened on demand.
    The breakdown is one Claude call per ad (POST /creative), made only when a creative is opened. */
 
-const SAVED_KEY = "addoctor.creatives.v1";
 const PAGE = 24;
 const AWARENESS = [
   ["unaware", "Unaware"],
@@ -37,10 +37,6 @@ function landing(link) {
   const s = String(link || "").trim();
   if (!s) return "";
   try { const u = new URL(/^https?:\/\//i.test(s) ? s : "https://" + s); return /^https?:$/.test(u.protocol) && u.hostname.includes(".") ? u.href : ""; } catch (e) { return ""; }
-}
-
-function loadSaved() {
-  try { const v = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); return Array.isArray(v) ? v.filter((x) => typeof x === "string") : []; } catch (e) { return []; }
 }
 
 function useBreakdown(ad, brand) {
@@ -370,13 +366,13 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
   const [onlyLong, setOnlyLong] = useState(false);
   const [status, setStatus] = useState("all");   // "all" | "active" | "inactive", like Meta's own filter
   const [shown, setShown] = useState(PAGE);
-  const [saved, setSaved] = useState(loadSaved);
+  const swiped = useSwipe();   // ads saved to the Vault, kept with their picture
+  const saved = useMemo(() => swiped.map((x) => x.id), [swiped]);
   const [open, setOpen] = useState(null);
   const [canOrganic, setCanOrganic] = useState(false);
   useEffect(() => { let dead = false; hasFeature("organic").then((ok) => { if (!dead) setCanOrganic(ok); }); return () => { dead = true; }; }, []);
   const [canAsk, setCanAsk] = useState(false);   // the question box shows only once the server says it can answer
   useEffect(() => { let dead = false; hasFeature("ask").then((ok) => { if (!dead) setCanAsk(ok); }); return () => { dead = true; }; }, []);
-  useEffect(() => { try { localStorage.setItem(SAVED_KEY, JSON.stringify(saved)); } catch (e) { /* storage unavailable */ } }, [saved]);
 
   const formats = useMemo(() => ["All", ...Array.from(new Set(ads.map((a) => a.format).filter(Boolean)))], [ads]);
   const list = useMemo(() => {
@@ -393,7 +389,13 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
   }, [ads, format, sort, onlyLong, onlySaved, status, saved]);
   useEffect(() => { setShown(PAGE); }, [format, sort, onlyLong, onlySaved, ads]);
 
-  const toggleSave = (id) => setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id].slice(-300)));
+  const toggleSave = async (ad) => {
+    try {
+      const r = await toggleSwipe(ad, brand);
+      notify(r === "saved" ? "Saved to your Vault, under Competitor ads" : "Removed from your Vault");
+      if (r === "saved") track("creative_saved", { format: ad.format });
+    } catch (e) { notify(e.message || "Couldn't save that ad. Try again."); }
+  };
   const chip = (on) => `rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`;
   const withImg = ads.filter((x) => x.img).length;
 
@@ -461,7 +463,7 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
 
       {open && (
         <CreativePanel
-          ad={open} brand={brand} saved={saved.includes(open.libId)} onSave={() => toggleSave(open.libId)}
+          ad={open} brand={brand} saved={saved.includes(open.libId)} onSave={() => toggleSave(open)}
           onClose={() => setOpen(null)} onRebuild={() => { const a = open; setOpen(null); onRebuild(a); }} notify={notify}
         />
       )}
