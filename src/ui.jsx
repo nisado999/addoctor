@@ -285,7 +285,7 @@ const NAV = [
   { head: "Create", items: [
     { id: "explore", label: "Explore Templates", icon: Icon.Grid },
     { id: "static", label: "Static Ads", icon: Icon.Layout },
-    { id: "pack", label: "Social Pack", icon: Icon.Image, note: "New" },
+    { id: "pack", label: "30-Day Drop", icon: Icon.Image, note: "New" },
     { id: "video", label: "Video Generator", icon: Icon.Video, note: "Soon", quiet: true },
   ] },
   { head: "Analyse", items: [

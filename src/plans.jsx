@@ -15,7 +15,7 @@ const BUYS = [
   ["Ask a question about a brand's ads", COSTS.ask],
   ["Load a brand's best Instagram and TikTok posts", COSTS.organic],
   ["Make one ad image with your product", COSTS.image],
-  ["A post for your Social Pack (image)", COSTS.image],
+  ["A post for your 30-Day Drop (image)", COSTS.image],
   ["Best-quality image", COSTS.imagePremium],
   ["Analyze a competitor's ads (up to 1,000)", COSTS.analyze],
 ];

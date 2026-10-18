@@ -140,14 +140,15 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, busy }) {
   );
 }
 
-function PackView({ notify, credits, onSpend }) {
+function PackView({ notify, credits, onSpend, seed = "" }) {
   const [desc, setDesc] = useState("");
   const [audience, setAudience] = useState("");
   const [tone, setTone] = useState(PACK_TONES[0]);
   const [size, setSize] = useState(6);
   const [quality, setQuality] = useState("standard");
   const [mode, setMode] = useState("store"); // store | upload | describe
-  const [storeUrl, setStoreUrl] = useState("");
+  const [storeUrl, setStoreUrl] = useState(seed);
+  useEffect(() => { if (seed) { setMode("store"); setStoreUrl(seed); } }, [seed]); // a store link typed on Home; reading it is left to the button
   const [store, setStore] = useState(null);
   const [picked, setPicked] = useState([]);
   const [files, setFiles] = useState([]);

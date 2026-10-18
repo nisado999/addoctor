@@ -297,8 +297,8 @@ div.fixed:has(> [role="dialog"]) { animation: fade-in .25s ease-out backwards; -
 }
 
 
-/* The kinetic ad stream: creatives drifting across the white page, fading out 160px from each edge. */
-.ad-stream { -webkit-mask-image: linear-gradient(90deg, transparent, #000 160px, #000 calc(100% - 160px), transparent); mask-image: linear-gradient(90deg, transparent, #000 160px, #000 calc(100% - 160px), transparent); }
+/* The kinetic ad stream: creatives drifting across the white page, fading out 140px from each edge. */
+.ad-stream { -webkit-mask-image: linear-gradient(90deg, transparent, #000 140px, #000 calc(100% - 140px), transparent); mask-image: linear-gradient(90deg, transparent, #000 140px, #000 calc(100% - 140px), transparent); }
 .ad-track { animation: marquee 70s linear infinite; }
 .ad-card:nth-child(odd) { transform: translateY(-10px); }
 .ad-card:nth-child(even) { transform: translateY(10px) scale(.96); }
