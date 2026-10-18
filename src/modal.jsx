@@ -298,6 +298,9 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
       .finally(() => setAssetBusy(false));
   };
 
+  // A file dropped on the Home card arrives with the modal and is loaded like one chosen inside it.
+  useEffect(() => { if (init.file) onFile(init.file); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const hasContent = !!(headline.trim() || copy.trim() || asset);
   const canRun = hasContent && credits > 0 && stage === "input" && !assetBusy;
 

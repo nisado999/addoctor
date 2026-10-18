@@ -1,194 +1,229 @@
-import { createContext, useContext } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TEMPLATES } from "./data";
 import { Icon, TemplateImage } from "./ui";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
-import SpotlightCard from "./components/bits/SpotlightCard.jsx";
-import ScrollReveal from "./components/bits/ScrollReveal.jsx";
-import Counter from "./components/bits/Counter.jsx";
+import SplitText from "./components/bits/SplitText/SplitText.jsx";
 
-/* The tools at a glance, under the Explore hero: a bento of real features. Every tile opens the tool it shows, and
-   the little pictures in them are drawings of the interface, not numbers we made up. The only figures are counted
-   from the gallery itself.
-   Each tile is a double bezel: the words sit on the white card, the picture sits in its own inset stone stage. */
+/* The Home screen, on pure white: a headline, one composer that does three jobs, a stream of real ad templates
+   drifting across the page, and four flat links into the tools. No cards, no tints, no made-up figures: the only
+   number is the gallery's own count. */
 
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
-const PHOTOS = TEMPLATES.filter((t) => t.type !== "video" && TEMPLATE_IMGS[t.id]);
-const SCAN = PHOTOS.find((t) => t.trending) || PHOTOS[0];
-const PACK = PHOTOS.slice(8, 11);
-const REEL = PHOTOS.slice(12, 24);
-const SAVED = PHOTOS.slice(30, 33);
-const NICHES = new Set(TEMPLATES.map((t) => t.category)).size;
+const COUNT = TEMPLATES.length;
+const STREAM = TEMPLATES.filter((t) => t.type !== "video" && TEMPLATE_IMGS[t.id]).slice(0, 16);
 const ring = "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
+const isCreative = (f) => !!f && /^(image|video)\//.test(f.type);
 
-/* Each tile's own colour (from its icon tone), used for a faint wash in its top corner so the cards feel tied to
-   what they hold. The tile hands its icon and name down to its heading. */
-const HUES = { blue: "43, 89, 255", violet: "124, 92, 255", amber: "245, 158, 11", emerald: "16, 185, 129" };
-const TileInfo = createContext(null);
+const MODES = [
+  { id: "examine", label: "Examine Ad", hints: ["Drop an ad creative to examine…", "Paste a screenshot of your ad…", "Upload an image or a video thumbnail…"] },
+  { id: "spy", label: "Competitor Spy", hints: ["Enter a competitor domain, e.g. glossier.com", "gymshark.com", "Or just a brand name…"] },
+  { id: "search", label: "Template Search", hints: [`Search ${COUNT} templates…`, "Skincare, fashion, local services…", "Before and after, testimonial, UGC…"] },
+];
 
-function Tile({ className = "", label, onOpen, accent = false, icon, kicker, tone = "text-blue-600 bg-blue-50 ring-blue-100", children }) {
-  const hue = HUES[(tone.match(/text-(\w+)-600/) || [])[1]] || HUES.blue;
-  return (
-    <SpotlightCard
-      theme="light" spotlightColor={accent ? "#ffffff" : "#2b59ff"} intensity={accent ? 0.5 : 0.2} spotlightSize={320} borderGlow={0.9}
-      className={`bento-tile group relative flex flex-col overflow-hidden !rounded-[26px] !p-0 ${accent ? "bento-accent" : "bento-soft"} ${className}`}
-      style={{ "--hue": hue, ...(accent ? {} : { "--spotlight-card-surface": "transparent" }), "--spotlight-card-shadow": "var(--shadow-soft)", "--spotlight-card-border": accent ? "rgba(255, 255, 255, .2)" : "linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, .5) 30%, rgba(21, 20, 18, .07))" }}
-      data-reveal
-    >
-      <TileInfo.Provider value={{ icon, kicker, tone }}>{children}</TileInfo.Provider>
-      {/* The corner chip: an arrow that turns to point out of the tile on hover. */}
-      <span aria-hidden="true" className={`bento-go absolute right-4 top-4 z-[1] grid h-9 w-9 place-items-center rounded-full ${accent ? "bg-white/15 text-white ring-1 ring-white/25" : "bg-white text-slate-900 ring-1 ring-slate-900/[.08] shadow-[0_2px_6px_-2px_rgba(21,20,18,.15)]"}`}>
-        <Icon.Arrow className="h-4 w-4" />
-      </span>
-      {/* One real button stretched over the tile. */}
-      <button type="button" onClick={onOpen} aria-label={label} className={`absolute inset-0 z-[2] rounded-[26px] ${ring}`} />
-    </SpotlightCard>
-  );
+const TILES = [
+  { id: "examine", title: "Examine Ad", text: "X-ray hook, offer & CTA" },
+  { id: "spy", title: "Competitor Spy", text: "Uncover live brand ads" },
+  { id: "gallery", title: `${COUNT} Ad Gallery`, text: "Proven DR formats" },
+  { id: "pack", title: "30-Day Pack", text: "A full month of creatives" },
+];
+
+/* The placeholder types itself out, holds, then rubs out for the next example. It only runs while the box is empty. */
+function useTyped(lines, on) {
+  const [out, setOut] = useState(lines[0]);
+  useEffect(() => {
+    const still = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!on || still) { setOut(lines[0]); return; }
+    let i = 0, n = 0, dir = 1, t;
+    const tick = () => {
+      n += dir;
+      setOut(lines[i].slice(0, n));
+      if (dir === 1 && n === lines[i].length) { dir = -1; t = setTimeout(tick, 1800); return; }
+      if (dir === -1 && n === 0) { dir = 1; i = (i + 1) % lines.length; t = setTimeout(tick, 350); return; }
+      t = setTimeout(tick, dir === 1 ? 42 : 18);
+    };
+    n = 0; t = setTimeout(tick, 400);
+    return () => clearTimeout(t);
+  }, [lines, on]);
+  return out || " ";
 }
 
-function Head({ title, text }) {
-  const { icon: I, kicker, tone } = useContext(TileInfo);
+/* The composer: type or drop, pick what it should do in the tray, press Enter. */
+function Composer({ onExamine, onSpy, onBrowse }) {
+  const [mode, setMode] = useState("examine");
+  const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [over, setOver] = useState(false);
+  const [err, setErr] = useState("");
+  const input = useRef(null);
+  const m = MODES.find((x) => x.id === mode);
+  const typed = useTyped(m.hints, !text);
+
+  const attach = (f) => {
+    if (!f) return;
+    if (!isCreative(f)) { setErr("Use an image or a video file."); return; }
+    setErr(""); setFile(f); setMode("examine");
+  };
+  const submit = () => {
+    if (mode === "examine") onExamine(file || undefined);
+    else if (mode === "spy") onSpy(text.trim());
+    else onBrowse(text.trim());
+  };
+  // Paste an image anywhere on Home (outside a text field) to attach it.
+  useEffect(() => {
+    const onPaste = (e) => {
+      const t = e.target;
+      if ((t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) || (t && t.isContentEditable)) return;
+      const f = Array.from((e.clipboardData && e.clipboardData.files) || []).find(isCreative);
+      if (f) { e.preventDefault(); attach(f); }
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, []);
+
   return (
-    <div className="relative pr-12">
-      <div className="flex items-center gap-2.5">
-        <span className={`grid h-8 w-8 place-items-center rounded-xl ring-1 ${tone}`}><I className="h-4 w-4" /></span>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{kicker}</span>
+    <div className="mx-auto w-full max-w-[680px]">
+      <div className="composer">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
+        onDrop={(e) => { e.preventDefault(); setOver(false); attach(e.dataTransfer.files && e.dataTransfer.files[0]); }}
+        className={`overflow-hidden rounded-2xl border bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-colors ${over ? "border-blue-500" : "border-[#E5E5E5]"}`}
+      >
+        <div className="flex min-h-[96px] flex-col px-5 py-[18px]">
+          <textarea
+            value={text} rows={2} onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
+            placeholder={typed} aria-label={m.label}
+            className="w-full resize-none bg-transparent text-base leading-snug text-[#111] placeholder:text-[#999] focus:outline-none sm:text-[15px]"
+          />
+          <div className="mt-3 flex items-center gap-2">
+            {mode === "examine" && (
+              <>
+                <input ref={input} type="file" accept="image/*,video/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { attach(e.target.files && e.target.files[0]); e.target.value = ""; }} />
+                <button type="button" onClick={() => input.current && input.current.click()} className={`inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium text-[#666] transition hover:bg-[#F4F4F4] hover:text-[#111] ${ring}`}>
+                  <Icon.Upload className="h-4 w-4" /> Upload ad creative
+                </button>
+                {file && (
+                  <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[#F4F4F4] py-1 pl-2.5 pr-1 text-xs font-medium text-[#111]">
+                    <span className="max-w-[10rem] truncate">{file.name}</span>
+                    <button type="button" onClick={() => setFile(null)} aria-label="Remove file" className={`grid h-5 w-5 place-items-center rounded-full text-[#666] hover:bg-[#E5E5E5] ${ring}`}><Icon.Close className="h-3 w-3" /></button>
+                  </span>
+                )}
+              </>
+            )}
+            <button type="button" onClick={submit} aria-label={m.label} className={`ml-auto grid h-9 w-9 place-items-center rounded-lg bg-[#111] text-white transition hover:bg-black active:scale-95 ${ring}`}>
+              <Icon.Arrow className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-[#EFEFEF] bg-[#F9F9F9] px-5 py-2.5">
+          <span className="text-xs font-medium text-[#888]" id="mode-label">Mode:</span>
+          <div role="radiogroup" aria-labelledby="mode-label" className="flex flex-wrap gap-1.5">
+            {MODES.map((x) => (
+              <button
+                key={x.id} type="button" role="radio" aria-checked={mode === x.id} onClick={() => setMode(x.id)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === x.id ? "bg-[#111] text-white" : "bg-white text-[#666] ring-1 ring-[#E5E5E5] hover:text-[#111]"} ${ring}`}
+              >{x.label}</button>
+            ))}
+          </div>
+          <span className="ml-auto hidden items-center gap-1 text-[11px] font-medium text-[#888] sm:inline-flex">
+            <kbd className="rounded border border-[#E5E5E5] bg-white px-1.5 py-px font-sans">{IS_MAC ? "⌘" : "Ctrl"}</kbd>
+            <kbd className="rounded border border-[#E5E5E5] bg-white px-1.5 py-px font-sans">K</kbd>
+          </span>
+        </div>
       </div>
-      <h3 className="font-display mt-4 text-[22px] font-extrabold leading-[1.08] tracking-[-0.03em] text-slate-950 sm:text-[24px]">{title}</h3>
-      {text && <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-600">{text}</p>}
+      </div>
+      {err && <p role="alert" className="mt-3 text-center text-xs font-medium text-rose-700">{err}</p>}
+
+      <div className="hero-up mt-4 flex flex-wrap items-center justify-center gap-3" style={{ "--d": "300ms" }}>
+        <button type="button" onClick={() => onBrowse("")} className={`inline-flex h-11 items-center rounded-full border border-[#E5E5E5] bg-white px-5 text-sm font-semibold text-[#111] transition hover:border-[#111] ${ring}`}>Explore {COUNT} Templates</button>
+        <button type="button" onClick={() => onExamine()} className={`inline-flex h-11 items-center gap-1.5 rounded-full bg-[#111] px-5 text-sm font-semibold text-white transition hover:bg-black ${ring}`}>Examine an Ad <span aria-hidden="true">→</span></button>
+      </div>
     </div>
   );
 }
 
-/* The inset stage the picture sits in: 8px in from the card edge, so the card reads as a frame around it. */
-const Stage = ({ className = "", children }) => <div className={`bento-stage relative mx-2 mb-2 mt-5 overflow-hidden rounded-[20px] ${className}`} aria-hidden="true">{children}</div>;
+/* Real templates drifting across the page. The drift eases to a crawl while the pointer is over the stream. */
+function Stream({ onPick }) {
+  const track = useRef(null);
+  useEffect(() => {
+    const el = track.current;
+    const anim = el && el.getAnimations && el.getAnimations()[0];
+    if (!anim) return;
+    let rate = 1, target = 1, raf = 0;
+    const step = () => {
+      rate += (target - rate) * 0.08;
+      anim.playbackRate = rate;
+      raf = Math.abs(target - rate) > 0.005 ? requestAnimationFrame(step) : 0;
+    };
+    const go = (t) => () => { target = t; if (!raf) raf = requestAnimationFrame(step); };
+    const slow = go(0.2), fast = go(1);
+    const host = el.parentElement;
+    host.addEventListener("pointerenter", slow);
+    host.addEventListener("pointerleave", fast);
+    return () => { host.removeEventListener("pointerenter", slow); host.removeEventListener("pointerleave", fast); if (raf) cancelAnimationFrame(raf); };
+  }, []);
 
-export function Bento({ onExamine, onSpy, onPack, onBrowse, onPalette, onVault }) {
   return (
-    <section aria-labelledby="bento-title" className="mt-20 sm:mt-28">
-      <div className="max-w-3xl">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600" data-reveal>Everything in one clinic</p>
-        <span id="bento-title" className="sr-only">One place to study, make and check every ad you run.</span>
-        <ScrollReveal containerClassName="section-head mt-3" baseOpacity={0.12} blurStrength={6} baseRotation={2} rotationEnd="bottom 60%" wordAnimationEnd="bottom 60%">
-          One place to study, make and check every ad you run.
-        </ScrollReveal>
-      </div>
-
-      <div className="relative mt-10">
-      <div className="bento-field pointer-events-none absolute -inset-x-8 -inset-y-10" aria-hidden="true" />
-      <div className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:gap-5">
-        {/* Examine: the big tile. A real template being scanned, with the three checks Examine runs. */}
-        <Tile className="sm:col-span-2 lg:col-span-3 lg:row-span-2" label="Examine an ad" onOpen={onExamine} icon={Icon.Stethoscope} kicker="Examine">
-          <div className="px-6 pt-6 sm:px-8 sm:pt-8">
-            <Head title="An X-ray for any ad." text="Drop in a static or a video. Get the hook, offer and call to action checked, with a prescription for every leak." />
-          </div>
-          <Stage className="flex min-h-[300px] flex-1 items-center justify-center gap-5 px-5 py-8">
-            <div className="bento-lines pointer-events-none absolute inset-0" />
-            <div className="bento-art relative w-[44%] max-w-[220px] overflow-hidden rounded-2xl card-frame [container-type:size]" style={{ aspectRatio: "4 / 5" }}>
-              {SCAN && <TemplateImage src={TEMPLATE_IMGS[SCAN.id]} alt="" title={SCAN.title} className="cr-photo-img" />}
-              <span className="scan-sweep absolute inset-x-0 top-0 h-[2px] bg-blue-500 shadow-[0_0_16px_4px_rgba(43,89,255,.55)]" style={{ "--h": "calc(100cqh - 2px)" }} />
-              <span className="absolute inset-0 bg-gradient-to-t from-blue-600/15 to-transparent" />
-            </div>
-            <ul className="relative flex w-[48%] max-w-[230px] flex-col gap-2.5">
-              {[["Hook", "Stops the scroll"], ["Offer", "Clear and specific"], ["Call to action", "One next step"]].map(([k, v], i) => (
-                <li key={k} className="bento-check flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3 shadow-[0_0_0_1px_rgba(21,20,18,.07),0_10px_24px_-14px_rgba(21,20,18,.3)]" style={{ "--x": `${i * 10}px`, "--i": i }}>
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-emerald-500 text-white shadow-[0_4px_10px_-3px_rgba(16,185,129,.6)]"><Icon.Check className="h-3.5 w-3.5" /></span>
-                  <span className="min-w-0 leading-tight"><b className="block text-[13px] font-semibold text-slate-950">{k}</b><span className="text-[11px] text-slate-500">{v}</span></span>
-                </li>
-              ))}
-            </ul>
-          </Stage>
-        </Tile>
-
-        {/* Spy: a domain being typed, and the three things the report brings back. */}
-        <Tile className="lg:col-span-3" label="Open Competitor Spy" onOpen={onSpy} icon={Icon.Eye} kicker="Competitor Spy" tone="text-violet-600 bg-violet-50 ring-violet-100">
-          <div className="px-6 pt-6 sm:px-7 sm:pt-7">
-            <Head title="See what they are really running."/>
-          </div>
-          <Stage className="bento-art p-4 sm:p-5">
-            <div className="flex h-11 items-center gap-2.5 rounded-full bg-white px-4 text-sm text-slate-900 shadow-[0_0_0_1px_rgba(21,20,18,.07),0_6px_16px_-10px_rgba(21,20,18,.3)]">
-              <Icon.Search className="h-4 w-4 text-slate-400" /> competitor.com<span className="type-caret -ml-1.5 h-4 w-px bg-blue-600" />
-              <span className="ml-auto rounded-full bg-slate-950 px-3 py-1 text-[11px] font-semibold text-white">Spy</span>
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {["Main focus", "Top products", "Promotions"].map((k, i) => (
-                <div key={k} className="rounded-xl bg-white px-3 py-2.5 shadow-[0_0_0_1px_rgba(21,20,18,.06)]">
-                  <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">{k}</span>
-                  <span className="bar-grow mt-2 block h-1.5 rounded-full bg-gradient-to-r from-blue-600 to-violet-500" style={{ width: `${[86, 64, 48][i]}%`, "--d": `${300 + i * 150}ms` }} />
-                </div>
-              ))}
-            </div>
-          </Stage>
-        </Tile>
-
-        {/* Social Pack: three real template photos fanned like posts; they spread on hover. */}
-        <Tile className="lg:col-span-2" label="Open Social Pack" onOpen={onPack} icon={Icon.Image} kicker="Social Pack" tone="text-amber-600 bg-amber-50 ring-amber-100">
-          <div className="px-6 pt-6 sm:px-7 sm:pt-7">
-            <Head title="A month of posts."/>
-          </div>
-          <Stage className="flex h-[150px] items-center justify-center">
-            {PACK.map((t, i) => (
-              <span key={t.id} className="bento-fan absolute h-[112px] w-[90px] overflow-hidden rounded-xl card-frame" style={{ "--r": `${(i - 1) * 9}deg`, "--x": `${(i - 1) * 62}%`, "--hx": `${(i - 1) * 105}%`, zIndex: i === 1 ? 2 : 1 }}>
-                <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" />
-              </span>
-            ))}
-          </Stage>
-        </Tile>
-
-        {/* The command palette shortcut: the one loud tile, in the accent colour. */}
-        <Tile className="lg:col-span-1" label="Open the command palette" onOpen={onPalette} accent icon={Icon.Bolt} kicker="Shortcut">
-          <div className="relative flex h-full flex-col items-start p-6">
-            
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">Shortcut</span>
-            <div className="bento-art mt-auto flex items-center gap-1.5 pt-6" aria-hidden="true">
-              <kbd className="kbd-3d grid h-12 min-w-12 place-items-center rounded-xl px-2.5 font-sans text-sm font-semibold text-slate-900">{IS_MAC ? "⌘" : "Ctrl"}</kbd>
-              <kbd className="kbd-3d grid h-12 w-12 place-items-center rounded-xl font-sans text-base font-semibold text-slate-900">K</kbd>
-            </div>
-            <p className="font-display mt-4 text-[20px] font-extrabold leading-tight tracking-[-0.02em] text-white">Jump anywhere.</p>
-            <p className="mt-1 text-xs leading-relaxed text-white/75">Any page, action or template.</p>
-          </div>
-        </Tile>
-
-        {/* The gallery: the real count, and a tilted reel of real templates that straightens on hover. */}
-        <Tile className="sm:col-span-2 lg:col-span-4" label="Browse the template gallery" onOpen={onBrowse} icon={Icon.Grid} kicker="Gallery">
-          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 px-6 pt-6 sm:px-7 sm:pt-7">
-            <Head title="Proven direct-response formats." />
-            <p className="flex items-baseline gap-2 text-slate-950 sm:mr-12">
-              <span className="font-display text-[52px] font-extrabold leading-none tracking-[-0.05em] tabular-nums"><Counter value={TEMPLATES.length} fontSize="1em" fade={0.15} duration={1.2} stagger={0.08} /></span>
-              <span className="text-xs font-semibold uppercase leading-tight tracking-[0.12em] text-slate-500">templates<br />{NICHES} niches</span>
-            </p>
-          </div>
-          <Stage className="reel-3d h-[190px]">
-            <div className="marquee reel-tilt absolute inset-x-[-12%] top-1/2 -translate-y-1/2">
-              <div className="marquee-track flex w-max gap-3 px-3 py-3">
-                {[...REEL, ...REEL].map((t, i) => (
-                  <span key={t.id + "-" + i} className="relative h-[136px] w-[109px] shrink-0 overflow-hidden rounded-xl card-frame">
-                    <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" />
+    <div className="hero-up ad-stream -mx-4 overflow-hidden py-5 sm:-mx-6 lg:-mx-8" aria-label="Templates from the gallery" style={{ "--d": "420ms" }}>
+      <div ref={track} className="ad-track flex w-max gap-4">
+        {[...STREAM, ...STREAM].map((t, i) => (
+          <button
+            key={t.id + "-" + i} type="button" onClick={() => onPick(t)} tabIndex={i >= STREAM.length ? -1 : 0} aria-hidden={i >= STREAM.length ? "true" : undefined}
+            aria-label={`Use the template ${t.title}`}
+            className={`ad-card relative h-[250px] w-[200px] shrink-0 overflow-hidden rounded-xl bg-[#F6F6F6] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)] ${ring}`}
+          >
+            <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" />
+            <span className="xray pointer-events-none absolute inset-0" aria-hidden="true">
+              <span className="scan-sweep absolute inset-x-0 top-0 h-[2px] bg-blue-500 shadow-[0_0_14px_3px_rgba(43,89,255,.55)]" style={{ "--h": "246px" }} />
+              <span className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent" />
+              <span className="absolute left-3 top-3 flex flex-col gap-1.5">
+                {["Hook", "Offer", "CTA"].map((k, j) => (
+                  <span key={k} className="xray-chip inline-flex items-center gap-1.5 self-start rounded-full bg-white py-0.5 pl-0.5 pr-2 text-[10px] font-semibold text-[#111] shadow-[0_2px_8px_rgba(0,0,0,.18)]" style={{ "--i": j }}>
+                    <span className="grid h-4 w-4 place-items-center rounded-full bg-emerald-500 text-white"><Icon.Check className="h-2.5 w-2.5" /></span>{k}
                   </span>
                 ))}
-              </div>
-            </div>
-          </Stage>
-        </Tile>
-
-        {/* Vault: saved ads stacked like cards in a drawer; the top one lifts on hover. */}
-        <Tile className="sm:col-span-2 lg:col-span-2" label="Open the Saved Vault" onOpen={onVault} icon={Icon.Bookmark} kicker="Saved Vault" tone="text-emerald-600 bg-emerald-50 ring-emerald-100">
-          <div className="px-6 pt-6 sm:px-7 sm:pt-7">
-            <Head title="Keep every prescription."/>
-          </div>
-          <Stage className="flex h-[190px] items-end justify-center">
-            {SAVED.map((t, i) => (
-              <span key={t.id} className="bento-stack absolute flex w-[78%] items-center gap-3 rounded-2xl bg-white p-2.5 pr-3.5 shadow-[0_0_0_1px_rgba(21,20,18,.07),0_12px_28px_-16px_rgba(21,20,18,.4)]" style={{ "--i": i, bottom: `${18 + i * 14}px`, zIndex: 3 - i, opacity: 1 - i * 0.22 }}>
-                <span className="relative h-12 w-10 shrink-0 overflow-hidden rounded-lg"><TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" /></span>
-                <span className="min-w-0 flex-1">
-                  <b className="block truncate text-[13px] font-semibold text-slate-950">{t.title}</b>
-                  <span className="text-[11px] text-slate-500">{t.label}</span>
-                </span>
-                <Icon.Bookmark className="h-4 w-4 shrink-0 text-emerald-500" fill="currentColor" />
               </span>
-            ))}
-          </Stage>
-        </Tile>
+            </span>
+            <span className="ad-badge absolute bottom-3 left-1/2 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] shadow-[0_4px_14px_rgba(0,0,0,0.18)]">Use template →</span>
+          </button>
+        ))}
       </div>
+    </div>
+  );
+}
+
+export function Bento({ onExamine, onSpy, onPack, onBrowse, onPick }) {
+  const go = { examine: () => onExamine(), spy: () => onSpy(""), gallery: () => onBrowse(""), pack: onPack };
+  return (
+    <section aria-label="Home" className="flex flex-col gap-[72px] pt-10 sm:pt-16">
+      <div className="text-center">
+        {/* React Bits SplitText: the words rise out of a mask as the page opens. */}
+        <SplitText
+          tag="h1" text="What are we diagnosing today?" splitType="words" effect="rise" mask delay={55} duration={0.9} textAlign="center"
+          className="font-display text-[32px] font-extrabold leading-[1.1] tracking-[-0.035em] text-[#111]"
+        />
+        <p className="hero-up mt-3 text-[15px] text-[#666]" style={{ "--d": "200ms" }}>Examine an ad, spy on a competitor, or start from a proven template.</p>
+      </div>
+
+      <div className="-mt-6 flex flex-col gap-14">
+        <Composer onExamine={onExamine} onSpy={onSpy} onBrowse={onBrowse} />
+        <Stream onPick={onPick} />
+      </div>
+
+      <div className="hero-up pb-4 text-center" style={{ "--d": "520ms" }}>
+        <p className="text-[13px] text-[#888]">Everything in one clinic — jump straight into a workflow</p>
+        <ul role="list" className="mx-auto mt-6 grid max-w-[960px] gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
+          {TILES.map((t) => (
+            <li key={t.id}>
+              <button type="button" onClick={go[t.id]} className={`flat-tile relative block h-full w-full rounded-xl bg-[#F6F6F6] px-5 py-6 text-left transition-[background-color,transform] duration-300 hover:-translate-y-0.5 hover:bg-[#EFEFEF] ${ring}`}>
+                <span aria-hidden="true" className="flat-go absolute right-4 top-5 text-sm text-[#111]">→</span>
+                <b className="block text-sm font-semibold text-[#111]">{t.title}</b>
+                <span className="mt-1 block text-[13px] text-[#666]">{t.text}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

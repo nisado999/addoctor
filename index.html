@@ -36,7 +36,7 @@
   <body>
     <!-- A static copy of the first screen, painted as soon as the HTML and CSS arrive; React replaces it when the
          scripts have loaded. It mirrors Sidebar and BottomNav (src/ui.jsx), the header and main column (src/App.jsx)
-         and Hero (src/hero.jsx) class for class, with grey blocks where real data goes. Keep it in step with them. -->
+         and the Home header (src/bento.jsx) class for class, with grey blocks where real data goes. Keep it in step with them. -->
     <div id="root"><div data-shell aria-busy="true" class="app-bg min-h-screen font-sans text-slate-900 antialiased">
       <svg width="0" height="0" class="absolute" aria-hidden="true">
         <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" /></symbol>
@@ -86,10 +86,6 @@
               </div>
             </div>
           </div>
-          <div class="mt-5">
-            <div class="flex items-center justify-between pr-2"><p class="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Favourites</p></div>
-            <p class="flex items-start gap-2 px-3 text-xs leading-relaxed text-slate-500"><svg class="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-heart" /></svg>Tap the heart on a template to keep it here.</p>
-          </div>
         </div>
         <div class="shrink-0 border-t border-slate-200/80 px-5 py-4">
           <span class="mt-2 inline-block text-[11px] font-medium text-slate-500">Privacy</span>
@@ -110,34 +106,9 @@
         </header>
 
         <main class="px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
-          <section class="hero relative overflow-hidden rounded-[28px]">
-            <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/95 via-white/60 to-white/0 md:via-white/30"></div>
-            <div class="relative grid items-center gap-8 px-5 pb-10 pt-7 sm:px-9 sm:pb-14 sm:pt-11 md:min-h-[540px] md:grid-cols-[1.12fr_1fr] lg:px-12 lg:pt-14 xl:min-h-[600px]">
-              <div class="min-w-0">
-                <p class="glass inline-flex items-center gap-2 rounded-full py-1 pl-1.5 pr-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] shadow-[0_0_0_1px_rgba(21,20,18,.08),0_4px_14px_-6px_rgba(21,20,18,.18)]"><span class="grid h-5 w-5 place-items-center rounded-full bg-emerald-50"><span class="hero-dot h-1.5 w-1.5 rounded-full bg-emerald-500"></span></span><span class="shiny">The ad creative clinic</span></p>
-                <h1 class="hero-title mt-5 text-[40px] leading-[.98] text-slate-950 sm:text-[56px] lg:text-[64px] xl:text-[76px]">Ads that stop the scroll, <span class="hero-ink">diagnosed and rebuilt.</span></h1>
-                <p class="mt-5 max-w-[30rem] text-[15px] leading-relaxed text-slate-600 sm:text-[17px]">Spy on what a competitor runs, start from a proven direct-response format, and make a new ad in its style with your own product. Then examine any ad for conversion leaks.</p>
-                <div class="mt-7 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-                  <span class="btn-ink col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 text-[15px] font-semibold sm:col-span-1"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-steth" /></svg> Examine an ad <svg class="h-4 w-4 opacity-60" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow" /></svg></span>
-                  <span class="btn-soft inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-900 sm:px-5">Browse templates <svg class="hidden h-4 w-4 rotate-90 sm:block" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-arrow" /></svg></span>
-                  <span class="btn-soft inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-slate-900 sm:px-5"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-eye" /></svg> Spy on a competitor</span>
-                </div>
-                <noscript><p class="mt-4 text-sm font-semibold text-rose-700">AdDoctor needs JavaScript to run. Turn it on and reload the page.</p></noscript>
-                <div class="-mx-5 mt-5 flex gap-3 overflow-hidden px-5 py-1 sm:-mx-8 sm:px-8 md:hidden">
-                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-16 rounded-full bg-slate-200/70"></span></span></span>
-                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-14 rounded-full bg-slate-200/70"></span></span></span>
-                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-16 rounded-full bg-slate-200/70"></span></span></span>
-                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-12 rounded-full bg-slate-200/70"></span></span></span>
-                  <span class="w-24 shrink-0"><span class="block aspect-[4/5] rounded-xl border border-slate-200/80 bg-slate-100 shadow-sm"></span><span class="mt-1.5 flex h-4 items-center"><span class="h-2.5 w-16 rounded-full bg-slate-200/70"></span></span></span>
-                </div>
-                <div class="mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t border-slate-900/[.07] pt-6 sm:mt-10 sm:gap-x-10">
-                  <span class="h-[52px] w-[88px] rounded-lg bg-slate-100/80"></span>
-                  <span class="h-[52px] w-[88px] rounded-lg bg-slate-100/80"></span>
-                  <span class="h-[52px] w-[64px] rounded-lg bg-slate-100/80"></span>
-                </div>
-              </div>
-              <div class="hero-stage relative hidden h-[340px] md:block lg:h-[400px] xl:h-[440px]"></div>
-            </div>
+          <section>
+            <div class="pt-10 text-center sm:pt-16"><h1 class="font-display text-[32px] font-extrabold leading-[1.1] tracking-[-0.035em] text-[#111]">What are we diagnosing today?</h1><p class="mt-3 text-[15px] text-[#666]">Examine an ad, spy on a competitor, or start from a proven template.</p></div>
+            <noscript><p class="mt-4 text-sm font-semibold text-rose-700">AdDoctor needs JavaScript to run. Turn it on and reload the page.</p></noscript>
           </section>
 
         </main>
@@ -147,7 +118,7 @@
         <div class="mx-auto grid h-16 max-w-md grid-cols-5 items-center px-1">
           <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-grid" /></svg>Explore</span>
           <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-layout" /></svg>Static</span>
-          <span class="btn-ink mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full ring-4 ring-[#f5f3ee]"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-steth" /></svg></span>
+          <span class="btn-ink mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full ring-4 ring-white"><svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-steth" /></svg></span>
           <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-eye" /></svg>Spy</span>
           <span class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bookmark" /></svg>Vault</span>
         </div>

@@ -8,7 +8,7 @@
   color-scheme: light;
   --ink: #151412;
   --paper: #ffffff;
-  --stone: #f5f3ee;
+  --stone: #ffffff;
   --accent: #2b59ff;
   --accent-2: #7c5cff;
   --edge: rgba(21, 20, 18, .08);
@@ -78,19 +78,12 @@ button, [role="button"], a, select { touch-action: manipulation; }
 
 /* The page: warm stone with faint pools of light, fixed so the content glides over it. */
 .app-bg { background: var(--stone); }
-.app-bg::before {
-  content: ""; position: fixed; inset: 0; pointer-events: none;
-  background:
-    radial-gradient(42% 38% at 88% -4%, rgba(43, 89, 255, .09), transparent 70%),
-    radial-gradient(38% 34% at 18% 4%, rgba(255, 196, 150, .16), transparent 72%),
-    radial-gradient(50% 40% at 50% 110%, rgba(124, 92, 255, .06), transparent 70%);
-}
 .app-main { position: relative; }
 
 /* Frosted white glass: the sidebar, the top bar, chips and floating panels. */
 .glass { background: rgba(255, 255, 255, .72); -webkit-backdrop-filter: saturate(180%) blur(18px); backdrop-filter: saturate(180%) blur(18px); }
 .side-glass { background: rgba(255, 255, 255, .8); box-shadow: 1px 0 0 var(--edge), 12px 0 40px -28px rgba(21, 20, 18, .18); -webkit-backdrop-filter: saturate(160%) blur(20px); backdrop-filter: saturate(160%) blur(20px); }
-.top-glass { background: rgba(245, 243, 238, .74); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); box-shadow: 0 1px 0 var(--edge); }
+.top-glass { background: rgba(255, 255, 255, .86); -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); box-shadow: 0 1px 0 var(--edge); }
 .surface { background: #fff; border: 1px solid var(--edge); box-shadow: var(--shadow-1); }
 .surface-lift { background: #fff; border: 1px solid var(--edge); box-shadow: var(--shadow-2); }
 
@@ -302,3 +295,29 @@ div.fixed:has(> [role="dialog"]) { animation: fade-in .25s ease-out backwards; -
   .hero-fan, .tilt, .btn-ink, .btn-glow, .btn-soft, .bento-tile, .bento-art, .btn-ink::after, .btn-glow::after { transition: none; }
   .tilt, .bento-tile:hover, .bento-tile:hover .bento-art { transform: none; }
 }
+
+
+/* The kinetic ad stream: creatives drifting across the white page, fading out 160px from each edge. */
+.ad-stream { -webkit-mask-image: linear-gradient(90deg, transparent, #000 160px, #000 calc(100% - 160px), transparent); mask-image: linear-gradient(90deg, transparent, #000 160px, #000 calc(100% - 160px), transparent); }
+.ad-track { animation: marquee 70s linear infinite; }
+.ad-card:nth-child(odd) { transform: translateY(-10px); }
+.ad-card:nth-child(even) { transform: translateY(10px) scale(.96); }
+.ad-card .ad-badge { opacity: 0; transform: translate(-50%, 6px); transition: opacity .25s var(--ease), transform .25s var(--ease); }
+.ad-card:hover .ad-badge, .ad-card:focus-visible .ad-badge { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .ad-track { animation: none; } }
+
+/* The composer: a thin ring of colour travels round its edge while it has focus. */
+@property --a { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+@keyframes spin-a { to { --a: 360deg; } }
+.composer { position: relative; border-radius: 16px; }
+.composer::before { content: ""; position: absolute; inset: -1px; z-index: 1; pointer-events: none; border-radius: 17px; padding: 1.5px; background: conic-gradient(from var(--a), transparent 0 55%, #2b59ff 75%, #7c5cff 88%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity .4s var(--ease); animation: spin-a 3.5s linear infinite; }
+.composer:focus-within::before { opacity: 1; }
+
+/* Hovering an ad in the stream x-rays it: a scan line crosses it and the three checks light up. */
+.ad-card .xray { opacity: 0; transition: opacity .3s var(--ease); }
+.ad-card:hover .xray, .ad-card:focus-visible .xray { opacity: 1; }
+.ad-card .xray-chip { transform: translateX(-8px); opacity: 0; transition: transform .35s var(--ease), opacity .35s var(--ease); transition-delay: calc(var(--i) * 90ms); }
+.ad-card:hover .xray-chip, .ad-card:focus-visible .xray-chip { transform: none; opacity: 1; }
+.flat-tile .flat-go { opacity: 0; transform: translateX(-6px); transition: opacity .25s var(--ease), transform .25s var(--ease); }
+.flat-tile:hover .flat-go { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .composer::before { animation: none; } }

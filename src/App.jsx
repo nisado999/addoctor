@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useDeferredValue, Suspense } from "react";
 import { CATEGORIES, TEMPLATES } from "./data";
 import { Icon, TemplateCard, TemplateGrid, Sidebar, BottomNav, holdClips } from "./ui";
-import { Hero } from "./hero";
 import { Bento } from "./bento.jsx";
 import SplitText from "./components/bits/SplitText/SplitText.jsx";
 import { TONE, inputKey } from "./shared.js";
@@ -234,6 +233,7 @@ function App() {
   const [examKey, setExamKey] = useState(0);
   const [cat, setCat] = useState("All");
   const [q, setQ] = useState("");
+  const [spySeed, setSpySeed] = useState(""); // a domain typed into the Home composer, handed to Competitor Spy
   const [credits, spend] = useCredits();
   const [vault, setVault] = useState(() => loadVault(VAULT_KEY));
   const vaultRef = useRef(vault); // the list as last stored, for writes that must know the result straight away
@@ -620,12 +620,6 @@ function App() {
   const savedKeys = useMemo(() => vault.map(inputKey), [vault]);
 
   const toggleFav = useCallback((id) => setFavs((f) => (f.includes(id) ? f.filter((x) => x !== id) : [id, ...f])), []);
-  const pinned = useMemo(() => favs.map((id) => TEMPLATES.find((t) => t.id === id)).filter(Boolean).slice(0, 4), [favs]);
-  const pickPinned = useCallback((t) => {
-    if (openRef.current.length && !confirmDiscard()) return;
-    setExam(null); setStudio(null); setBrand(null); setInspire(null); setProduct(null); setAuthOpen(false); setLook(t);
-  }, []);
-  const showPinned = () => { if (!goto("explore")) return; setQ(""); setCat("All"); setQuick("favs"); };
 
   const dq = useDeferredValue(q); // typing stays instant while the grid catches up
   const s = dq.trim().toLowerCase();
@@ -709,7 +703,7 @@ function App() {
   const screen = (id) => (
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} />
-    : <SpyView notify={notify} onRebuild={rebuild} active={view === "spy"} />
+    : <SpyView notify={notify} onRebuild={rebuild} active={view === "spy"} seed={spySeed} />
   );
 
   return (
@@ -724,7 +718,6 @@ function App() {
       <Sidebar
         active={active} onNav={goto} open={menu} onClose={closeMenu} onExamine={() => openExam({})}
         credits={credits} creditsPerDay={PER_DAY} bill={{ on: billing.on, account: billing.account, signedIn: !!user }} vaultCount={vault.length}
-        pinned={pinned} pinnedTotal={favs.length} onPick={pickPinned} onShowPinned={showPinned}
       />
 
       <div className="app-main min-h-screen lg:pl-64">
@@ -747,18 +740,20 @@ function App() {
                 onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
                 onFocus={() => setSearchOn(true)} onBlur={() => setSearchOn(false)}
                 placeholder={view === "vault" ? "Search saved reports..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search saved reports" : "Search templates, niches, formats"}
-                className="h-10 w-full rounded-full border border-slate-900/[.08] bg-white/75 pl-10 pr-4 shadow-[inset_0_1px_2px_rgba(21,20,18,.05)] text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                className="h-10 w-full rounded-full border border-slate-900/[.08] bg-white/75 pl-10 pr-4 md:pr-24 shadow-[inset_0_1px_2px_rgba(21,20,18,.05)] text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
               />
-              {!q && <kbd className="pointer-events-none absolute right-3.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 md:block">/</kbd>}
+              {/* The shortcut lives in the search bar: a click opens the jump palette, Ctrl/⌘ K does the same from anywhere. */}
+              {!q && (
+                <button
+                  type="button" onClick={() => setPalette(true)} aria-label="Jump to a page, action or template" aria-keyshortcuts="Control+K Meta+K"
+                  className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-full p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 md:flex"
+                >
+                  <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-semibold text-slate-500">{IS_MAC ? "⌘" : "Ctrl"}</kbd>
+                  <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-semibold text-slate-500">K</kbd>
+                </button>
+              )}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
-              <button
-                onClick={() => setPalette(true)} aria-label="Jump to a page, action or template" aria-keyshortcuts="Control+K Meta+K"
-                className="btn-soft hidden h-9 items-center gap-2 rounded-full px-3.5 text-[13px] font-medium text-slate-700 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 md:inline-flex"
-              >
-                Jump to
-                <kbd className="rounded border border-slate-200 bg-slate-50 px-1.5 py-px font-mono text-[10px] font-medium text-slate-500">{IS_MAC ? "⌘K" : "Ctrl K"}</kbd>
-              </button>
               {user ? (
                 <div className="relative">
                   <button
@@ -793,13 +788,11 @@ function App() {
           <ErrorBoundary variant="view" label={view} resetKeys={[view]}>
           <div key={view} className={moved ? "view-in" : undefined}>
           {view === "home" ? (
-            <>
-              <Hero onExamine={() => openExam({})} onSpy={() => goto("spy")} onPick={inspect} onBrowse={() => goto("explore")} />
-              <Bento
-                onExamine={() => openExam({})} onSpy={() => goto("spy")} onPack={() => goto("pack")} onVault={() => goto("vault")}
-                onPalette={() => setPalette(true)} onBrowse={() => goto("explore")}
-              />
-            </>
+            <Bento
+              onExamine={(file) => openExam(file ? { file } : {})} onSpy={(domain) => { setSpySeed(domain || ""); goto("spy"); }} onPack={() => goto("pack")}
+              onPick={inspect}
+              onBrowse={(term) => { if (goto("explore") && typeof term === "string") { setQuick(null); setCat("All"); setQ(term); } }}
+            />
           ) : view === "explore" ? (
             <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
               <div className="min-w-0 max-w-2xl">

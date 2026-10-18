@@ -566,7 +566,7 @@ function spyHalves(a, b) {
 const spyDone = (out) => track("spy_complete", { ads_count: out.count || 0, creatives_read: (out.vision && out.vision.images) || 0, ai_written: !!(out.slide && out.slide.length) });
 const spySeen = (out) => (out.vision && out.vision.images ? ` and looked at ${spyPlural(out.vision.images, "creative")}` : "");
 
-function SpyView({ onRebuild, notify }) {
+function SpyView({ onRebuild, notify, seed = "" }) {
   const now = new Date();
   const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);   // local date, not UTC
   const [brand, setBrand] = useState("");
@@ -888,6 +888,11 @@ ${spyCompact(ads)}`;
       track("spy_brand_search", { results: (j.brands || []).length });
     } catch (e) { setFind((f) => ({ ...f, busy: false, err: e.message || "Search failed. Try again." })); }
   };
+  // A domain or name typed on Home: "https://www.glossier.com/" searches for "glossier", as if Search had been pressed.
+  useEffect(() => {
+    const name = seed.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[0].replace(/\.[a-z]{2,}$/i, "");
+    if (name.length >= 2) searchBrands(name);
+  }, [seed]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickBrand = (b) => {
     setLibRaw(spyUrl(b.id, country || "ALL", from, to));
     setBrand(b.name);

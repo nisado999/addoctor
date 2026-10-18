@@ -321,7 +321,7 @@ function useWide() {
   return wide;
 }
 
-function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerDay = 15, bill, vaultCount, pinned = [], pinnedTotal = 0, onPick, onShowPinned }) {
+function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerDay = 15, bill, vaultCount }) {
   const asideRef = useRef(null);
   const closeRef = useRef(null);
   const wide = useWide();
@@ -360,8 +360,8 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
 
         <div className="mt-5 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3">
           <nav aria-label="Workspace" className="flex flex-col gap-5">
-            {(bill && bill.on ? NAV.map((g) => (g.head === "Library" ? { ...g, items: [...g.items, { id: "plans", label: "Plans & credits", icon: Icon.Tag }] } : g)) : NAV).map((g) => (
-              <div key={g.head || "top"}>
+            {NAV.map((g) => (
+              <div key={g.head}>
                 {g.head && <p className={navHead}>{g.head}</p>}
                 <div className="flex flex-col gap-px">
                   {g.items.map((n) => {
@@ -386,42 +386,19 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
               </div>
             ))}
           </nav>
-
-          {/* Favourites, so the templates someone keeps coming back to are one click away. */}
-          <div className="mt-5">
-            <div className="flex items-center justify-between pr-2">
-              <p className={navHead}>Favourites</p>
-              {pinnedTotal > pinned.length && (
-                <button onClick={() => { onShowPinned(); onClose(); }} className={`mb-1.5 rounded text-[11px] font-semibold text-blue-600 hover:text-blue-700 ${ring}`}>All {pinnedTotal}</button>
-              )}
-            </div>
-            {pinned.length ? (
-              <div className="flex flex-col gap-px">
-                {pinned.map((t) => (
-                  <button
-                    key={t.id} onClick={() => { onPick(t); onClose(); }}
-                    className="group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600"
-                  >
-                    <span className="relative h-8 w-[26px] shrink-0 overflow-hidden rounded-[5px] border border-slate-200 bg-slate-100">
-                      <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium text-slate-700 group-hover:text-slate-900">{t.title}</span>
-                      <span className="block truncate text-[11px] text-slate-500">{t.label}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="flex items-start gap-2 px-3 text-xs leading-relaxed text-slate-500">
-                <Icon.Heart className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Tap the heart on a template to keep it here.
-              </p>
-            )}
-          </div>
         </div>
 
         <div className="shrink-0 border-t border-slate-200/80 px-5 py-4">
+          {bill && bill.on && (
+            <button
+              onClick={() => { onNav("plans"); onClose(); }}
+              aria-current={active === "plans" ? "page" : undefined}
+              className={`group -mx-2 mb-3 flex w-[calc(100%+1rem)] items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${active === "plans" ? "nav-on font-semibold text-slate-950" : "text-slate-600 hover:bg-white/70 hover:text-slate-950"}`}
+            >
+              <Icon.Tag className={`h-4 w-4 shrink-0 ${active === "plans" ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+              <span className="flex-1 truncate">Plans &amp; credits</span>
+            </button>
+          )}
           {/* The free allowance as it really is: kept on this device and topped up each day. Nothing to buy yet. */}
           {bill && bill.on && (
             bill.account ? (
@@ -472,7 +449,7 @@ function BottomNav({ active, onNav, vaultCount }) {
           const on = active === n.id;
           const I = n.icon;
           return n.main ? (
-            <button key={n.id} onClick={() => onNav(n.id)} aria-label="Examine an ad" className="btn-ink mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full ring-4 ring-[#f5f3ee] transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+            <button key={n.id} onClick={() => onNav(n.id)} aria-label="Examine an ad" className="btn-ink mx-auto -mt-7 grid h-14 w-14 place-items-center rounded-full ring-4 ring-white transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
               <I className="h-6 w-6" />
             </button>
           ) : (
