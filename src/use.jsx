@@ -642,8 +642,8 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                 <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={field} placeholder="e.g. Made to move in" />
               </div>
               <div>
-                <label htmlFor="make-note" className={lab}>3. Anything to know? <span className="font-normal text-slate-400">(optional)</span></label>
-                <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={field} placeholder="e.g. women's running top, worn by a woman in her 30s" />
+                <label htmlFor="make-note" className={lab}>3. About your product <span className="font-normal text-slate-400">(optional, facts only. To change the ad, use "Change something" after it is made)</span></label>
+                <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={field} placeholder="e.g. a sticker with a silver logo, not a shirt" />
               </div>
               <label className="flex items-center gap-2.5 text-[13px] text-slate-600">
                 <input type="checkbox" checked={premium} onChange={(e) => setPremium(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-blue-600" />
