@@ -375,9 +375,9 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
                         aria-current={on ? "page" : undefined}
                         className={`group flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "nav-on font-semibold text-slate-950" : n.quiet ? "text-slate-500 hover:bg-white/70 hover:text-slate-700" : "text-slate-600 hover:translate-x-0.5 hover:bg-white/70 hover:text-slate-950"}`}
                       >
-                        <I className={`h-4 w-4 shrink-0 ${on ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+                        <I className={`h-4 w-4 shrink-0 ${on ? "text-slate-950" : "text-slate-400 group-hover:text-slate-500"}`} />
                         <span className="flex-1 truncate">{n.label}</span>
-                        {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-500" : "text-blue-600"}`}>{n.note}</span>}
+                        {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-400" : "text-slate-600"}`}>{n.note}</span>}
                         {count > 0 && <span className="text-[11px] font-semibold tabular-nums text-slate-500">{count}</span>}
                       </button>
                     );
@@ -395,7 +395,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
               aria-current={active === "plans" ? "page" : undefined}
               className={`group -mx-2 mb-3 flex w-[calc(100%+1rem)] items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${active === "plans" ? "nav-on font-semibold text-slate-950" : "text-slate-600 hover:bg-white/70 hover:text-slate-950"}`}
             >
-              <Icon.Tag className={`h-4 w-4 shrink-0 ${active === "plans" ? "text-blue-600" : "text-slate-400 group-hover:text-slate-500"}`} />
+              <Icon.Tag className={`h-4 w-4 shrink-0 ${active === "plans" ? "text-slate-950" : "text-slate-400 group-hover:text-slate-500"}`} />
               <span className="flex-1 truncate">Plans &amp; credits</span>
             </button>
           )}

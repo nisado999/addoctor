@@ -387,3 +387,6 @@ div.fixed:has(> [role="dialog"]) { animation: fade-in .25s ease-out backwards; -
 .flat-tile .flat-go { opacity: 0; transform: translateX(-6px); transition: opacity .25s var(--ease), transform .25s var(--ease); }
 .flat-tile:hover .flat-go { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .composer::before { animation: none; } }
+
+/* A disabled ink button reads as soft grey, not a faded black. */
+button.bg-slate-950:disabled { background-color: #e7e4de; background-image: none; color: #9a968f; opacity: 1; box-shadow: none; }
