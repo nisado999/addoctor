@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Icon } from "./ui";
-import { field, copyText, SPY_API, SPY_KEY } from "./shared.js";
+import { field, copyText, SPY_API } from "./shared.js";
+import { apiFetch } from "./api.js";
 import { makeCost } from "./billing.js";
 import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
@@ -423,12 +424,8 @@ function shrinkPhoto(src, max = 1400, q = 0.9) {
 }
 const readFile = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
 
-async function makeCall(path, body, signal) {
-  const r = await fetch(SPY_API + path, { method: "POST", signal, headers: { "Content-Type": "application/json", ...(SPY_KEY ? { "X-App-Key": SPY_KEY } : {}) }, body: JSON.stringify(body) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(r.status === 404 ? "The AdDoctor server has not been updated for this yet." : j.error || "Request failed (" + r.status + ")");
-  return j;
-}
+// apiFetch sends the visitor's sign-in token; a bare fetch here made the server treat signed-in users as anonymous.
+const makeCall = (path, body, signal) => apiFetch(path, { body, signal, timeout: 180000 });
 
 function ProductModal({ tpl, onClose, notify, onSpend }) {
   useModal(onClose);
