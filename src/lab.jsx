@@ -124,7 +124,7 @@ function LabView({ notify }) {
           {running ? (
             <button onClick={() => { stop.current = true; if (run.current) run.current.abort(); }} className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200">Stop</button>
           ) : (
-            <button id="lab-run" onClick={runMissing} className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700">Generate missing ({TEMPLATES.length - done})</button>
+            <button id="lab-run" onClick={runMissing} className="rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800">Generate missing ({TEMPLATES.length - done})</button>
           )}
           <button id="lab-zip" onClick={zip} disabled={!done} className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-40"><Icon.Download className="h-3.5 w-3.5" />Download ZIP</button>
         </div>
@@ -144,7 +144,7 @@ function LabView({ notify }) {
               <p className="text-sm font-semibold text-slate-900">{t.title}</p>
               <details className="mt-1">
                 <summary className="cursor-pointer text-xs font-medium text-blue-600">Edit prompt</summary>
-                <textarea value={prompts[t.id] || ""} onChange={(e) => setPrompts((p) => ({ ...p, [t.id]: e.target.value }))} rows={5} className="mt-2 w-full resize-none rounded-lg border border-slate-200 p-2 text-xs text-slate-700 outline-none focus:border-blue-500" />
+                <textarea value={prompts[t.id] || ""} onChange={(e) => setPrompts((p) => ({ ...p, [t.id]: e.target.value }))} rows={5} className="mt-2 w-full resize-none rounded-lg border border-slate-200 p-2 text-xs text-slate-700 outline-none focus:border-slate-900" />
               </details>
               <button disabled={!!busy[t.id]} onClick={() => one(t)} className="mt-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-50">{imgs[t.id] ? "Redo" : "Generate"}</button>
             </div>

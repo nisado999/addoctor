@@ -51,7 +51,7 @@ function ModalWait({ onClose }) {
       <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Loading" className="flex w-full max-w-[15rem] flex-col items-center dlg-panel rounded-[28px] px-6 py-7 text-center">
         <span className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" aria-hidden="true" />
         <p role="status" className="mt-3 text-sm font-medium text-slate-600">Loading…</p>
-        <button onClick={requestClose} className="mt-4 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Close</button>
+        <button onClick={requestClose} className="mt-4 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Close</button>
       </div>
     </div>
   );
@@ -86,7 +86,7 @@ function VaultView({ items, total, query, onClearSearch, onOpen, onRemove, onExa
         <span className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon.Bookmark className="h-6 w-6" /></span>
         <p className="mt-4 text-base font-semibold text-slate-900">Your vault is empty</p>
         <p className="mt-1 text-sm leading-relaxed text-slate-500">Examine an ad, then choose Save to Vault to keep the prescription here.</p>
-        <button onClick={onExamine} className="mt-5 inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700">
+        <button onClick={onExamine} className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800">
           <Icon.Plus className="h-4 w-4" /> Examine an ad
         </button>
       </div>
@@ -96,7 +96,7 @@ function VaultView({ items, total, query, onClearSearch, onOpen, onRemove, onExa
     <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((it) => (
         <li key={it.id} onClick={() => onOpen(it)} className="flex cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md">
-          <button onClick={(e) => { e.stopPropagation(); onOpen(it); }} aria-label={`Open report: ${it.headline || "saved ad"}`} className="flex items-start gap-4 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+          <button onClick={(e) => { e.stopPropagation(); onOpen(it); }} aria-label={`Open report: ${it.headline || "saved ad"}`} className="flex items-start gap-4 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
             <span className={`grid h-14 w-14 shrink-0 place-items-center rounded-full text-lg font-semibold tabular-nums ring-4 ${it.tone === "good" ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : it.tone === "warn" ? "bg-amber-50 text-amber-700 ring-amber-100" : "bg-rose-50 text-rose-700 ring-rose-100"}`}>{it.score}</span>
             <div className="min-w-0">
               <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">{it.brand || "Untitled brand"} · {it.type === "video" ? "Video" : "Static"}</p>
@@ -108,7 +108,7 @@ function VaultView({ items, total, query, onClearSearch, onOpen, onRemove, onExa
           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
             <span className="text-xs text-slate-500">Saved {new Date(it.savedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
             <span className="flex items-center gap-1">
-              <button onClick={(e) => { e.stopPropagation(); onOpen(it); }} className="rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">View report</button>
+              <button onClick={(e) => { e.stopPropagation(); onOpen(it); }} className="rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">View report</button>
               <button onClick={(e) => { e.stopPropagation(); onRemove(it.id); }} aria-label={`Remove ${it.headline || "saved report"} from vault`} className="rounded-full p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-500/20"><Icon.Trash className="h-4 w-4" /></button>
             </span>
           </div>
@@ -711,7 +711,7 @@ function App() {
     <div className="app-bg min-h-screen font-sans text-slate-900 antialiased">
       <a
         href="#main" onClick={(e) => { e.preventDefault(); if (mainRef.current) mainRef.current.focus(); }}
-        className="sr-only rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-lg ring-1 ring-slate-200 focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+        className="sr-only rounded-full bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-lg ring-1 ring-slate-200 focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25"
       >
         Skip to main content
       </a>
@@ -729,7 +729,7 @@ function App() {
             </button>
             {/* Below lg the sidebar (and its logo) is off-screen, so the name goes here. On a phone it makes room
                 while the visitor is typing a search. */}
-            <button onClick={() => goto("home")} aria-label="AdDoctor: Home" className={`-ml-1 shrink-0 rounded-lg p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 lg:hidden ${searchOn ? "max-sm:hidden" : ""}`}>
+            <button onClick={() => goto("home")} aria-label="AdDoctor: Home" className={`-ml-1 shrink-0 rounded-lg p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 lg:hidden ${searchOn ? "max-sm:hidden" : ""}`}>
               <img src="./logo.png" alt="AdDoctor" width={98} height={18} className="block h-[18px] w-auto select-none sm:h-5" draggable={false} />
             </button>
             <div className={`relative min-w-0 flex-1 md:max-w-md ${isGrid || view === "vault" || view === "home" ? "" : "invisible"}`}>
@@ -741,7 +741,7 @@ function App() {
                 onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
                 onFocus={() => setSearchOn(true)} onBlur={() => setSearchOn(false)}
                 placeholder={view === "vault" ? "Search saved reports..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search saved reports" : "Search templates, niches, formats"}
-                className="h-10 w-full rounded-full border border-slate-900/[.08] bg-white/75 pl-10 pr-4 md:pr-24 shadow-[inset_0_1px_2px_rgba(21,20,18,.05)] text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                className="h-10 w-full rounded-full border border-slate-900/[.08] bg-white/75 pl-10 pr-4 md:pr-24 shadow-[inset_0_1px_2px_rgba(21,20,18,.05)] text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10"
               />
               {/* The shortcut lives in the search bar: a click opens the jump palette, Ctrl/⌘ K does the same from anywhere. */}
               {!q && (
@@ -759,7 +759,7 @@ function App() {
                 <div className="relative">
                   <button
                     id="acct" ref={acctRef} onClick={() => setAcct((v) => !v)} aria-haspopup="menu" aria-expanded={acct} aria-controls={acct ? "acct-menu" : undefined} aria-label="Your account"
-                    className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-blue-600 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+                    className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-slate-950 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25"
                   >
                     {user.avatar ? <img src={user.avatar} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : (user.name || user.email || "?").charAt(0).toUpperCase()}
                   </button>
@@ -777,7 +777,7 @@ function App() {
                   )}
                 </div>
               ) : authReady ? (
-                <button id="signin" ref={signinRef} onClick={() => openSignIn("in")} className="btn-ink inline-flex h-9 items-center rounded-full px-4 text-[13px] font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">Sign in</button>
+                <button id="signin" ref={signinRef} onClick={() => openSignIn("in")} className="btn-ink inline-flex h-9 items-center rounded-full px-4 text-[13px] font-semibold focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">Sign in</button>
               ) : (
                 <span className="h-9 w-9" aria-hidden="true" />
               )}
@@ -828,7 +828,7 @@ function App() {
                   return (
                     <button
                       key={c} onClick={() => setCat(c)} aria-pressed={on}
-                      className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition active:scale-95 [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-slate-950 bg-slate-950 text-white shadow-[0_6px_16px_-6px_rgba(11,10,9,.5)]" : "border-slate-900/[.08] bg-white/80 text-slate-600 shadow-[0_1px_2px_rgba(21,20,18,.05)] hover:-translate-y-px hover:border-slate-900/20 hover:bg-white hover:text-slate-950"}`}
+                      className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition active:scale-95 [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${on ? "border-slate-950 bg-slate-950 text-white shadow-[0_6px_16px_-6px_rgba(11,10,9,.5)]" : "border-slate-900/[.08] bg-white/80 text-slate-600 shadow-[0_1px_2px_rgba(21,20,18,.05)] hover:-translate-y-px hover:border-slate-900/20 hover:bg-white hover:text-slate-950"}`}
                     >
                       {c}
                       <span className={`ml-1.5 text-[11px] tabular-nums ${on ? "text-white/70" : "text-slate-500"}`}>{catCounts[c] || 0}</span>
@@ -847,7 +847,7 @@ function App() {
                   return (
                     <button
                       key={id} onClick={() => setQuick(on ? null : id)} aria-pressed={on}
-                      className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}
+                      className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"}`}
                     >
                       {id === "new" ? <Icon.Sparkle className="h-3.5 w-3.5" /> : id === "trending" ? <Icon.Flame className="h-3.5 w-3.5" /> : id === "video" ? <Icon.Video className="h-3.5 w-3.5" /> : <Icon.Heart className="h-3.5 w-3.5" />}
                       {label}
@@ -856,7 +856,7 @@ function App() {
                   );
                 })}
                 {filtered && (
-                  <button onClick={clearFilters} className="rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Clear filters</button>
+                  <button onClick={clearFilters} className="rounded-full px-2 py-1 text-xs font-semibold text-slate-500 transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Clear filters</button>
                 )}
               </div>
               <p aria-live="polite" className="ml-auto text-xs font-medium tabular-nums text-slate-500">{list.length} {list.length === 1 ? "template" : "templates"}</p>
@@ -864,7 +864,7 @@ function App() {
                 Sort
                 <select
                   value={sort} onChange={(e) => setSort(e.target.value)}
-                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition [@media(pointer:coarse)]:h-10 hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition [@media(pointer:coarse)]:h-10 hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
                 >
                   {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
                 </select>
@@ -891,7 +891,7 @@ function App() {
                 {!noFavs && niches.length > 0 && (
                   <div className="mt-4 flex max-w-md flex-wrap justify-center gap-2">
                     {niches.map((c) => (
-                      <button key={c} onClick={() => pickNiche(c)} className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">{c}</button>
+                      <button key={c} onClick={() => pickNiche(c)} className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[13px] font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 [@media(pointer:coarse)]:min-h-10 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">{c}</button>
                     ))}
                   </div>
                 )}
@@ -970,7 +970,7 @@ function App() {
       {toTop && isGrid && !anyModal && (
         <button
           onClick={scrollTop} aria-label="Back to top"
-          className="glass fixed bottom-24 right-5 z-20 grid h-11 w-11 lg:bottom-6 place-items-center rounded-full text-slate-700 shadow-[0_0_0_1px_rgba(21,20,18,.08),0_12px_28px_-10px_rgba(21,20,18,.3)] transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25"
+          className="glass fixed bottom-24 right-5 z-20 grid h-11 w-11 lg:bottom-6 place-items-center rounded-full text-slate-700 shadow-[0_0_0_1px_rgba(21,20,18,.08),0_12px_28px_-10px_rgba(21,20,18,.3)] transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25"
         >
           <Icon.Arrow className="h-4 w-4 -rotate-90" />
         </button>
@@ -982,7 +982,7 @@ function App() {
           <p className="text-[13px] leading-relaxed text-slate-600">AdDoctor would like to use analytics cookies to see which features get used. Nothing is loaded unless you accept. <a href="./privacy.html" className="font-semibold text-blue-600 hover:text-blue-700">Privacy</a></p>
           <div className="mt-3 flex justify-end gap-2">
             <button id="consent-no" onClick={() => answerConsent(false)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300">Decline</button>
-            <button id="consent-yes" onClick={() => answerConsent(true)} className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">Accept</button>
+            <button id="consent-yes" onClick={() => answerConsent(true)} className="rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Accept</button>
           </div>
         </div>
       )}

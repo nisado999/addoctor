@@ -87,7 +87,7 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, busy }) {
                 <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-rose-50 text-rose-600"><Icon.Alert className="h-5 w-5" /></div>
                 <p className="mt-3 text-sm font-semibold text-slate-900">Not generated</p>
                 <p className="mt-1 text-xs text-slate-500">{post.error}</p>
-                <button onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Retry</button>
+                <button onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800">Retry</button>
               </div>
             ) : post.queued ? (
               <div>
@@ -97,7 +97,7 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, busy }) {
             ) : (
               <div>
                 <p className="text-sm font-semibold text-slate-900">Not generated</p>
-                <button disabled={busy} onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">Retry</button>
+                <button disabled={busy} onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50">Retry</button>
               </div>
             )}
           </div>
@@ -125,7 +125,7 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, busy }) {
                 <li key={i} className="flex gap-2 text-[12px] text-slate-600"><span className="mt-0.5 text-blue-500"><Icon.Wand className="h-3.5 w-3.5" /></span>{t}</li>))}</ul>
             )}
             {rv.regen && (
-              <button disabled={busy} onClick={() => onFix(post, rv.regen)} className="mt-3 w-full rounded-full bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">Apply fixes and regenerate image</button>
+              <button disabled={busy} onClick={() => onFix(post, rv.regen)} className="mt-3 w-full rounded-full bg-slate-950 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50">Apply fixes and regenerate image</button>
             )}
           </div>
         )}
@@ -332,7 +332,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
               <label htmlFor="pack-url" className="block text-sm font-semibold text-slate-900">Your store link</label>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input id="pack-url" value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchStore()} placeholder="https://yourstore.com/collections/hoodies"
-                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-blue-100" />
                 <button id="pack-fetch" onClick={fetchStore} disabled={fetching} className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{fetching ? "Reading…" : store ? "Read again" : "Fetch details"}</button>
               </div>
               <p className="mt-1.5 text-xs text-slate-500">Works best with shop homepages, collections and product pages. We read the product names, text and photos.</p>
@@ -341,7 +341,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
                   <p className="text-sm font-semibold text-slate-900">Found: {store.name}</p>
                   <label htmlFor="pack-desc" className="mt-3 block text-xs font-semibold uppercase tracking-wide text-slate-500">What we understood (edit if needed)</label>
                   <textarea id="pack-desc" value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} maxLength={700}
-                    className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                    className="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-4 focus:ring-blue-100" />
                   <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Product photos to use <span className="font-normal normal-case text-slate-400">· {picked.length} of up to 6 selected</span></p>
                   {store.images && store.images.length ? (
                     <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -351,7 +351,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
                           <button key={im.url} onClick={() => togglePick(im.url)} aria-pressed={on} title={im.label}
                             className={`relative overflow-hidden rounded-xl bg-slate-100 ring-2 transition ${on ? "ring-blue-600" : "ring-transparent opacity-70 hover:opacity-100"}`} style={{ aspectRatio: "1 / 1" }}>
                             <img src={im.url} alt={im.label || "Product"} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
-                            {on && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-blue-600 text-white"><Icon.Check className="h-3 w-3" /></span>}
+                            {on && <span className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-slate-950 text-white"><Icon.Check className="h-3 w-3" /></span>}
                           </button>
                         );
                       })}
@@ -384,7 +384,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
               )}
               <label htmlFor="pack-desc" className="mt-4 block text-sm font-semibold text-slate-900">Anything we should know? <span className="font-normal text-slate-400">optional</span></label>
               <textarea id="pack-desc" value={desc} onChange={(e) => setDesc(e.target.value)} rows={2} maxLength={700} placeholder="Brand name, what makes it special, who it is for."
-                className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-blue-100" />
             </div>
           )}
 
@@ -393,7 +393,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
               <label htmlFor="pack-desc" className="block text-sm font-semibold text-slate-900">What do you sell?</label>
               <textarea id="pack-desc" value={desc} onChange={(e) => setDesc(e.target.value)} rows={4} maxLength={700}
                 placeholder="Describe the product, who it is for, and what makes it different."
-                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-blue-100" />
               <div className="mt-2 flex flex-wrap gap-2">
                 {PACK_IDEAS.map((t, i) => (
                   <button key={i} onClick={() => setDesc(t)} className="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100">Example {i + 1}</button>
@@ -406,12 +406,12 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
             <div>
               <label htmlFor="pack-aud" className="block text-sm font-semibold text-slate-900">Audience <span className="font-normal text-slate-400">optional</span></label>
               <input id="pack-aud" value={audience} onChange={(e) => setAudience(e.target.value)} maxLength={200} placeholder="Women 25–40 who care about…"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-blue-100" />
             </div>
             <div>
               <label htmlFor="pack-tone" className="block text-sm font-semibold text-slate-900">Tone</label>
               <select id="pack-tone" value={tone} onChange={(e) => setTone(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-slate-900 focus:ring-4 focus:ring-blue-100">
                 {PACK_TONES.map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
@@ -441,7 +441,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
           {err && <p className="mt-5 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">{err}</p>}
 
           <div className="mt-6 flex flex-wrap items-center gap-4">
-            <button id="pack-go" onClick={generate} className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+            <button id="pack-go" onClick={generate} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">
               <Icon.Sparkle className="h-4 w-4" />Create {size} posts
             </button>
             <p className="text-sm text-slate-500"><span className="font-semibold text-slate-900">{cost} credits</span> · you have {credits}</p>
@@ -468,7 +468,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
           ) : (
             <>
               <button onClick={copyAll} className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200">Copy all captions</button>
-              <button id="pack-dlall" onClick={dlAll} disabled={!readyCount} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40"><Icon.Download className="h-3.5 w-3.5" />Download all</button>
+              <button id="pack-dlall" onClick={dlAll} disabled={!readyCount} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-40"><Icon.Download className="h-3.5 w-3.5" />Download all</button>
               <button onClick={() => { setPhase("form"); setErr(""); }} className="rounded-full bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200">New pack</button>
             </>
           )}

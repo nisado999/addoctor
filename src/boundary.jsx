@@ -121,8 +121,8 @@ function lazyRetry(factory, pick = (m) => m.default) {
 
 /* ------------------------------ Error boundary ------------------------------ */
 
-const primaryBtn = "inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25";
-const secondaryBtn = "inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20";
+const primaryBtn = "inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25";
+const secondaryBtn = "inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20";
 
 function Message({ error, onRetry, retryRef, titleId, textId }) {
   const chunk = isChunkError(error);
@@ -155,7 +155,7 @@ function DialogFallback({ error, onRetry, onClose }) {
         className="dlg-panel relative w-full max-w-sm rounded-t-[28px] px-6 pt-10 text-center sm:rounded-[28px]"
       >
         {onClose && (
-          <button onClick={requestClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+          <button onClick={requestClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
             <Icon.Close className="h-4 w-4" />
           </button>
         )}

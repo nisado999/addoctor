@@ -142,7 +142,7 @@ function Report({ input, r }) {
 
       <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-6">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-blue-600 text-xs font-bold text-white">Rx</span>
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-950 text-xs font-bold text-white">Rx</span>
           <h3 className="text-base font-semibold tracking-tight text-slate-900">The Doctor's Prescription</h3>
         </div>
 
@@ -209,11 +209,11 @@ function ScanView({ steps, step, template, asset }) {
         <span className="scan-line" />
       </div>
       <p className="mt-8 text-base font-semibold text-slate-900" role="status" aria-live="polite">{steps[step]}</p>
-      <div className="mt-4 h-1.5 w-64 max-w-full overflow-hidden rounded-full bg-slate-200"><i className="scan-fill block h-full rounded-full bg-blue-600" /></div>
+      <div className="mt-4 h-1.5 w-64 max-w-full overflow-hidden rounded-full bg-slate-200"><i className="scan-fill block h-full rounded-full bg-slate-950" /></div>
       <ul className="mt-6 flex flex-wrap justify-center gap-2">
         {chips.map((s, i) => (
           <li key={s} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${i <= step ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-400"}`}>
-            {i < step ? <Icon.Check className="h-3 w-3" /> : <span className={`h-1.5 w-1.5 rounded-full ${i === step ? "bg-blue-600" : "bg-slate-300"}`} />}
+            {i < step ? <Icon.Check className="h-3 w-3" /> : <span className={`h-1.5 w-1.5 rounded-full ${i === step ? "bg-slate-950" : "bg-slate-300"}`} />}
             {s}
           </li>
         ))}
@@ -356,7 +356,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
             <h2 id="ex-title" className="font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">{title}</h2>
             <p className="mt-0.5 text-[13px] text-slate-500">{sub}</p>
           </div>
-          <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+          <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
             <Icon.Close className="h-4 w-4" />
           </button>
         </header>
@@ -374,7 +374,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
                   </div>
                   <button
                     onClick={applyTemplate}
-                    className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 ${applied ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700"}`}
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${applied ? "border border-emerald-200 bg-emerald-50 text-emerald-700" : "bg-slate-950 text-white shadow-sm shadow-slate-900/20 hover:bg-slate-800"}`}
                   >
                     {applied ? <Icon.Check className="h-4 w-4" /> : <Icon.Sparkle className="h-4 w-4" />}
                     {applied ? "Structure applied" : "Apply Template Structure"}
@@ -414,7 +414,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
                       return (
                         <button
                           key={s.id} onClick={() => loadSample(s)} aria-pressed={on}
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${on ? "border-blue-600 bg-blue-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"}`}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${on ? "border-blue-600 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"}`}
                         >
                           <Icon.Bolt className="h-3.5 w-3.5" />
                           {s.label}
@@ -478,7 +478,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
               </p>
               <button
                 onClick={run} disabled={!canRun}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none sm:w-auto"
               >
                 <Icon.Stethoscope className="h-4 w-4" />
                 Run Diagnostic Scan
@@ -488,16 +488,16 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
           {stage === "scan" && <p className="flex-1 text-center text-xs text-slate-500">Scanning your ad…</p>}
           {stage === "report" && (
             <>
-              <button onClick={() => setStage("input")} className="mr-auto rounded-full px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+              <button onClick={() => setStage("input")} className="mr-auto rounded-full px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
                 Edit ad
               </button>
-              <button onClick={doCopy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+              <button onClick={doCopy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
                 {copied ? <Icon.Check className="h-4 w-4 text-emerald-600" /> : <Icon.Copy className="h-4 w-4" />}
                 {copied ? "Copied" : "Copy Prescription"}
               </button>
               <button
                 onClick={() => !saved && onSave(snap, report)} disabled={saved}
-                className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 ${saved ? "cursor-default bg-emerald-50 text-emerald-700 shadow-none" : "bg-blue-600 text-white shadow-blue-600/25 hover:bg-blue-700"}`}
+                className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${saved ? "cursor-default bg-emerald-50 text-emerald-700 shadow-none" : "bg-slate-950 text-white shadow-slate-900/20 hover:bg-slate-800"}`}
               >
                 {saved ? <Icon.Check className="h-4 w-4" /> : <Icon.Bookmark className="h-4 w-4" />}
                 {saved ? "Saved to Vault" : "Save to Vault"}

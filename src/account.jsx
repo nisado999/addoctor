@@ -53,7 +53,7 @@ function AuthModal({ onClose, notify }) {
     setBusy("");
   };
 
-  const btn = "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:opacity-60";
+  const btn = "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" onClick={onClose}>
@@ -62,7 +62,7 @@ function AuthModal({ onClose, notify }) {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         className="relative w-full max-w-sm dlg-panel rounded-t-[28px] p-6 sm:rounded-[28px] sm:p-7"
       >
-        <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+        <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
           <Icon.Close className="h-4 w-4" />
         </button>
 
@@ -70,7 +70,7 @@ function AuthModal({ onClose, notify }) {
           <>
             <h2 id="auth-title" className="pr-10 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">Check your email</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">We sent a confirmation link to <b className="font-semibold text-slate-900">{email.trim()}</b>. Open it to finish creating your account, then come back here.</p>
-            <button onClick={onClose} className={`${btn} mt-6 bg-blue-600 text-white hover:bg-blue-700`}>Done</button>
+            <button onClick={onClose} className={`${btn} mt-6 bg-slate-950 text-white hover:bg-slate-800`}>Done</button>
           </>
         ) : (
           <>
@@ -98,7 +98,7 @@ function AuthModal({ onClose, notify }) {
               <label htmlFor="auth-password" className="mb-1.5 mt-3 block text-xs font-semibold text-slate-700">Password</label>
               <input id="auth-password" type="password" required minLength={8} autoComplete={mode === "up" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className={field} placeholder={mode === "up" ? "At least 8 characters" : "Your password"} />
               {err && <p role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2.5 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{err}</p>}
-              <button id="auth-submit" type="submit" disabled={!!busy} className={`${btn} mt-4 bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700`}>
+              <button id="auth-submit" type="submit" disabled={!!busy} className={`${btn} mt-4 bg-slate-950 text-white shadow-sm shadow-slate-900/20 hover:bg-slate-800`}>
                 {busy === "email" ? "One moment…" : mode === "up" ? "Create account" : "Sign in"}
               </button>
             </form>

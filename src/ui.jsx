@@ -407,7 +407,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
                   <span className={`font-semibold tabular-nums ${bill.account.total > 0 ? "text-slate-900" : "text-rose-700"}`}>{bill.account.total}</span> credits · {bill.account.plan === "free" ? "Free" : bill.account.plan.charAt(0).toUpperCase() + bill.account.plan.slice(1)} plan
                 </p>
                 <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                  <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.min(100, (bill.account.total / Math.max(1, { free: 25, starter: 300, pro: 900, agency: 2500 }[bill.account.plan] || 25)) * 100)}%` }} />
+                  <div className="h-full rounded-full bg-slate-950 transition-all duration-500" style={{ width: `${Math.min(100, (bill.account.total / Math.max(1, { free: 25, starter: 300, pro: 900, agency: 2500 }[bill.account.plan] || 25)) * 100)}%` }} />
                 </div>
                 <button onClick={() => onNav("plans")} className={`mt-2 block rounded text-[11px] font-semibold text-blue-600 transition hover:text-blue-700 ${ring}`}>{bill.account.plan === "free" ? "Upgrade plan →" : "Plans and top-ups →"}</button>
               </>
@@ -421,7 +421,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
                 <span className={`font-semibold tabular-nums ${left > 0 ? "text-slate-900" : "text-rose-700"}`}>{left}</span> of {creditsPerDay} free credits today
               </p>
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                <div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.min(100, (left / creditsPerDay) * 100)}%` }} />
+                <div className="h-full rounded-full bg-slate-950 transition-all duration-500" style={{ width: `${Math.min(100, (left / creditsPerDay) * 100)}%` }} />
               </div>
               <p className={`mt-2 text-[11px] font-medium ${left > 0 ? "text-slate-500" : "text-rose-700"}`}>{left > 0 ? "Kept on this device. Refills daily." : "Refills tomorrow."}</p>
             </>
@@ -455,10 +455,10 @@ function BottomNav({ active, onNav, vaultCount }) {
           ) : (
             // The active tab is already blue, so focus draws a ring of its own rather than only changing colour.
             <button key={n.id} onClick={() => onNav(n.id)} aria-current={on ? "page" : undefined} className={`relative flex h-full flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-semibold transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "text-blue-700" : "text-slate-500 focus-visible:text-blue-700"}`}>
-              <span className={`absolute top-0 h-0.5 w-8 rounded-full bg-blue-600 transition-transform duration-300 ${on ? "scale-x-100" : "scale-x-0"}`} />
+              <span className={`absolute top-0 h-0.5 w-8 rounded-full bg-slate-950 transition-transform duration-300 ${on ? "scale-x-100" : "scale-x-0"}`} />
               <I className="h-5 w-5" />
               {n.label}
-              {n.id === "vault" && vaultCount > 0 && <span className="absolute right-[22%] top-2 grid h-4 min-w-4 place-items-center rounded-full bg-blue-600 px-1 text-[10px] tabular-nums text-white">{vaultCount}</span>}
+              {n.id === "vault" && vaultCount > 0 && <span className="absolute right-[22%] top-2 grid h-4 min-w-4 place-items-center rounded-full bg-slate-950 px-1 text-[10px] tabular-nums text-white">{vaultCount}</span>}
             </button>
           );
         })}

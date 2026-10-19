@@ -46,7 +46,7 @@ export default function PlansView({ user, onSignIn, notify }) {
         {!user ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-600">Sign in to get your <span className="font-semibold text-slate-900">25 free credits</span> every month, and to buy a plan.</p>
-            <button onClick={onSignIn} className={`rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 ${ring}`}>Sign in</button>
+            <button onClick={onSignIn} className={`rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 ${ring}`}>Sign in</button>
           </div>
         ) : !acct ? (
           <p className="text-sm text-slate-500" role="status">Loading your balance…</p>
@@ -110,7 +110,7 @@ export default function PlansView({ user, onSignIn, notify }) {
                   ) : current ? (
                     <button disabled className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500">Your plan</button>
                   ) : (
-                    <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`h-11 w-full rounded-xl text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${p.popular ? "bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700" : "border border-slate-200 bg-white text-slate-800 hover:border-slate-300"}`}>{busy === key ? "Opening…" : user ? `Choose ${p.name}` : "Sign in to choose"}</button>
+                    <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`h-11 w-full rounded-xl text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${p.popular ? "bg-slate-950 text-white shadow-sm shadow-slate-900/20 hover:bg-slate-800" : "border border-slate-200 bg-white text-slate-800 hover:border-slate-300"}`}>{busy === key ? "Opening…" : user ? `Choose ${p.name}` : "Sign in to choose"}</button>
                   )}
                 </div>
               </article>

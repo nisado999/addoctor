@@ -300,10 +300,10 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
             </div>
           </div>
           <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
-            <button onClick={pick} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 disabled:cursor-wait disabled:text-slate-400 disabled:hover:bg-transparent">
+            <button onClick={pick} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 disabled:cursor-wait disabled:text-slate-400 disabled:hover:bg-transparent">
               {busy ? <><Spinner className="h-3.5 w-3.5" /> Reading…</> : "Replace"}
             </button>
-            <button onClick={onClear} className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Remove</button>
+            <button onClick={onClear} className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Remove</button>
           </div>
         </div>
       ) : (
@@ -311,7 +311,7 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
           {...drag} role="button" tabIndex={0} onClick={pick}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), pick())}
           aria-describedby="ex-asset-label"
-          className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-7 text-center transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 ${over ? "border-blue-500 bg-blue-50/70" : "border-slate-300 bg-white hover:border-blue-400 hover:bg-blue-50/30"}`}
+          className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-7 text-center transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${over ? "border-blue-500 bg-blue-50/70" : "border-slate-300 bg-white hover:border-blue-400 hover:bg-blue-50/30"}`}
         >
           <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
             {busy ? (

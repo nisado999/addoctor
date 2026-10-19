@@ -1323,7 +1323,7 @@ function StudioModal({ tpl, onClose, notify }) {
     onDragLeave: () => setOver(false),
     onDrop: (e) => { e.preventDefault(); setOver(false); onFile(e.dataTransfer.files && e.dataTransfer.files[0]); },
   };
-  const field = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
+  const field = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10";
 
   return (
     <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" onClick={onClose}>
@@ -1338,7 +1338,7 @@ function StudioModal({ tpl, onClose, notify }) {
             <h2 id="st-title" className="font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">Creative Synthesizer</h2>
             <p className="mt-0.5 truncate text-[13px] text-slate-500">{tpl.title} · {tpl.format}</p>
           </div>
-          <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+          <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
             <Icon.Close className="h-4 w-4" />
           </button>
         </header>
@@ -1376,7 +1376,7 @@ function StudioModal({ tpl, onClose, notify }) {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Ad variations · new structure and hook angle</p>
                   <button
                     onClick={() => setSel(-1)} aria-pressed={sel < 0}
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${sel < 0 ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-white hover:text-slate-800"}`}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${sel < 0 ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-white hover:text-slate-800"}`}
                   >Template layout</button>
                 </div>
                 <ul className="mt-2 grid grid-cols-4 gap-2.5">
@@ -1384,7 +1384,7 @@ function StudioModal({ tpl, onClose, notify }) {
                     <li key={v.layout}>
                       <button
                         onClick={() => setSel(i)} aria-pressed={sel === i} aria-label={`Use variation ${i + 1}: ${v.label}`}
-                        className={`flex w-full flex-col items-stretch gap-1.5 rounded-xl border bg-white p-1.5 text-left transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 ${sel === i ? "border-blue-600 ring-2 ring-blue-600" : "border-slate-200 hover:border-slate-300"}`}
+                        className={`flex w-full flex-col items-stretch gap-1.5 rounded-xl border bg-white p-1.5 text-left transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${sel === i ? "border-blue-600 ring-2 ring-blue-600" : "border-slate-200 hover:border-slate-300"}`}
                       >
                         <canvas ref={(el) => (thumbRefs.current[i] = el)} className="block h-auto w-full rounded-lg" />
                         <span className="px-0.5 text-[11px] font-semibold leading-tight text-slate-700">{i + 1}. {v.label}</span>
@@ -1409,15 +1409,15 @@ function StudioModal({ tpl, onClose, notify }) {
                     <p className="truncate text-sm font-semibold text-slate-900">{img.name}</p>
                     <p className="mt-0.5 text-xs tabular-nums text-slate-500">{img.w}×{img.h} · placed in the creative</p>
                   </div>
-                  <button onClick={() => fileRef.current && fileRef.current.click()} className="rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Replace</button>
-                  <button onClick={() => setImg(null)} className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Remove</button>
+                  <button onClick={() => fileRef.current && fileRef.current.click()} className="rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Replace</button>
+                  <button onClick={() => setImg(null)} className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Remove</button>
                 </div>
               ) : (
                 <div
                   {...drag} role="button" tabIndex={0} onClick={() => fileRef.current && fileRef.current.click()}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), fileRef.current.click())}
                   aria-describedby="st-img-label"
-                  className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-7 text-center transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 ${over ? "border-blue-500 bg-blue-50/70" : "border-slate-300 bg-white hover:border-blue-400 hover:bg-blue-50/30"}`}
+                  className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-7 text-center transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${over ? "border-blue-500 bg-blue-50/70" : "border-slate-300 bg-white hover:border-blue-400 hover:bg-blue-50/30"}`}
                 >
                   <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Image className="h-5 w-5" /></span>
                   <p className="mt-3 text-sm font-semibold text-slate-900">{imgBusy ? "Reading your photo…" : "Drag your product photo here, or click to browse"}</p>
@@ -1437,7 +1437,7 @@ function StudioModal({ tpl, onClose, notify }) {
                     <span className="w-10 text-right text-xs font-semibold tabular-nums text-slate-600">{Math.round(pos.s * 100)}%</span>
                     <button
                       onClick={() => setPos(POS0)}
-                      className="rounded-full px-2.5 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"
+                      className="rounded-full px-2.5 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20"
                     >Reset Position</button>
                   </div>
                   <p className="mt-2 text-[11px] text-slate-400">Click and drag image in preview to adjust position</p>
@@ -1455,8 +1455,8 @@ function StudioModal({ tpl, onClose, notify }) {
                   <>
                     <span className="grid h-10 w-14 shrink-0 place-items-center rounded-lg border border-slate-200 bg-slate-100 p-1"><img src={logo.thumb} alt="Your brand logo" className="max-h-full max-w-full object-contain" /></span>
                     <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-800">{logo.name}</span>
-                    <button onClick={() => logoRef.current && logoRef.current.click()} className="rounded-full px-2.5 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Replace</button>
-                    <button onClick={() => setLogo(null)} className="rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Remove</button>
+                    <button onClick={() => logoRef.current && logoRef.current.click()} className="rounded-full px-2.5 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Replace</button>
+                    <button onClick={() => setLogo(null)} className="rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Remove</button>
                   </>
                 ) : (
                   <>
@@ -1465,7 +1465,7 @@ function StudioModal({ tpl, onClose, notify }) {
                       <span className="block text-xs font-semibold text-slate-800">Upload Brand Logo (PNG/SVG) <span className="font-normal text-slate-400">optional</span></span>
                       <span className="block text-[11px] text-slate-500">Shown top-left. Without one, your brand name gets an initial badge.</span>
                     </span>
-                    <button onClick={() => logoRef.current && logoRef.current.click()} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Browse</button>
+                    <button onClick={() => logoRef.current && logoRef.current.click()} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Browse</button>
                   </>
                 )}
               </div>
@@ -1529,7 +1529,7 @@ function StudioModal({ tpl, onClose, notify }) {
             <div>
               <button
                 onClick={generate} disabled={!canGen || gen}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
               >
                 {gen ? (
                   <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity=".3" strokeWidth="3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
@@ -1581,7 +1581,7 @@ function StudioModal({ tpl, onClose, notify }) {
                     <p className="mt-2 flex-1 text-[13px] leading-relaxed text-slate-800">{cp.text}</p>
                     <div className="mt-3 flex items-center justify-between">
                       <span className={`text-[11px] font-medium tabular-nums ${!tall && cp.text.length > 125 ? "text-amber-600" : "text-slate-400"}`}>{cp.text.length}{tall ? "" : "/125 before See more"}</span>
-                      <button onClick={() => copyCap(cp.text)} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+                      <button onClick={() => copyCap(cp.text)} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
                         <Icon.Copy className="h-3.5 w-3.5" /> Copy Caption
                       </button>
                     </div>

@@ -137,7 +137,7 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
                 <div>
                   <p className="text-xs font-semibold text-slate-500">Awareness stage</p>
                   <div className="mt-2 flex gap-1" role="img" aria-label={aw >= 0 ? "Targets " + AWARENESS[aw][1] : "Awareness stage not clear"}>
-                    {AWARENESS.map(([id], i) => <span key={id} className={`h-2 flex-1 rounded-full ${i === aw ? "bg-blue-600" : "bg-slate-200"}`} />)}
+                    {AWARENESS.map(([id], i) => <span key={id} className={`h-2 flex-1 rounded-full ${i === aw ? "bg-slate-950" : "bg-slate-200"}`} />)}
                   </div>
                   <p className="mt-1.5 text-[13px] font-medium text-slate-700">{aw >= 0 ? AWARENESS[aw][1] : "Not clear"}</p>
                 </div>
@@ -164,7 +164,7 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
           )}
 
           <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-            {ad.kind !== "organic" && <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Wand className="h-3.5 w-3.5" /> Make mine in this style</button>}
+            {ad.kind !== "organic" && <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Wand className="h-3.5 w-3.5" /> Make mine in this style</button>}
             <button onClick={onSave} aria-pressed={saved} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Bookmark className="h-3.5 w-3.5" /> {saved ? "Saved" : "Save"}</button>
             {data && <button onClick={async () => { const ok = await copyText(breakdownText(ad, data, brand)); notify(ok === false ? "Couldn't copy. Select the text manually." : "Breakdown copied"); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Copy className="h-3.5 w-3.5" /> Copy breakdown</button>}
             {landing(ad.link) && <a href={landing(ad.link)} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><span className="truncate">{ad.kind === "organic" ? "Open the original post · " : "Landing page · "}{String(ad.link).replace(/^https?:\/\//i, "").split("/")[0]}</span><span className="sr-only"> (opens in a new tab)</span></a>}
@@ -273,7 +273,7 @@ function AdsChat({ ads, brand, onOpen }) {
         </div>
       )}
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); ask(q); }}>
-        <input id="spy-ask-input" value={q} onChange={(e) => setQ(e.target.value)} maxLength={400} placeholder={`e.g. What hooks does ${brand || "this brand"} repeat most?`} aria-label="Your question" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
+        <input id="spy-ask-input" value={q} onChange={(e) => setQ(e.target.value)} maxLength={400} placeholder={`e.g. What hooks does ${brand || "this brand"} repeat most?`} aria-label="Your question" className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10" />
         <button type="submit" disabled={!q.trim() || busy} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">{busy ? "Thinking…" : billingOn ? `Ask · ${COSTS.ask} credits` : "Ask"}</button>
       </form>
     </section>
@@ -315,7 +315,7 @@ function OrganicPosts({ brand, hint, onOpen }) {
       track("organic_loaded", { instagram: !!ig.trim(), tiktok: !!tt.trim(), posts: posts.length });
     } catch (e) { setSt({ busy: false, err: e.message || "Couldn't load posts. Try again.", posts: null, notes: [] }); }
   };
-  const field = "h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
+  const field = "h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10";
   const list = (st.posts || []).filter((p) => plat === "All" || p.platform === plat.toLowerCase());
   const chip = (on) => "rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 " + (on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300");
 
@@ -441,7 +441,7 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
                 <span className="relative block aspect-[4/5] w-full bg-slate-100">
                   <img src={a.img} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} className="absolute inset-0 h-full w-full object-cover" />
                   <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-semibold text-slate-700 shadow-sm">{a.format}</span>
-                  {saved.includes(a.libId) && <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-blue-600 text-white shadow-sm"><Icon.Bookmark className="h-3 w-3" /><span className="sr-only">Saved</span></span>}
+                  {saved.includes(a.libId) && <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-slate-950 text-white shadow-sm"><Icon.Bookmark className="h-3 w-3" /><span className="sr-only">Saved</span></span>}
                   {a.days !== null && a.days !== undefined && <span className={`absolute bottom-2 left-2 rounded-full px-2 py-0.5 text-[11px] font-semibold shadow-sm ${winner ? "bg-emerald-700 text-white" : "bg-white/90 text-slate-700"}`}>{a.days}d live</span>}
                 </span>
                 <span className="p-3">

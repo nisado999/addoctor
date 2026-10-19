@@ -41,7 +41,7 @@ function Shell({ title, sub, icon, onClose, children, footer, studio }) {
             <h2 className="font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">{title}</h2>
             <p className="mt-0.5 text-[13px] text-slate-500">{sub}</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+          <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
             <Icon.Close className="h-4 w-4" />
           </button>
         </header>}
@@ -73,7 +73,7 @@ function Switch({ on, onChange, label, id }) {
 }
 
 const lab = "mb-1.5 block text-xs font-semibold text-slate-700";
-const primaryBtn = "inline-flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none";
+const primaryBtn = "inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none";
 
 /* ------------------------------ Add my logo ------------------------------ */
 
@@ -204,7 +204,7 @@ function LogoDrop({ logo, onLogo, notify, quiet }) {
       <button
         type="button" onClick={() => fileRef.current && fileRef.current.click()}
         onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); take(e.dataTransfer.files[0]); }}
-        className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-left transition hover:border-blue-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"
+        className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-left transition hover:border-blue-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20"
       >
         <span className={quiet ? "grid h-6 w-6 shrink-0 place-items-center text-slate-900" : "grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"}><Icon.Upload className="h-5 w-5" /></span>
         <span className="min-w-0">
@@ -276,7 +276,7 @@ function BrandModal({ tpl, onClose, notify }) {
             <span className={lab}>2. Position</span>
             <div className="grid grid-cols-3 gap-2" role="group" aria-label="Logo position">
               {SPOTS.map(([id, name]) => (
-                <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${spot === id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
+                <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${spot === id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
               ))}
             </div>
           </div>
@@ -384,7 +384,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
         ) : (
           <>
             {busy !== null && logo && <span className="mr-auto text-xs font-medium tabular-nums text-slate-500">Preparing file… {Math.round(busy * 100)}%</span>}
-            <button onClick={() => setStage("form")} className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">Change and regenerate</button>
+            <button onClick={() => setStage("form")} className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Change and regenerate</button>
             <button onClick={download} disabled={busy !== null} className={primaryBtn}><Icon.Download className="h-4 w-4" /> {busy !== null ? "Working…" : "Download video"}</button>
           </>
         )
@@ -414,7 +414,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
                 <span className={lab}>Logo position</span>
                 <div className="grid grid-cols-3 gap-2" role="group" aria-label="Logo position">
                   {SPOTS.map(([id, name]) => (
-                    <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${spot === id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
+                    <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${spot === id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
                   ))}
                 </div>
               </div>
@@ -429,11 +429,11 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
         {stage === "working" && (
           <div className="flex flex-col justify-center gap-4" role="status" aria-live="polite">
             <p className="text-base font-semibold text-slate-900">Generating your video…</p>
-            <div className="h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-blue-600 transition-all duration-150" style={{ width: `${p * 100}%` }} /></div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-slate-950 transition-all duration-150" style={{ width: `${p * 100}%` }} /></div>
             <ul className="space-y-2 text-sm">
               {GEN_STEPS.map((s, i) => (
                 <li key={s} className={`flex items-center gap-2 ${i < step ? "text-slate-400" : i === step ? "font-medium text-slate-900" : "text-slate-300"}`}>
-                  <span className={`grid h-4 w-4 place-items-center rounded-full ${i < step ? "bg-emerald-500 text-white" : i === step ? "bg-blue-600" : "bg-slate-200"}`}>{i < step && <Icon.Check className="h-2.5 w-2.5" />}</span>
+                  <span className={`grid h-4 w-4 place-items-center rounded-full ${i < step ? "bg-emerald-500 text-white" : i === step ? "bg-slate-950" : "bg-slate-200"}`}>{i < step && <Icon.Check className="h-2.5 w-2.5" />}</span>
                   {s}
                 </li>
               ))}
@@ -451,7 +451,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
               <span className={lab}>Suggested caption</span>
               <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3.5">
                 <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700">{caption}</p>
-                <button onClick={copyCaption} aria-label="Copy caption" className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"><Icon.Copy className="h-4 w-4" /></button>
+                <button onClick={copyCaption} aria-label="Copy caption" className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20"><Icon.Copy className="h-4 w-4" /></button>
               </div>
             </div>
             <div>

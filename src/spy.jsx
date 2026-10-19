@@ -534,7 +534,7 @@ function SpyAdCard({ ad, onRebuild }) {
       )}
       <div className="mt-auto flex items-center justify-between gap-2 pt-4">
         <span className="min-w-0 truncate text-xs text-slate-400">{ad.product || "No product detected"}{ad.cta ? ` · ${ad.cta}` : ""}</span>
-        <button onClick={() => onRebuild(SPY_ANGLE[ad.angle].tpl)} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+        <button onClick={() => onRebuild(SPY_ANGLE[ad.angle].tpl)} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:border-blue-200 hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
           <Icon.Wand className="h-3.5 w-3.5" /> Rebuild
         </button>
       </div>
@@ -924,7 +924,7 @@ ${spyCompact(ads)}`;
     return out.join("\n");
   };
   const srcLabel = state && state.source === "crawl-ai" ? "Read from the Meta Ad Library" : "Read from the Meta Ad Library · keyword wording";
-  const inp = "mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
+  const inp = "mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10";
   const running = crawl.phase === "running";
   const noDesktop = browser.ready && !browser.mcp && !SPY_API;
 
@@ -937,7 +937,7 @@ ${spyCompact(ads)}`;
         <form className="mt-4 flex gap-2" onSubmit={(e) => { e.preventDefault(); searchBrands(); }} role="search">
           <div className="relative min-w-0 flex-1">
             <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input id="spy-find" value={find.q} onChange={(e) => setFind((f) => ({ ...f, q: e.target.value }))} placeholder="Search a brand, e.g. Glossier" aria-label="Search a brand by name" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
+            <input id="spy-find" value={find.q} onChange={(e) => setFind((f) => ({ ...f, q: e.target.value }))} placeholder="Search a brand, e.g. Glossier" aria-label="Search a brand by name" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10" />
           </div>
           <button type="submit" disabled={find.q.trim().length < 2 || find.busy} className="h-12 shrink-0 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-50">{find.busy ? "Searching…" : "Search"}</button>
         </form>
@@ -969,11 +969,11 @@ ${spyCompact(ads)}`;
         <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">or paste a link</p>
         </>}
         <div className={`${canFind ? "mt-2" : "mt-4"} flex flex-col gap-3 sm:flex-row`}>
-          <input id="spy-lib" value={libRaw} onChange={(e) => setLibRaw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && libOk && !running) runCrawl(); }} placeholder="https://www.facebook.com/ads/library/?…view_all_page_id=…" aria-label="Ad Library link" className="h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-600/10" />
+          <input id="spy-lib" value={libRaw} onChange={(e) => setLibRaw(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && libOk && !running) runCrawl(); }} placeholder="https://www.facebook.com/ads/library/?…view_all_page_id=…" aria-label="Ad Library link" className="h-12 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10" />
           {running ? (
             <button onClick={() => crawlCtl.current && crawlCtl.current.abort()} className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 hover:border-slate-300">Stop</button>
           ) : (
-            <button id="spy-analyze" onClick={runCrawl} disabled={!libOk} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 text-sm font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25 disabled:cursor-not-allowed disabled:opacity-50"><Icon.Sparkle className="h-4 w-4" />Analyze{billingOn ? ` · ${COSTS.analyze} credits` : ""}</button>
+            <button id="spy-analyze" onClick={runCrawl} disabled={!libOk} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-7 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:opacity-50"><Icon.Sparkle className="h-4 w-4" />Analyze{billingOn ? ` · ${COSTS.analyze} credits` : ""}</button>
           )}
         </div>
         {lib && lib.error && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{lib.error}</p>}
@@ -983,7 +983,7 @@ ${spyCompact(ads)}`;
           <div className="mt-4" id="spy-progress" role="status">
             {running && (
               <>
-                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600 transition-all duration-500" style={{ width: `${Math.round((crawl.i / Math.max(crawl.n, 1)) * 100)}%` }} /></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-slate-950 transition-all duration-500" style={{ width: `${Math.round((crawl.i / Math.max(crawl.n, 1)) * 100)}%` }} /></div>
                 <p className="mt-2 text-xs text-slate-600"><span className="font-semibold text-slate-900">{crawl.found} ads found</span>{crawl.plain ? "" : ` · period ${crawl.i} of ${crawl.n}`} · {crawl.msg}</p>
                 <p className="mt-0.5 text-xs text-slate-400">This can take a few minutes. Keep this page open.</p>
               </>
@@ -1006,7 +1006,7 @@ ${spyCompact(ads)}`;
               <p className="text-[13px] leading-relaxed text-slate-600">The AdDoctor button reads an advertiser's ads straight from the Ad Library page you have open, images included, and sends them here for the analysis. Set it up once:</p>
               <ol className="mt-3 space-y-2.5 text-[13px] leading-relaxed text-slate-700">
                 <li className="flex flex-wrap items-center gap-2"><span className="font-semibold text-slate-900">1.</span> Drag this to your bookmarks bar:
-                  <a ref={helperLink} id="spy-bookmark" draggable onClick={(e) => { e.preventDefault(); notify("Drag the button to your bookmarks bar (Ctrl+Shift+B shows the bar)."); }} className="inline-flex cursor-grab items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-blue-600/25"><Icon.Sparkle className="h-3.5 w-3.5" />AdDoctor</a>
+                  <a ref={helperLink} id="spy-bookmark" draggable onClick={(e) => { e.preventDefault(); notify("Drag the button to your bookmarks bar (Ctrl+Shift+B shows the bar)."); }} className="inline-flex cursor-grab items-center gap-1.5 rounded-full bg-slate-950 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-slate-900/20"><Icon.Sparkle className="h-3.5 w-3.5" />AdDoctor</a>
                 </li>
                 <li><span className="font-semibold text-slate-900">2.</span> Open the advertiser in the <a href={libOk ? spyUrl(lib.id, country || lib.country, from, to) : "https://www.facebook.com/ads/library/"} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:text-blue-700">Meta Ad Library</a>{libOk ? " (this link opens the one you pasted)" : ""}.</li>
                 <li><span className="font-semibold text-slate-900">3.</span> Click the AdDoctor bookmark on that page. It scrolls through the ads, then opens your analysis here.</li>
@@ -1032,7 +1032,7 @@ ${spyCompact(ads)}`;
       <div id="spy-results" className="scroll-mt-24">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700 ring-1 ring-blue-100">{srcLabel} · {spyPlural(res.n, "ad")}</p>
-          <button id="spy-copy" onClick={() => copy(reportText(), "Slide text copied")} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+          <button id="spy-copy" onClick={() => copy(reportText(), "Slide text copied")} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
             <Icon.Copy className="h-3.5 w-3.5" /> Copy slide text
           </button>
         </div>
@@ -1042,7 +1042,7 @@ ${spyCompact(ads)}`;
         {res.insights.length > 0 && (
           <section className="mt-5 rounded-2xl border border-blue-200 bg-white p-5 shadow-sm" aria-label="What to do about it">
             <div className="flex items-center gap-2.5">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600 text-white"><Icon.Sparkle className="h-4 w-4" /></span>
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-slate-950 text-white"><Icon.Sparkle className="h-4 w-4" /></span>
               <h3 className="text-sm font-semibold text-slate-900">What this may mean for you <span className="font-normal text-slate-400">· from Claude</span></h3>
             </div>
             <ul className="mt-3.5 grid gap-x-8 gap-y-2.5 lg:grid-cols-2">

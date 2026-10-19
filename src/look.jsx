@@ -22,8 +22,8 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
   }, [onClose]);
 
   const tags = tpl.tags || [tpl.category, tpl.framework];
-  const thumb = "relative aspect-[9/16] overflow-hidden rounded-xl border-2 bg-slate-100 transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25";
-  const option = "group flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25";
+  const thumb = "relative aspect-[9/16] overflow-hidden rounded-xl border-2 bg-slate-100 transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25";
+  const option = "group flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25";
 
   return (
     <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" onClick={onClose}>
@@ -32,7 +32,7 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         className="relative flex max-h-[94dvh] w-full max-w-4xl flex-col overflow-y-auto dlg-panel rounded-t-[28px] sm:rounded-[28px] md:flex-row md:overflow-hidden"
       >
-        <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 z-10 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
+        <button ref={closeRef} onClick={onClose} aria-label="Close" className="absolute right-4 top-4 z-10 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
           <Icon.Close className="h-4 w-4" />
         </button>
 
@@ -89,7 +89,7 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
 
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Use this template</p>
             <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
-              <button id="look-product" onClick={() => onProduct(tpl, "exact")} className={`${option} border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700 sm:col-span-2`}>
+              <button id="look-product" onClick={() => onProduct(tpl, "exact")} className={`${option} border-blue-600 bg-slate-950 text-white shadow-sm shadow-slate-900/20 hover:bg-slate-800 sm:col-span-2`}>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/15"><Icon.Sparkle className="h-[18px] w-[18px]" /></span>
                 <span>
                   <span className="block text-sm font-semibold">Put my product in this ad</span>
@@ -111,7 +111,7 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
                 </span>
               </button>}
             </div>
-            <button onClick={() => onExamine(tpl)} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20">
+            <button onClick={() => onExamine(tpl)} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
               <Icon.Stethoscope className="h-3.5 w-3.5" /> Or examine an ad of mine against this template
             </button>
           </div>
