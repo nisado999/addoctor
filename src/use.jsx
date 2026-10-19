@@ -473,7 +473,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
 
   const generate = async () => {
     const template = await shrinkPhoto(TEMPLATE_IMGS[tpl.id], 1000);
-    run("Building the scene around your product…", { template, about: tpl.desc || "", note: note.trim() }, true);
+    run(inspired ? "Creating a new ad around your product…" : "Putting your product into the photo…", { template, about: tpl.desc || "", note: note.trim(), keepText: headline.trim() === (tpl.headline || "").trim() }, true);
   };
   const edit = async (text) => { const t = (text || "").trim(); if (t && ad && !busy) run("Applying your change…", { base: await shrinkPhoto(ad, 1600, 0.92), fix: t }, true); };
   const undo = () => { if (!past.length || busy) return; setAd(past[past.length - 1]); setPast((p) => p.slice(0, -1)); setReview(null); };

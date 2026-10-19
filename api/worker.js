@@ -676,6 +676,15 @@ async function makeAd(env, b) {
   if (!b.template) throw new Error("template required");
   const style = await loadRef({ data: b.template });
   const about = clip(b.about, 400).trim(), note = clip(b.note, 300).trim();
+  if (b.mode !== "inspired") {
+    // One to one: the template photo is edited, not re-imagined, so the person, place and light stay as they are.
+    const words = b.keepText ? "Keep every word of text in the image exactly as it is, in the same place and style."
+      : headline ? `Replace the main headline text with exactly: "${headline}", in the same place, font style and size as the old one. Keep any other text as it is.`
+      : "Remove all headline and caption text from the image and leave clean background where it was.";
+    return geminiImage(env, [inline(style), ...refs.map(inline), { text: `The FIRST image is a finished advert photo. EDIT it, do not recreate it. Replace ONLY the product in it with the real product shown in the other image${refs.length > 1 ? "s" : ""}. Everything else must stay pixel-for-pixel the same: the same person with the same face, hair, skin, pose and expression, the same clothes other than the product, the same background, camera angle, framing, lighting and colours. Never change the person's skin tone, ethnicity, age, face, hair colour, hair length, hair texture or hairstyle, and never swap them for someone else, even slightly. If the person has dark skin or curly hair they keep it exactly.
+${words}
+${PRODUCT_TRUTH(refs.length)} Put the real product exactly where the old product was, at the same size, worn or held the same way, whole and clearly visible.${note ? `\nAbout the product: ${note}` : ""}` }], b.quality);
+  }
   return geminiImage(env, [inline(style), ...refs.map(inline), { text: `Create a photorealistic 4:5 portrait advert for Facebook and Instagram.
 ${b.mode === "inspired"
   ? "The FIRST image is an inspiration reference only, an existing advert. Create a completely NEW advert, not a copy: keep its kind of scene, mood, colour palette, lighting feel and overall energy, but use a fresh composition, a new camera angle, a different pose or arrangement and a different setting detail. It must feel like the same family of ad without matching it frame for frame. Do not copy its product, its wording, or any logo or brand name in it."
