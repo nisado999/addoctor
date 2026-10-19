@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Icon } from "./ui";
 import { field, copyText, SPY_API } from "./shared.js";
 import { apiFetch } from "./api.js";
-import { SLOTS, pasteIntoSlot } from "./slots.js";
 import { makeCost } from "./billing.js";
 import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
@@ -432,7 +431,6 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const inspired = tpl.mode === "inspired";          // a new ad in this mood, not a one-to-one copy
-  const slot = inspired ? null : SLOTS[tpl.id];      // a picture inside the scene: the photo is pasted in by code, unchanged
   const [photos, setPhotos] = useState([]);          // [{ src, name }]
   const [headline, setHeadline] = useState(tpl.headline || "");
   const [note, setNote] = useState("");
@@ -474,18 +472,6 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   };
 
   const generate = async () => {
-    if (slot) {
-      if (busy || !photos.length) return;
-      setBusy("Placing your photo…"); setErr("");
-      try {
-        const out = await pasteIntoSlot(TEMPLATE_IMGS[tpl.id], photos[0].src, slot);
-        if (ad) setPast((p) => [...p, ad].slice(-6));
-        setAd(out); setReview(null); setFix("");
-        track("ad_generated", { template_id: tpl.id, template_category: tpl.category, quality: "paste", product_photos: 1, has_headline: false });
-      } catch (e) { setErr("That photo could not be placed. Try a different one."); }
-      setBusy("");
-      return;
-    }
     const template = await shrinkPhoto(TEMPLATE_IMGS[tpl.id], 1000);
     run(inspired ? "Creating a new ad around your product…" : "Putting your product into the photo…", { template, about: tpl.desc || "", note: note.trim(), keepText: headline.trim() === (tpl.headline || "").trim() }, true);
   };
@@ -522,8 +508,8 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
           {busy && <span className="mr-auto text-xs font-medium text-slate-500">{busy} This can take up to a minute.</span>}
           {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 hover:text-slate-800">Undo last change</button>}
           {ad && <button onClick={download} disabled={!!busy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
-          <button id="make-go" onClick={slot && ad ? () => { setPast([]); setAd(""); setReview(null); } : generate} disabled={!photos.length || !!busy} className={primaryBtn}>
-            <Icon.Sparkle className="h-4 w-4" /> {busy ? "Working…" : slot ? (ad ? "Use a different photo" : "Place my photo in the ad · free") : ad ? "Make another version" : `Generate my ad · ${makeCost(premium)} credits`}
+          <button id="make-go" onClick={generate} disabled={!photos.length || !!busy} className={primaryBtn}>
+            <Icon.Sparkle className="h-4 w-4" /> {busy ? "Working…" : ad ? "Make another version" : `Generate my ad · ${makeCost(premium)} credits`}
           </button>
         </>
       }
@@ -564,24 +550,18 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                 </div>
                 <input ref={fileRef} id="make-file" type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
               </div>
-              {slot ? (
-                <p className="rounded-xl bg-slate-50 px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 ring-1 ring-slate-200/70">Your photo goes into the picture in this ad exactly as it is. Nothing else in the ad changes, and nothing is redrawn.</p>
-              ) : (
-                <>
-                  <div>
-                    <label htmlFor="make-headline" className={lab}>2. Headline on the image <span className="font-normal text-slate-400">(leave empty for no text)</span></label>
-                    <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={field} placeholder="e.g. Made to move in" />
-                  </div>
-                  <div>
-                    <label htmlFor="make-note" className={lab}>3. Anything to know? <span className="font-normal text-slate-400">(optional)</span></label>
-                    <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={field} placeholder="e.g. women's running top, worn by a woman in her 30s" />
-                  </div>
-                  <label className="flex items-center gap-2.5 text-[13px] text-slate-600">
-                    <input type="checkbox" checked={premium} onChange={(e) => setPremium(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-blue-600" />
-                    Best quality <span className="text-slate-400">(slower, costs more to generate)</span>
-                  </label>
-                </>
-              )}
+              <div>
+                <label htmlFor="make-headline" className={lab}>2. Headline on the image <span className="font-normal text-slate-400">(leave empty for no text)</span></label>
+                <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={field} placeholder="e.g. Made to move in" />
+              </div>
+              <div>
+                <label htmlFor="make-note" className={lab}>3. Anything to know? <span className="font-normal text-slate-400">(optional)</span></label>
+                <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={field} placeholder="e.g. women's running top, worn by a woman in her 30s" />
+              </div>
+              <label className="flex items-center gap-2.5 text-[13px] text-slate-600">
+                <input type="checkbox" checked={premium} onChange={(e) => setPremium(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-blue-600" />
+                Best quality <span className="text-slate-400">(slower, costs more to generate)</span>
+              </label>
             </>
           ) : (
             <>
