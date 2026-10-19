@@ -131,6 +131,45 @@ function readLogo(file, notify) {
   });
 }
 
+/* Makes the logo's plain background transparent. It starts from the edges and clears every pixel that is close to the
+   background colour (the average of the four corners) and connected to the edge, so the logo's own colours inside stay.
+   "tol" is how different from the background a pixel may be and still count as background. */
+async function cutBackground(logo, tol) {
+  const max = 900;
+  const k = Math.min(1, max / Math.max(logo.img.naturalWidth, logo.img.naturalHeight));
+  const w = Math.max(1, Math.round(logo.img.naturalWidth * k)), h = Math.max(1, Math.round(logo.img.naturalHeight * k));
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(logo.img, 0, 0, w, h);
+  const im = ctx.getImageData(0, 0, w, h), d = im.data;
+  const corners = [0, w - 1, (h - 1) * w, h * w - 1].map((i) => i * 4);
+  if (corners.every((i) => d[i + 3] < 12)) return logo;      // already transparent at the corners
+  const bg = [0, 1, 2].map((ch) => corners.reduce((s, i) => s + d[i + ch], 0) / 4);
+  const dist = (i) => Math.hypot(d[i] - bg[0], d[i + 1] - bg[1], d[i + 2] - bg[2]);
+  const hi = tol * 1.6;                                      // between tol and hi the edge fades out instead of cutting hard
+  const seen = new Uint8Array(w * h), stack = [];
+  const push = (x, y) => { const p = y * w + x; if (!seen[p] && dist(p * 4) <= hi) { seen[p] = 1; stack.push(p); } };
+  for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); }
+  for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
+  while (stack.length) {
+    const p = stack.pop(), x = p % w, y = (p / w) | 0;
+    if (x > 0) push(x - 1, y);
+    if (x < w - 1) push(x + 1, y);
+    if (y > 0) push(x, y - 1);
+    if (y < h - 1) push(x, y + 1);
+  }
+  for (let p = 0; p < w * h; p++) {
+    if (!seen[p]) continue;
+    const dd = dist(p * 4);
+    d[p * 4 + 3] = dd <= tol ? 0 : Math.round(d[p * 4 + 3] * ((dd - tol) / (hi - tol)));
+  }
+  ctx.putImageData(im, 0, 0);
+  const src = c.toDataURL("image/png");
+  const img = await loadImage(src);
+  return { ...logo, src, img, ratio: w / h };
+}
+
 function LogoDrop({ logo, onLogo, notify }) {
   const fileRef = useRef(null);
   const take = async (file) => { const l = await readLogo(file, notify); if (l) onLogo(l); };
@@ -448,7 +487,17 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   const ctrl = useRef(null);
   const frameRef = useRef(null);
   const dragging = useRef(false);
+  const [logoCut, setLogoCut] = useState(false);     // remove the logo's background
+  const [cutTol, setCutTol] = useState(45);
+  const [cutLogo, setCutLogo] = useState(null);
   useEffect(() => () => { if (ctrl.current) ctrl.current.abort(); }, []);
+  useEffect(() => {
+    let off = false;
+    if (!logo || !logoCut) { setCutLogo(null); return undefined; }
+    cutBackground(logo, cutTol).then((r) => { if (!off) setCutLogo(r); }).catch(() => { if (!off) setCutLogo(null); });
+    return () => { off = true; };
+  }, [logo, logoCut, cutTol]);
+  const shownLogo = logoCut && cutLogo ? cutLogo : logo;
 
   const startDrag = (e) => { e.preventDefault(); dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
   const moveDrag = (e) => {
@@ -458,7 +507,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   };
   const endDrag = () => { dragging.current = false; };
   const applyLogo = async () => {
-    if (!logo || !ad) return;
+    if (!shownLogo || !ad) return;
     try {
       const base = await loadImage(ad);
       const c = document.createElement("canvas");
@@ -466,11 +515,11 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
       const ctx = c.getContext("2d");
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(base, 0, 0);
-      const lw = c.width * lp.s, lh = lw / logo.ratio;
-      ctx.drawImage(logo.img, c.width * lp.x - lw / 2, c.height * lp.y - lh / 2, lw, lh);
+      const lw = c.width * lp.s, lh = lw / shownLogo.ratio;
+      ctx.drawImage(shownLogo.img, c.width * lp.x - lw / 2, c.height * lp.y - lh / 2, lw, lh);
       setPast((p) => [...p, ad].slice(-6));
       setAd(c.toDataURL("image/png"));
-      setReview(null); setLogoOpen(false); setLogo(null);
+      setReview(null); setLogoOpen(false); setLogo(null); setLogoCut(false);
       track("ad_logo_added", { template_id: tpl.id, template_category: tpl.category });
     } catch (e) { notify("The logo could not be added. Try another file."); }
   };
@@ -548,9 +597,9 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
         <div className="mx-auto w-full max-w-[260px]">
           <div ref={frameRef} className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-200 shadow-sm">
             <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition ${busy ? "opacity-50" : ""}`} />
-            {ad && logoOpen && logo && (
+            {ad && logoOpen && shownLogo && (
               <img
-                src={logo.src} alt="Your logo, drag to move" draggable={false}
+                src={shownLogo.src} alt="Your logo, drag to move" draggable={false}
                 onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}
                 className="absolute z-10 cursor-move touch-none select-none ring-2 ring-blue-500/70"
                 style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: "translate(-50%, -50%)" }}
@@ -638,6 +687,16 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                   {logo && (
                     <>
                       <p className="text-xs text-slate-500">Drag the logo on the image to put it anywhere.</p>
+                      <label className="flex items-center gap-2.5 text-[13px] text-slate-600">
+                        <input id="make-logo-cut" type="checkbox" checked={logoCut} onChange={(e) => setLogoCut(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-blue-600" />
+                        Remove the logo's background <span className="text-slate-400">(plain backgrounds work best)</span>
+                      </label>
+                      {logoCut && (
+                        <div>
+                          <label htmlFor="make-logo-tol" className={lab}>Strength <span className="font-normal text-slate-400">(raise it if background is left, lower it if the logo gets eaten)</span></label>
+                          <input id="make-logo-tol" type="range" min="10" max="140" step="1" value={cutTol} onChange={(e) => setCutTol(+e.target.value)} className="w-full accent-blue-600" />
+                        </div>
+                      )}
                       <div>
                         <label htmlFor="make-logo-size" className={lab}>Size <span className="font-normal text-slate-400">({Math.round(lp.s * 100)}% of the width)</span></label>
                         <input id="make-logo-size" type="range" min="0.06" max="0.7" step="0.01" value={lp.s} onChange={(e) => setLp((p) => ({ ...p, s: +e.target.value }))} className="w-full accent-blue-600" />
@@ -646,7 +705,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                   )}
                   <div className="flex items-center gap-3">
                     <button id="make-logo-apply" onClick={applyLogo} disabled={!logo || !!busy} className={primaryBtn}>Add to my ad</button>
-                    <button onClick={() => { setLogoOpen(false); setLogo(null); }} className="text-xs font-semibold text-slate-500 hover:text-slate-800">Cancel</button>
+                    <button onClick={() => { setLogoOpen(false); setLogo(null); setLogoCut(false); }} className="text-xs font-semibold text-slate-500 hover:text-slate-800">Cancel</button>
                   </div>
                 </div>
               )}
@@ -659,4 +718,4 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   );
 }
 
-export { BrandModal, InspireModal, ProductModal };
+export { BrandModal, InspireModal, ProductModal, cutBackground };
