@@ -687,9 +687,9 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                   {logo && (
                     <>
                       <p className="text-xs text-slate-500">Drag the logo on the image to put it anywhere.</p>
-                      <label className="flex items-center gap-2.5 text-[13px] text-slate-600">
-                        <input id="make-logo-cut" type="checkbox" checked={logoCut} onChange={(e) => setLogoCut(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-blue-600" />
-                        Remove the logo's background <span className="text-slate-400">(plain backgrounds work best)</span>
+                      <label className="flex items-start gap-2.5 text-[13px] text-slate-600">
+                        <input id="make-logo-cut" type="checkbox" checked={logoCut} onChange={(e) => setLogoCut(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 accent-blue-600" />
+                        <span>Remove the logo's background<span className="block text-xs text-slate-400">Plain backgrounds work best.</span></span>
                       </label>
                       {logoCut && (
                         <div>
@@ -703,7 +703,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                       </div>
                     </>
                   )}
-                  <div className="flex items-center gap-3">
+                  <div className="sticky bottom-0 -mx-4 -mb-4 flex items-center gap-3 rounded-b-2xl border-t border-slate-100 bg-white px-4 py-3">
                     <button id="make-logo-apply" onClick={applyLogo} disabled={!logo || !!busy} className={primaryBtn}>Add to my ad</button>
                     <button onClick={() => { setLogoOpen(false); setLogo(null); setLogoCut(false); }} className="text-xs font-semibold text-slate-500 hover:text-slate-800">Cancel</button>
                   </div>
