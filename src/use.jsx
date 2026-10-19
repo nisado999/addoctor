@@ -430,6 +430,7 @@ const makeCall = (path, body, signal) => apiFetch(path, { body, signal, timeout:
 function ProductModal({ tpl, onClose, notify, onSpend }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
+  const inspired = tpl.mode === "inspired";          // a new ad in this mood, not a one-to-one copy
   const [photos, setPhotos] = useState([]);          // [{ src, name }]
   const [headline, setHeadline] = useState(tpl.headline || "");
   const [note, setNote] = useState("");
@@ -460,7 +461,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     ctrl.current = c;
     setBusy(label); setErr("");
     try {
-      const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", ...body }, c.signal);
+      const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: inspired ? "inspired" : "exact", ...body }, c.signal);
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setAd(`data:${out.mime};base64,${out.data}`);
       setReview(null); setFix("");
@@ -499,7 +500,8 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
 
   return (
     <Shell
-      title="Make it with my product" sub={`${tpl.title} · a new ad in this style, with your real product in it.`}
+      title={inspired ? "Create a new ad inspired by this" : "Put my product in this ad"}
+      sub={inspired ? `${tpl.title} · a brand new ad with your real product, in the mood of this one.` : `${tpl.title} · the same ad, one to one, with your real product in it.`}
       icon={<Icon.Wand className="h-5 w-5" />} onClose={onClose}
       footer={
         <>
@@ -518,7 +520,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
             <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition ${busy ? "opacity-50" : ""}`} />
             {busy && <span className="absolute inset-0 grid place-items-center"><span className="h-8 w-8 animate-spin rounded-full border-[3px] border-white/60 border-t-blue-600" /></span>}
           </div>
-          <p className="mt-2 text-center text-[11px] text-slate-400">{ad ? "Your ad" : isVideo ? "The look your ad will copy (first frame of the video)" : "The look your ad will copy"}</p>
+          <p className="mt-2 text-center text-[11px] text-slate-400">{ad ? "Your ad" : isVideo ? `${inspired ? "The inspiration" : "The look your ad will copy"} (first frame of the video)` : inspired ? "The inspiration" : "The look your ad will copy"}</p>
         </div>
 
         <div className="flex min-w-0 flex-col gap-5">

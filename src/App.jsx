@@ -948,7 +948,7 @@ function App() {
             onBrand={(tp) => { track("template_use", { method: "add_logo", ...tplInfo(tp) }); setLook(null); setBrand(tp); }}
             onInspire={(tp) => { track("template_use", { method: "inspired_version", ...tplInfo(tp) }); setLook(null); if (TEMPLATE_VIDS[tp.id]) setInspire(tp); else setStudio(tp); }}
             onExamine={(tp) => { track("template_use", { method: "examine", ...tplInfo(tp) }); setLook(null); openExam({ template: tp }); }}
-            onProduct={(tp) => { track("template_use", { method: "my_product", ...tplInfo(tp) }); setLook(null); setProduct(tp); }}
+            onProduct={(tp, mode) => { track("template_use", { method: mode === "inspired" ? "my_product_inspired" : "my_product", ...tplInfo(tp) }); setLook(null); setProduct({ ...tp, mode: mode || "exact" }); }}
           />
         </DialogSlot>
       )}

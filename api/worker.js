@@ -677,7 +677,9 @@ async function makeAd(env, b) {
   const style = await loadRef({ data: b.template });
   const about = clip(b.about, 400).trim(), note = clip(b.note, 300).trim();
   return geminiImage(env, [inline(style), ...refs.map(inline), { text: `Create a photorealistic 4:5 portrait advert for Facebook and Instagram.
-The FIRST image is a style reference only, an existing advert. Match its composition, camera angle, framing, setting, lighting, colour mood and the place where its text sits. Do not copy its product, its wording, or any logo or brand name in it.${about ? `\nWhat the reference shows: ${about}` : ""}
+${b.mode === "inspired"
+  ? "The FIRST image is an inspiration reference only, an existing advert. Create a completely NEW advert, not a copy: keep its kind of scene, mood, colour palette, lighting feel and overall energy, but use a fresh composition, a new camera angle, a different pose or arrangement and a different setting detail. It must feel like the same family of ad without matching it frame for frame. Do not copy its product, its wording, or any logo or brand name in it."
+  : "The FIRST image is the exact layout to reproduce, an existing advert. Recreate it one to one: same composition, camera angle, framing, setting, model pose, lighting, colour mood and the same place for the text. The only thing that changes is the product. Do not copy its product, its wording, or any logo or brand name in it."}${about ? `\nWhat the reference shows: ${about}` : ""}
 ${PRODUCT_TRUTH(refs.length)}
 Put the real product where the reference has its product: worn by the model if it is clothing, footwear or an accessory, otherwise held or standing in the scene, at a similar size in the frame. The whole product must be in frame and clearly visible. Anything else the model wears is plain and neutral (black, grey or white) and never matches the product's colour, so only the real product stands out. People must look real, with natural hands and faces. Natural or cool light, never an orange glow.${note ? `\nAbout the product: ${note}` : ""}
 ${text}` }], b.quality);

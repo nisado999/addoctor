@@ -89,11 +89,18 @@ function LookModal({ tpl, onClose, onBrand, onInspire, onExamine, onProduct }) {
 
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Use this template</p>
             <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
-              <button id="look-product" onClick={() => onProduct(tpl)} className={`${option} border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700 sm:col-span-2`}>
+              <button id="look-product" onClick={() => onProduct(tpl, "exact")} className={`${option} border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/25 hover:bg-blue-700 sm:col-span-2`}>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/15"><Icon.Sparkle className="h-[18px] w-[18px]" /></span>
                 <span>
-                  <span className="block text-sm font-semibold">Make it with my product</span>
-                  <span className="mt-0.5 block text-xs leading-snug text-blue-100">Upload a product photo and get {isVideo ? "an image ad" : "this ad"} in this style with your real product in it. Then edit it and score it.</span>
+                  <span className="block text-sm font-semibold">Put my product in this ad</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-blue-100">The same ad, one to one, with your real product swapped in. Then edit it and score it.</span>
+                </span>
+              </button>
+              <button id="look-inspired" onClick={() => onProduct(tpl, "inspired")} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300 sm:col-span-2`}>
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Wand className="h-[18px] w-[18px]" /></span>
+                <span>
+                  <span className="block text-sm font-semibold">Create a new image inspired by it</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-slate-500">A brand new ad with your product, in the mood and style of this one, not a copy.</span>
                 </span>
               </button>
               <button onClick={() => onBrand(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300 ${isVideo ? "" : "sm:col-span-2"}`}>
