@@ -54,7 +54,7 @@ function spyCollector(cfg) {
   var box = el("div", "position:fixed;right:20px;bottom:20px;z-index:2147483647;width:300px;padding:16px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 12px 40px rgba(15,23,42,.22);font:14px/1.45 system-ui,sans-serif;color:#0f172a");
   var title = el("div", "font-weight:700", "AdDoctor");
   var msg = el("div", "margin-top:4px;color:#475569;font-size:13px");
-  var btn = el("button", "margin-top:12px;width:100%;height:40px;border:0;border-radius:10px;background:#2563eb;color:#fff;font:600 14px system-ui,sans-serif;cursor:pointer");
+  var btn = el("button", "margin-top:12px;width:100%;height:40px;border:0;border-radius:10px;background:#0f172a;color:#fff;font:600 14px system-ui,sans-serif;cursor:pointer");
   var shut = el("button", "position:absolute;top:8px;right:10px;border:0;background:none;color:#94a3b8;font-size:18px;cursor:pointer", "×");
   box.appendChild(title); box.appendChild(msg); box.appendChild(btn); box.appendChild(shut);
   document.body.appendChild(box);
