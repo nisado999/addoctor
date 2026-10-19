@@ -3,7 +3,7 @@ import { Icon } from "./ui";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS, TEMPLATE_REFS } from "./templateImgs.js";
 
 /* "Use this template": the template shown large, what it is for, and the two ways to use it. */
-function LookModal({ tpl, onClose, onBrand, onInspire, onExamine, onProduct }) {
+function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const refs = TEMPLATE_REFS[tpl.id] || [];
   const [shot, setShot] = useState(-1); // -1 = the video, else a reference frame
@@ -103,14 +103,7 @@ function LookModal({ tpl, onClose, onBrand, onInspire, onExamine, onProduct }) {
                   <span className="mt-0.5 block text-xs leading-snug text-slate-500">A brand new ad with your product, in the mood and style of this one, not a copy.</span>
                 </span>
               </button>
-              <button onClick={() => onBrand(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300 ${isVideo ? "" : "sm:col-span-2"}`}>
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Image className="h-[18px] w-[18px]" /></span>
-                <span>
-                  <span className="block text-sm font-semibold">Add my logo</span>
-                  <span className="mt-0.5 block text-xs leading-snug text-slate-500">Put your logo straight onto this {isVideo ? "video" : "image"} and download it.</span>
-                </span>
-              </button>
-              {isVideo && <button onClick={() => onInspire(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300`}>
+              {isVideo && <button onClick={() => onInspire(tpl)} className={`${option} border-slate-200 bg-white text-slate-900 hover:border-blue-300 sm:col-span-2`}>
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Wand className="h-[18px] w-[18px]" /></span>
                 <span>
                   <span className="block text-sm font-semibold">Make a new one inspired by it</span>

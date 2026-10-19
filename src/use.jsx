@@ -441,9 +441,39 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   const [past, setPast] = useState([]);              // earlier results, newest last, for Undo
   const [fix, setFix] = useState("");
   const [review, setReview] = useState(null);
+  const [logo, setLogo] = useState(null);            // the logo being placed on the finished ad
+  const [logoOpen, setLogoOpen] = useState(false);
+  const [lp, setLp] = useState({ x: 0.82, y: 0.9, s: 0.22 });   // logo centre and width, as shares of the frame
   const fileRef = useRef(null);
   const ctrl = useRef(null);
+  const frameRef = useRef(null);
+  const dragging = useRef(false);
   useEffect(() => () => { if (ctrl.current) ctrl.current.abort(); }, []);
+
+  const startDrag = (e) => { e.preventDefault(); dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
+  const moveDrag = (e) => {
+    if (!dragging.current || !frameRef.current) return;
+    const r = frameRef.current.getBoundingClientRect();
+    setLp((p) => ({ ...p, x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }));
+  };
+  const endDrag = () => { dragging.current = false; };
+  const applyLogo = async () => {
+    if (!logo || !ad) return;
+    try {
+      const base = await loadImage(ad);
+      const c = document.createElement("canvas");
+      c.width = base.naturalWidth; c.height = base.naturalHeight;
+      const ctx = c.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(base, 0, 0);
+      const lw = c.width * lp.s, lh = lw / logo.ratio;
+      ctx.drawImage(logo.img, c.width * lp.x - lw / 2, c.height * lp.y - lh / 2, lw, lh);
+      setPast((p) => [...p, ad].slice(-6));
+      setAd(c.toDataURL("image/png"));
+      setReview(null); setLogoOpen(false); setLogo(null);
+      track("ad_logo_added", { template_id: tpl.id, template_category: tpl.category });
+    } catch (e) { notify("The logo could not be added. Try another file."); }
+  };
 
   const addPhotos = async (files) => {
     const ok = [...files].filter((f) => /^image\/(png|jpeg|webp)$/.test(f.type)).slice(0, 3 - photos.length);
@@ -516,8 +546,16 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     >
       <div className="grid gap-6 md:grid-cols-[minmax(0,260px)_1fr]">
         <div className="mx-auto w-full max-w-[260px]">
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-200 shadow-sm">
+          <div ref={frameRef} className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-200 shadow-sm">
             <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition ${busy ? "opacity-50" : ""}`} />
+            {ad && logoOpen && logo && (
+              <img
+                src={logo.src} alt="Your logo, drag to move" draggable={false}
+                onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}
+                className="absolute z-10 cursor-move touch-none select-none ring-2 ring-blue-500/70"
+                style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: "translate(-50%, -50%)" }}
+              />
+            )}
             {busy && <span className="absolute inset-0 grid place-items-center"><span className="h-8 w-8 animate-spin rounded-full border-[3px] border-white/60 border-t-blue-600" /></span>}
           </div>
           <p className="mt-2 text-center text-[11px] text-slate-400">{ad ? "Your ad" : isVideo ? `${inspired ? "The inspiration" : "The look your ad will copy"} (first frame of the video)` : inspired ? "The inspiration" : "The look your ad will copy"}</p>
@@ -589,7 +627,30 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                   {review.regen && <button id="make-autofix" onClick={() => edit(review.regen)} disabled={!!busy} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"><Icon.Wand className="h-3.5 w-3.5" /> Apply these fixes</button>}
                 </div>
               )}
-              <button onClick={() => { setPast([]); setAd(""); setReview(null); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 hover:text-slate-800">← Change the photos or the headline</button>
+              {!logoOpen ? (
+                <button id="make-logo" onClick={() => setLogoOpen(true)} disabled={!!busy} className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:opacity-50">
+                  <Icon.Image className="h-4 w-4" /> Add your logo
+                </button>
+              ) : (
+                <div id="make-logo-panel" className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+                  <span className={lab}>Add your logo</span>
+                  <LogoDrop logo={logo} onLogo={setLogo} notify={notify} />
+                  {logo && (
+                    <>
+                      <p className="text-xs text-slate-500">Drag the logo on the image to put it anywhere.</p>
+                      <div>
+                        <label htmlFor="make-logo-size" className={lab}>Size <span className="font-normal text-slate-400">({Math.round(lp.s * 100)}% of the width)</span></label>
+                        <input id="make-logo-size" type="range" min="0.06" max="0.7" step="0.01" value={lp.s} onChange={(e) => setLp((p) => ({ ...p, s: +e.target.value }))} className="w-full accent-blue-600" />
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <button id="make-logo-apply" onClick={applyLogo} disabled={!logo || !!busy} className={primaryBtn}>Add to my ad</button>
+                    <button onClick={() => { setLogoOpen(false); setLogo(null); }} className="text-xs font-semibold text-slate-500 hover:text-slate-800">Cancel</button>
+                  </div>
+                </div>
+              )}
+              <button onClick={() => { setPast([]); setAd(""); setReview(null); setLogoOpen(false); setLogo(null); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 hover:text-slate-800">← Change the photos or the headline</button>
             </>
           )}
         </div>
