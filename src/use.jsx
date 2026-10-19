@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { Icon } from "./ui";
 import { field, copyText, SPY_API } from "./shared.js";
 import { apiFetch } from "./api.js";
 import { makeCost } from "./billing.js";
 import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
+
+gsap.registerPlugin(useGSAP);
+const calm = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* Two ways to use a template: put your logo on it as it is (BrandModal), or brief a new one in its style (InspireModal). */
 
@@ -21,15 +26,16 @@ function useModal(onClose) {
   }, [onClose]);
 }
 
-function Shell({ title, sub, icon, onClose, children, footer }) {
+function Shell({ title, sub, icon, onClose, children, footer, studio }) {
   return (
     <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" onClick={onClose}>
       <div
         role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-        className="relative flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden dlg-panel rounded-t-[28px] sm:rounded-[28px]"
+        className={`relative flex max-h-[94dvh] w-full ${studio ? "sx-pop max-w-5xl" : "max-w-3xl"} flex-col overflow-hidden dlg-panel rounded-t-[28px] sm:rounded-[28px]`}
       >
-        <header className="dlg-head flex items-start gap-3.5 px-6 py-5 md:px-8">
+        {studio && <button onClick={onClose} aria-label="Close" className="sx-close absolute right-5 top-5 z-30 grid h-9 w-9 place-items-center rounded-full text-slate-500 transition hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/15"><Icon.Close className="h-4 w-4" /></button>}
+        {!studio && <header className="dlg-head flex items-start gap-3.5 px-6 py-5 md:px-8">
           <span className="dlg-icon grid h-11 w-11 shrink-0 place-items-center rounded-2xl">{icon}</span>
           <div className="min-w-0 flex-1 pr-8">
             <h2 className="font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">{title}</h2>
@@ -38,12 +44,32 @@ function Shell({ title, sub, icon, onClose, children, footer }) {
           <button onClick={onClose} aria-label="Close" className="absolute right-4 top-4 dlg-close rounded-full p-2 text-slate-500 hover:text-slate-950 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/25">
             <Icon.Close className="h-4 w-4" />
           </button>
-        </header>
-        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50 px-6 py-6 md:px-8">{children}</div>
-        {footer && <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 bg-white px-6 py-4 md:px-8">{footer}</footer>}
+        </header>}
+        <div className={`min-h-0 flex-1 overflow-y-auto ${studio ? "bg-white" : "bg-slate-50/50 px-6 py-6 md:px-8"}`}>{children}</div>
+        {footer && <footer className={`flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 bg-white ${studio ? "px-8 py-4 md:px-12" : "px-6 py-4 md:px-8"}`}>{footer}</footer>}
       </div>
     </div>
   );
+}
+
+/* Studio-style helpers for the product window. */
+function Step({ n, title, hint, htmlFor, done, children }) {
+  const Head = htmlFor ? "label" : "p";
+  return (
+    <div className="sx-step">
+      <Head {...(htmlFor ? { htmlFor } : {})} className="mb-3.5 flex items-start gap-3.5">
+        <span className={`sx-num ${done ? "is-done" : ""}`}>
+          {done ? <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3.2 3L13 4.5" /></svg> : n}
+        </span>
+        <span className="min-w-0"><span className="block text-[15px] font-semibold leading-tight text-slate-950">{title}</span><span className="mt-1 block text-xs text-slate-400">{hint}</span></span>
+      </Head>
+      <div className="sm:pl-[34px]">{children}</div>
+    </div>
+  );
+}
+
+function Switch({ on, onChange, label, id }) {
+  return <button id={id} type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} className={`sx-switch ${on ? "is-on" : ""}`}><span /></button>;
 }
 
 const lab = "mb-1.5 block text-xs font-semibold text-slate-700";
@@ -170,7 +196,7 @@ async function cutBackground(logo, tol) {
   return { ...logo, src, img, ratio: w / h };
 }
 
-function LogoDrop({ logo, onLogo, notify }) {
+function LogoDrop({ logo, onLogo, notify, quiet }) {
   const fileRef = useRef(null);
   const take = async (file) => { const l = await readLogo(file, notify); if (l) onLogo(l); };
   return (
@@ -180,7 +206,7 @@ function LogoDrop({ logo, onLogo, notify }) {
         onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); take(e.dataTransfer.files[0]); }}
         className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-left transition hover:border-blue-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20"
       >
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Upload className="h-5 w-5" /></span>
+        <span className={quiet ? "grid h-6 w-6 shrink-0 place-items-center text-slate-900" : "grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"}><Icon.Upload className="h-5 w-5" /></span>
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold text-slate-900">{logo ? logo.name : "Upload your logo"}</span>
           <span className="block text-xs text-slate-500">{logo ? "Click to choose a different file." : "PNG with a transparent background works best. It never leaves your browser."}</span>
@@ -499,6 +525,81 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   }, [logo, logoCut, cutTol]);
   const shownLogo = logoCut && cutLogo ? cutLogo : logo;
 
+  /* ---- motion (GSAP). Scoped to this window and reverted on close; reduced-motion users get none of it. ---- */
+  const root = useRef(null), panelRef = useRef(null), stageRef = useRef(null), beamRef = useRef(null), barRef = useRef(null), goRef = useRef(null);
+  const [phase, setPhase] = useState(0);
+  const PHASES = ["Reading your product photo", "Matching light and shadow", "Placing it in the scene", "Adding the finishing touches"];
+  useEffect(() => {
+    if (!busy || ad) { setPhase(0); return undefined; }
+    const t = setInterval(() => setPhase((p) => Math.min(p + 1, PHASES.length - 1)), 9000);
+    return () => clearInterval(t);
+  }, [busy, ad]);
+
+  // Opening: the heading rises, the light blooms, the ad settles in. Then the light keeps drifting, slowly.
+  useGSAP(() => {
+    if (calm()) return;
+    const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+    tl.from(".fx-head > *", { y: 16, opacity: 0, duration: 1.2, stagger: 0.07 }, 0.05)
+      .from(".fx-glow", { opacity: 0, duration: 2.4, ease: "power2.out" }, 0)
+      .from(".fx-ad", { y: 40, scale: 0.95, opacity: 0, duration: 1.5 }, 0.15)
+      .from(".fx-cap", { opacity: 0, duration: 1, ease: "power2.out" }, 0.9);
+    gsap.to(".sx-blob-a", { x: 70, y: 50, scale: 1.18, duration: 11, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    gsap.to(".sx-blob-b", { x: -60, y: 70, scale: 1.12, duration: 13, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    gsap.to(".sx-blob-c", { x: 60, y: -50, scale: 1.2, duration: 15, repeat: -1, yoyo: true, ease: "sine.inOut" });
+  }, { scope: root });
+
+  // Whenever the right side changes (the form, then the edit tools) its parts glide in one after another.
+  useGSAP(() => {
+    if (calm() || !panelRef.current) return;
+    gsap.fromTo(panelRef.current.children, { y: 22, opacity: 0 }, { y: 0, opacity: 1, duration: 1, stagger: 0.07, ease: "expo.out", delay: 0.1, clearProps: "transform,opacity" });
+  }, { dependencies: [!!ad], scope: root });
+
+  // The ad leans gently toward the pointer. Off while a logo is being placed so dragging stays exact.
+  useGSAP(() => {
+    const el = frameRef.current, st = stageRef.current;
+    if (!el || !st) return undefined;
+    gsap.set(el, { transformPerspective: 1000 });
+    if (calm() || logoOpen) { gsap.to(el, { rotationX: 0, rotationY: 0, duration: 0.6, ease: "power3.out" }); return undefined; }
+    const rx = gsap.quickTo(el, "rotationX", { duration: 0.9, ease: "power3.out" });
+    const ry = gsap.quickTo(el, "rotationY", { duration: 0.9, ease: "power3.out" });
+    const move = (e) => {
+      const r = st.getBoundingClientRect();
+      ry(((e.clientX - r.left) / r.width - 0.5) * 10);
+      rx(-((e.clientY - r.top) / r.height - 0.5) * 8);
+    };
+    const leave = () => { rx(0); ry(0); };
+    st.addEventListener("pointermove", move); st.addEventListener("pointerleave", leave);
+    return () => { st.removeEventListener("pointermove", move); st.removeEventListener("pointerleave", leave); };
+  }, { dependencies: [logoOpen], scope: root });
+
+  // While working: a thin light scans the ad and a progress line creeps along.
+  useGSAP(() => {
+    if (!busy || calm() || !beamRef.current) return;
+    gsap.fromTo(beamRef.current, { yPercent: -100 }, { yPercent: 100, duration: 1.8, ease: "sine.inOut", repeat: -1, yoyo: true });
+    gsap.fromTo(barRef.current, { scaleX: 0 }, { scaleX: 0.93, duration: ad ? 30 : 55, ease: "power1.out" });
+  }, { dependencies: [!!busy], scope: root });
+
+  // A new ad arrives: it opens from the centre, a soft flash and one ring pulse.
+  useGSAP(() => {
+    if (!ad || calm() || !frameRef.current) return;
+    gsap.timeline()
+      .fromTo("#make-result", { clipPath: "circle(0% at 50% 50%)", scale: 1.14 }, { clipPath: "circle(80% at 50% 50%)", scale: 1, duration: 1.3, ease: "expo.out", clearProps: "clipPath" }, 0)
+      .fromTo(".fx-flash", { opacity: 0.7 }, { opacity: 0, duration: 1, ease: "power2.out" }, 0)
+      .fromTo(frameRef.current, { scale: 0.96 }, { scale: 1, duration: 1.4, ease: "expo.out" }, 0)
+      .fromTo(".fx-pulse", { scale: 1, opacity: 0.6 }, { scale: 1.3, opacity: 0, duration: 1.4, ease: "power2.out" }, 0.05);
+  }, { dependencies: [ad], scope: root });
+
+  // The main button is magnetic.
+  useGSAP(() => {
+    const b = goRef.current;
+    if (!b || calm()) return undefined;
+    const qx = gsap.quickTo(b, "x", { duration: 0.6, ease: "power3.out" }), qy = gsap.quickTo(b, "y", { duration: 0.6, ease: "power3.out" });
+    const move = (e) => { const r = b.getBoundingClientRect(); qx((e.clientX - (r.left + r.width / 2)) * 0.2); qy((e.clientY - (r.top + r.height / 2)) * 0.28); };
+    const leave = () => { qx(0); qy(0); };
+    b.addEventListener("pointermove", move); b.addEventListener("pointerleave", leave);
+    return () => { b.removeEventListener("pointermove", move); b.removeEventListener("pointerleave", leave); };
+  });
+
   const startDrag = (e) => { e.preventDefault(); dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
   const moveDrag = (e) => {
     if (!dragging.current || !frameRef.current) return;
@@ -575,143 +676,185 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     saveBlob(blob, `${tpl.id}-my-product.${blob.type.includes("png") ? "png" : "jpg"}`);
   };
 
-  const tone = review ? (review.score >= 75 ? "text-emerald-600" : review.score >= 55 ? "text-amber-600" : "text-rose-600") : "";
+  const scoreHex = review ? (review.score >= 75 ? "#059669" : review.score >= 55 ? "#d97706" : "#e11d48") : "#059669";
+  const pct = (v, lo, hi) => `${((v - lo) / (hi - lo)) * 100}%`;
+  const ideas = ["Make the background a gym", "Make it brighter", "Change the headline to Run further"];
 
   return (
     <Shell
+      studio
       title={inspired ? "Create a new ad inspired by this" : "Put my product in this ad"}
       sub={inspired ? `${tpl.title} · a brand new ad with your real product, in the mood of this one.` : `${tpl.title} · the same ad, one to one, with your real product in it.`}
-      icon={<Icon.Wand className="h-5 w-5" />} onClose={onClose}
+      icon={null} onClose={onClose}
       footer={
         <>
-          {busy && <span className="mr-auto text-xs font-medium text-slate-500">{busy} This can take up to a minute.</span>}
-          {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 hover:text-slate-800">Undo last change</button>}
-          {ad && <button onClick={download} disabled={!!busy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
-          <button id="make-go" onClick={generate} disabled={!photos.length || !!busy} className={primaryBtn}>
-            <Icon.Sparkle className="h-4 w-4" /> {busy ? "Working…" : ad ? "Make another version" : `Generate my ad · ${makeCost(premium)} credits`}
+          {busy && <span className="mr-auto inline-flex items-center gap-2.5 text-xs font-medium text-slate-500"><span className="sx-dot" />{busy} This can take up to a minute.</span>}
+          {!busy && !ad && !photos.length && <span className="mr-auto text-xs font-medium text-slate-400">Add a product photo to begin</span>}
+          {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 transition hover:text-slate-900">Undo last change</button>}
+          {ad && <button onClick={download} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
+          <button id="make-go" ref={goRef} onClick={generate} disabled={!photos.length || !!busy} className={`${primaryBtn} !px-7 !py-3 !text-[15px]`}>
+            {busy ? "Working…" : ad ? "Make another version" : `Generate my ad · ${makeCost(premium)} credits`}
           </button>
         </>
       }
     >
-      <div className="grid gap-6 md:grid-cols-[minmax(0,260px)_1fr]">
-        <div className="mx-auto w-full max-w-[260px]">
-          <div ref={frameRef} className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-200 shadow-sm">
-            <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition ${busy ? "opacity-50" : ""}`} />
-            {ad && logoOpen && shownLogo && (
-              <img
-                src={shownLogo.src} alt="Your logo, drag to move" draggable={false}
-                onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}
-                className="absolute z-10 cursor-move touch-none select-none ring-2 ring-blue-500/70"
-                style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: "translate(-50%, -50%)" }}
-              />
+      <div ref={root} className="grid md:min-h-[590px] md:grid-cols-[minmax(0,390px)_1fr]">
+        <div ref={stageRef} className="sx-stage px-8 pb-12 pt-14 md:px-10 md:pt-24">
+          <div className="fx-glow" aria-hidden="true"><span className="sx-blob sx-blob-a" /><span className="sx-blob sx-blob-b" /><span className="sx-blob sx-blob-c" /></div>
+          <div className="relative md:sticky md:top-8">
+            <div className="fx-ad relative mx-auto w-full max-w-[290px]">
+              <span className="fx-pulse sx-pulse" aria-hidden="true" />
+              <div ref={frameRef} className="sx-ad relative aspect-[4/5] w-full overflow-hidden">
+                <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition-[filter,opacity] duration-700 ${busy ? "opacity-60 blur-[3px]" : ""}`} />
+                {ad && logoOpen && shownLogo && (
+                  <img
+                    src={shownLogo.src} alt="Your logo, drag to move" draggable={false}
+                    onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}
+                    className="absolute z-10 cursor-move touch-none select-none outline-dashed outline-2 outline-offset-2 outline-white/90"
+                    style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: "translate(-50%, -50%)" }}
+                  />
+                )}
+                <span className="fx-flash pointer-events-none absolute inset-0 bg-white opacity-0" aria-hidden="true" />
+                {busy && <span ref={beamRef} className="sx-beam" aria-hidden="true" />}
+              </div>
+            </div>
+            {busy ? (
+              <div className="mx-auto mt-7 w-full max-w-[290px]">
+                <p key={ad ? "e" : phase} className="sx-phase text-center text-[12px] font-medium tracking-wide text-slate-600">{ad ? busy : PHASES[phase]}…</p>
+                <div className="sx-bar mt-3"><span ref={barRef} /></div>
+              </div>
+            ) : (
+              <p className="fx-cap mt-6 text-center text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                {ad ? "Your ad" : isVideo ? `${inspired ? "The inspiration" : "The look your ad will copy"} · first frame` : inspired ? "The inspiration" : "The look your ad will copy"}
+              </p>
             )}
-            {busy && <span className="absolute inset-0 grid place-items-center"><span className="h-8 w-8 animate-spin rounded-full border-[3px] border-white/60 border-t-blue-600" /></span>}
           </div>
-          <p className="mt-2 text-center text-[11px] text-slate-400">{ad ? "Your ad" : isVideo ? `${inspired ? "The inspiration" : "The look your ad will copy"} (first frame of the video)` : inspired ? "The inspiration" : "The look your ad will copy"}</p>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-5">
-          {err && <p role="alert" className="rounded-xl bg-rose-50 px-3.5 py-3 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{err}</p>}
+        <div className="flex min-w-0 flex-col px-8 pb-9 pt-9 md:px-12 md:pt-12">
+          <div className="fx-head pr-10">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">{inspired ? "New ad studio" : "Product studio"}</p>
+            <h2 className="mt-2 font-display text-[30px] font-extrabold leading-[1.05] tracking-[-0.035em] text-slate-950">{inspired ? "Create a new ad inspired by this" : "Put my product in this ad"}</h2>
+            <p className="mt-2.5 max-w-md text-[13.5px] leading-relaxed text-slate-500">{inspired ? "A brand new ad with your real product, in the mood of this one." : "The same ad, one to one, with your real product in it."}</p>
+          </div>
 
-          {!ad ? (
-            <>
-              <div>
-                <span className={lab}>1. Photos of your product <span className="font-normal text-slate-400">(1 to 3, plain background works best)</span></span>
-                <div className="flex flex-wrap gap-2.5">
-                  {photos.map((p, i) => (
-                    <span key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200 bg-white">
-                      <img src={p.src} alt={p.name} className="h-full w-full object-cover" />
-                      <button onClick={() => setPhotos((x) => x.filter((_, k) => k !== i))} aria-label={`Remove ${p.name}`} className="absolute right-1 top-1 rounded-full bg-white/90 p-1 text-slate-600 shadow hover:text-rose-600"><Icon.Close className="h-3 w-3" /></button>
-                    </span>
-                  ))}
-                  {photos.length < 3 && (
-                    <button
-                      type="button" id="make-upload" onClick={() => fileRef.current && fileRef.current.click()}
-                      onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); addPhotos(e.dataTransfer.files); }}
-                      className={`flex items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 text-left transition hover:border-blue-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/20 ${photos.length ? "h-20" : "w-full py-4"}`}
-                    >
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"><Icon.Upload className="h-5 w-5" /></span>
-                      {!photos.length && <span><span className="block text-sm font-semibold text-slate-900">Upload a product photo</span><span className="block text-xs text-slate-500">The ad will show this exact product: same shape, colour and logo.</span></span>}
-                    </button>
-                  )}
-                </div>
-                <input ref={fileRef} id="make-file" type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
-              </div>
-              <div>
-                <label htmlFor="make-headline" className={lab}>2. Headline on the image <span className="font-normal text-slate-400">(leave empty for no text)</span></label>
-                <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={field} placeholder="e.g. Made to move in" />
-              </div>
-              <div>
-                <label htmlFor="make-note" className={lab}>3. About your product <span className="font-normal text-slate-400">(optional, facts only. To change the ad, use "Change something" after it is made)</span></label>
-                <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={field} placeholder="e.g. a sticker with a silver logo, not a shirt" />
-              </div>
-              <label className="flex items-center gap-2.5 text-[13px] text-slate-600">
-                <input type="checkbox" checked={premium} onChange={(e) => setPremium(e.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-blue-600" />
-                Best quality <span className="text-slate-400">(slower, costs more to generate)</span>
-              </label>
-            </>
-          ) : (
-            <>
-              <div>
-                <label htmlFor="make-fix" className={lab}>Change something</label>
-                <div className="flex gap-2">
-                  <input id="make-fix" value={fix} onChange={(e) => setFix(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") edit(fix); }} maxLength={500} className={field} placeholder="e.g. make the background a gym · change the headline to Run further" />
-                  <button id="make-apply" onClick={() => edit(fix)} disabled={!fix.trim() || !!busy} className="shrink-0 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-300">Apply</button>
-                </div>
-                <p className="mt-1.5 text-xs text-slate-400">Only what you ask for changes. Your product stays as it is in your photos.</p>
-              </div>
+          <div ref={panelRef} className={`mt-8 flex flex-col ${ad ? "gap-7" : ""}`}>
+            {err && <p role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{err}</p>}
 
-              {!review ? (
-                <button id="make-check" onClick={check} disabled={!!busy} className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:opacity-50">
-                  <Icon.Stethoscope className="h-4 w-4" /> Score this ad before you run it
-                </button>
-              ) : (
-                <div id="make-review" className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-baseline gap-3">
-                    <span className={`text-3xl font-bold tabular-nums ${tone}`}>{review.score}</span>
-                    <p className="text-[13px] leading-snug text-slate-700">{review.verdict}</p>
+            {!ad ? (
+              <>
+                <Step n="01" done={photos.length > 0} title="Photos of your product" hint="1 to 3, plain background works best">
+                  <div className="flex flex-wrap gap-3">
+                    {photos.map((p, i) => (
+                      <span key={i} className="sx-thumb relative h-24 w-24 overflow-hidden rounded-xl">
+                        <img src={p.src} alt={p.name} className="h-full w-full object-cover" />
+                        <button onClick={() => setPhotos((x) => x.filter((_, k) => k !== i))} aria-label={`Remove ${p.name}`} className="absolute right-1.5 top-1.5 rounded-full bg-white/95 p-1 text-slate-700 shadow transition hover:text-rose-600"><Icon.Close className="h-3 w-3" /></button>
+                      </span>
+                    ))}
+                    {photos.length < 3 && (
+                      <button
+                        type="button" id="make-upload" onClick={() => fileRef.current && fileRef.current.click()}
+                        onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); addPhotos(e.dataTransfer.files); }}
+                        className={`sx-drop group flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/70 text-center focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/10 ${photos.length ? "h-24 w-24" : "w-full px-6 py-9"}`}
+                      >
+                        <Icon.Upload className="h-5 w-5 text-slate-900 transition duration-500 group-hover:-translate-y-0.5" />
+                        {!photos.length && <><span className="mt-3 block text-sm font-semibold text-slate-900">Drop a photo here, or <span className="underline decoration-slate-300 underline-offset-4 group-hover:decoration-slate-900">browse</span></span><span className="mt-1 block max-w-xs text-xs leading-snug text-slate-500">The ad will show this exact product: same shape, colour and logo.</span></>}
+                      </button>
+                    )}
                   </div>
-                  {review.strengths.length > 0 && <ul className="mt-3 space-y-1.5 text-[13px] text-slate-600">{review.strengths.map((s) => <li key={s} className="flex gap-2"><Icon.Check className="mt-1 h-3 w-3 shrink-0 text-emerald-600" /><span>{s}</span></li>)}</ul>}
-                  {review.fixes.length > 0 && <ul className="mt-2 space-y-1.5 text-[13px] text-slate-600">{review.fixes.map((s) => <li key={s} className="flex gap-2"><Icon.Alert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" /><span>{s}</span></li>)}</ul>}
-                  {review.regen && <button id="make-autofix" onClick={() => edit(review.regen)} disabled={!!busy} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"><Icon.Wand className="h-3.5 w-3.5" /> Apply these fixes</button>}
+                  <input ref={fileRef} id="make-file" type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
+                </Step>
+                <Step n="02" done={!!headline.trim()} title="Headline on the image" hint="Leave empty for no text" htmlFor="make-headline">
+                  <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={`${field} !rounded-xl !py-3`} placeholder="e.g. Made to move in" />
+                </Step>
+                <Step n="03" done={!!note.trim()} title="About your product" hint="Optional, facts only. To change the ad, use “Change something” after it is made" htmlFor="make-note">
+                  <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={`${field} !rounded-xl !py-3`} placeholder="e.g. a sticker with a silver logo, not a shirt" />
+                </Step>
+                <div className="sx-step flex items-center gap-4">
+                  <div className="min-w-0 flex-1 sm:pl-[34px]">
+                    <p className="text-sm font-semibold text-slate-950">Best quality</p>
+                    <p className="mt-0.5 text-xs text-slate-400">Slower, and costs more to generate.</p>
+                  </div>
+                  <Switch on={premium} onChange={setPremium} label="Best quality" />
                 </div>
-              )}
-              {!logoOpen ? (
-                <button id="make-logo" onClick={() => setLogoOpen(true)} disabled={!!busy} className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:opacity-50">
-                  <Icon.Image className="h-4 w-4" /> Add your logo
-                </button>
-              ) : (
-                <div id="make-logo-panel" className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
-                  <span className={lab}>Add your logo</span>
-                  <LogoDrop logo={logo} onLogo={setLogo} notify={notify} />
-                  {logo && (
-                    <>
-                      <p className="text-xs text-slate-500">Drag the logo on the image to put it anywhere.</p>
-                      <label className="flex items-start gap-2.5 text-[13px] text-slate-600">
-                        <input id="make-logo-cut" type="checkbox" checked={logoCut} onChange={(e) => setLogoCut(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 accent-blue-600" />
-                        <span>Remove the logo's background<span className="block text-xs text-slate-400">Plain backgrounds work best.</span></span>
-                      </label>
-                      {logoCut && (
-                        <div>
-                          <label htmlFor="make-logo-tol" className={lab}>Strength <span className="font-normal text-slate-400">(raise it if background is left, lower it if the logo gets eaten)</span></label>
-                          <input id="make-logo-tol" type="range" min="10" max="140" step="1" value={cutTol} onChange={(e) => setCutTol(+e.target.value)} className="w-full accent-blue-600" />
+              </>
+            ) : (
+              <>
+                <div>
+                  <label htmlFor="make-fix" className="mb-3 block text-[15px] font-semibold text-slate-950">Change something</label>
+                  <div className="sx-compose flex items-center gap-2 rounded-2xl p-1.5 pl-4">
+                    <input id="make-fix" value={fix} onChange={(e) => setFix(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") edit(fix); }} maxLength={500} className="min-w-0 flex-1 !border-0 !bg-transparent py-2 text-[15px] text-slate-900 outline-none !ring-0 !shadow-none placeholder:text-slate-400" placeholder="Make the background a gym…" />
+                    <button id="make-apply" onClick={() => edit(fix)} disabled={!fix.trim() || !!busy} className="shrink-0 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Apply</button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {ideas.map((s) => <button key={s} onClick={() => setFix(s)} className="sx-chip rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-600">{s}</button>)}
+                  </div>
+                  <p className="mt-3 text-xs text-slate-400">Only what you ask for changes. Your product stays as it is in your photos.</p>
+                </div>
+
+                {review && (
+                  <div id="make-review" className="sx-card rounded-2xl p-5">
+                    <div className="flex items-center gap-4">
+                      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(${scoreHex} ${review.score}%, #ece9e4 0)` }}>
+                        <span className="grid h-[56px] w-[56px] place-items-center rounded-full bg-white text-xl font-bold tabular-nums" style={{ color: scoreHex }}>{review.score}</span>
+                      </span>
+                      <p className="text-[13.5px] font-medium leading-snug text-slate-700">{review.verdict}</p>
+                    </div>
+                    {review.strengths.length > 0 && <ul className="mt-4 space-y-2 text-[13px] text-slate-600">{review.strengths.map((s) => <li key={s} className="flex gap-2.5"><Icon.Check className="mt-1 h-3 w-3 shrink-0 text-emerald-600" /><span>{s}</span></li>)}</ul>}
+                    {review.fixes.length > 0 && <ul className="mt-2.5 space-y-2 text-[13px] text-slate-600">{review.fixes.map((s) => <li key={s} className="flex gap-2.5"><Icon.Alert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" /><span>{s}</span></li>)}</ul>}
+                    {review.regen && <button id="make-autofix" onClick={() => edit(review.regen)} disabled={!!busy} className="mt-4 inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50">Apply these fixes</button>}
+                  </div>
+                )}
+
+                {(!review || !logoOpen) && (
+                  <div className="sx-actions">
+                    {!review && (
+                      <button id="make-check" onClick={check} disabled={!!busy} className="sx-action disabled:opacity-50">
+                        <span><b>Score this ad</b><small>Check it before you run it</small></span><i aria-hidden="true">→</i>
+                      </button>
+                    )}
+                    {!logoOpen && (
+                      <button id="make-logo" onClick={() => setLogoOpen(true)} disabled={!!busy} className="sx-action disabled:opacity-50">
+                        <span><b>Add your logo</b><small>Place it anywhere on the ad</small></span><i aria-hidden="true">→</i>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {logoOpen && (
+                  <div id="make-logo-panel" className="sx-card space-y-5 rounded-2xl p-5">
+                    <span className="block text-[15px] font-semibold text-slate-950">Add your logo</span>
+                    <LogoDrop logo={logo} onLogo={setLogo} notify={notify} quiet />
+                    {logo && (
+                      <>
+                        <p className="text-xs text-slate-500">Drag the logo on the image to put it anywhere.</p>
+                        <div className="flex items-center gap-4">
+                          <div className="min-w-0 flex-1"><p className="text-[13px] font-semibold text-slate-900">Remove the logo's background</p><p className="text-xs text-slate-400">Plain backgrounds work best.</p></div>
+                          <Switch id="make-logo-cut" on={logoCut} onChange={setLogoCut} label="Remove the logo's background" />
                         </div>
-                      )}
-                      <div>
-                        <label htmlFor="make-logo-size" className={lab}>Size <span className="font-normal text-slate-400">({Math.round(lp.s * 100)}% of the width)</span></label>
-                        <input id="make-logo-size" type="range" min="0.06" max="0.7" step="0.01" value={lp.s} onChange={(e) => setLp((p) => ({ ...p, s: +e.target.value }))} className="w-full accent-blue-600" />
-                      </div>
-                    </>
-                  )}
-                  <div className="sticky bottom-0 -mx-4 -mb-4 flex items-center gap-3 rounded-b-2xl border-t border-slate-100 bg-white px-4 py-3">
-                    <button id="make-logo-apply" onClick={applyLogo} disabled={!logo || !!busy} className={primaryBtn}>Add to my ad</button>
-                    <button onClick={() => { setLogoOpen(false); setLogo(null); setLogoCut(false); }} className="text-xs font-semibold text-slate-500 hover:text-slate-800">Cancel</button>
+                        {logoCut && (
+                          <div>
+                            <label htmlFor="make-logo-tol" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Strength<span className="sx-val">{cutTol}</span></label>
+                            <input id="make-logo-tol" type="range" min="10" max="140" step="1" value={cutTol} onChange={(e) => setCutTol(+e.target.value)} className="rng mt-2.5 w-full" style={{ "--p": pct(cutTol, 10, 140) }} />
+                            <p className="mt-1.5 text-xs text-slate-400">Raise it if background is left, lower it if the logo gets eaten.</p>
+                          </div>
+                        )}
+                        <div>
+                          <label htmlFor="make-logo-size" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Size<span className="sx-val">{Math.round(lp.s * 100)}%</span></label>
+                          <input id="make-logo-size" type="range" min="0.06" max="0.7" step="0.01" value={lp.s} onChange={(e) => setLp((p) => ({ ...p, s: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct(lp.s, 0.06, 0.7) }} />
+                        </div>
+                      </>
+                    )}
+                    <div className="sticky bottom-0 -mx-5 -mb-5 flex items-center gap-4 rounded-b-2xl border-t border-slate-100 bg-white/95 px-5 py-3.5 backdrop-blur">
+                      <button id="make-logo-apply" onClick={applyLogo} disabled={!logo || !!busy} className={primaryBtn}>Add to my ad</button>
+                      <button onClick={() => { setLogoOpen(false); setLogo(null); setLogoCut(false); }} className="text-xs font-semibold text-slate-500 transition hover:text-slate-900">Cancel</button>
+                    </div>
                   </div>
-                </div>
-              )}
-              <button onClick={() => { setPast([]); setAd(""); setReview(null); setLogoOpen(false); setLogo(null); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 hover:text-slate-800">← Change the photos or the headline</button>
-            </>
-          )}
+                )}
+                <button onClick={() => { setPast([]); setAd(""); setReview(null); setLogoOpen(false); setLogo(null); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 transition hover:text-slate-900">← Change the photos or the headline</button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </Shell>
