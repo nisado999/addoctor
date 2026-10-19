@@ -390,3 +390,9 @@ div.fixed:has(> [role="dialog"]) { animation: fade-in .25s ease-out backwards; -
 
 /* A disabled ink button reads as soft grey, not a faded black. */
 button.bg-slate-950:disabled { background-color: #e7e4de; background-image: none; color: #9a968f; opacity: 1; box-shadow: none; }
+
+/* Every popup shares the studio look: white header, quiet monochrome icon tile, plain close button. */
+.dlg-head { background: #fff; box-shadow: 0 1px 0 rgba(21, 20, 18, .07); }
+.dlg-icon { background: #f3f1ed; color: #151412; box-shadow: 0 0 0 1px rgba(21, 20, 18, .08); }
+.dlg-close, .sx-close { background: transparent; box-shadow: none; transition: background-color .3s var(--ease), color .3s var(--ease); }
+.dlg-close:hover, .sx-close:hover { background: #f3f1ed; transform: none; }

@@ -151,13 +151,13 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
                 <p className="text-xs font-semibold text-slate-500">Visual and angle</p>
                 <p className="mt-1.5 text-[13px] leading-snug text-slate-700">{data.visual}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {data.angle !== "Not shown" && <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">{data.angle}</span>}
+                  {data.angle !== "Not shown" && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-900 ring-1 ring-blue-100">{data.angle}</span>}
                   {data.tags.map((t) => <span key={t} className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{t}</span>)}
                 </div>
               </div>
 
-              <div className="mt-5 rounded-xl bg-blue-50/60 p-3.5 ring-1 ring-blue-100">
-                <p className="text-xs font-semibold text-blue-700">Why it may be working</p>
+              <div className="mt-5 rounded-xl bg-slate-100/60 p-3.5 ring-1 ring-blue-100">
+                <p className="text-xs font-semibold text-slate-900">Why it may be working</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-slate-700">{data.why}</p>
               </div>
             </>
@@ -253,7 +253,7 @@ function AdsChat({ ads, brand, onOpen }) {
                 {x.evidence.length > 0 && (
                   <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                     {x.evidence.map((id) => byId.get(id)).filter(Boolean).map((a) => (
-                      <button key={a.libId} onClick={() => onOpen(a)} title={a.headline} className="relative h-24 w-[76px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+                      <button key={a.libId} onClick={() => onOpen(a)} title={a.headline} className="relative h-24 w-[76px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
                         {a.img ? <img src={a.img} alt={a.headline} loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <span className="block p-1.5 text-left text-[11px] leading-tight text-slate-600">{a.headline}</span>}
                         {a.days !== null && a.days !== undefined && <span className="absolute bottom-1 left-1 rounded-full bg-white/90 px-1.5 text-[11px] font-semibold text-slate-700">{a.days}d</span>}
                       </button>
@@ -269,7 +269,7 @@ function AdsChat({ ads, brand, onOpen }) {
 
       {thread.length === 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {ASK_IDEAS.map((s) => <button key={s} onClick={() => { ask(s); const box = document.getElementById("spy-ask-input"); if (box) box.focus({ preventScroll: true }); }} disabled={busy} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-200 hover:text-blue-700 disabled:opacity-50">{s}</button>)}
+          {ASK_IDEAS.map((s) => <button key={s} onClick={() => { ask(s); const box = document.getElementById("spy-ask-input"); if (box) box.focus({ preventScroll: true }); }} disabled={busy} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 disabled:opacity-50">{s}</button>)}
         </div>
       )}
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); ask(q); }}>
@@ -317,7 +317,7 @@ function OrganicPosts({ brand, hint, onOpen }) {
   };
   const field = "h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10";
   const list = (st.posts || []).filter((p) => plat === "All" || p.platform === plat.toLowerCase());
-  const chip = (on) => "rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 " + (on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300");
+  const chip = (on) => "rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 " + (on ? "border-slate-300 bg-slate-100 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300");
 
   return (
     <section className="mt-10" id="spy-organic" aria-label="Organic posts">
@@ -396,7 +396,7 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
       if (r === "saved") track("creative_saved", { format: ad.format });
     } catch (e) { notify(e.message || "Couldn't save that ad. Try again."); }
   };
-  const chip = (on) => `rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${on ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`;
+  const chip = (on) => `rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${on ? "border-slate-300 bg-slate-100 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`;
   const withImg = ads.filter((x) => x.img).length;
 
   return (

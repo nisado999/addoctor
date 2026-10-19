@@ -204,9 +204,9 @@ function LogoDrop({ logo, onLogo, notify, quiet }) {
       <button
         type="button" onClick={() => fileRef.current && fileRef.current.click()}
         onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); take(e.dataTransfer.files[0]); }}
-        className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-left transition hover:border-blue-400 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20"
+        className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20"
       >
-        <span className={quiet ? "grid h-6 w-6 shrink-0 place-items-center text-slate-900" : "grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600"}><Icon.Upload className="h-5 w-5" /></span>
+        <span className={quiet ? "grid h-6 w-6 shrink-0 place-items-center text-slate-900" : "grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-900"}><Icon.Upload className="h-5 w-5" /></span>
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold text-slate-900">{logo ? logo.name : "Upload your logo"}</span>
           <span className="block text-xs text-slate-500">{logo ? "Click to choose a different file." : "PNG with a transparent background works best. It never leaves your browser."}</span>
@@ -276,7 +276,7 @@ function BrandModal({ tpl, onClose, notify }) {
             <span className={lab}>2. Position</span>
             <div className="grid grid-cols-3 gap-2" role="group" aria-label="Logo position">
               {SPOTS.map(([id, name]) => (
-                <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${spot === id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
+                <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${spot === id ? "border-slate-300 bg-slate-100 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
               ))}
             </div>
           </div>
@@ -359,7 +359,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
         {logo && stage !== "working" && <img src={logo.src} alt="Your logo" className="absolute" style={{ left: `${pv.x}%`, top: `${(pv.y / ((100 * 16) / 9)) * 100}%`, width: `${pv.lw}%` }} />}
         {stage === "working" && (
           <div className="absolute inset-0 grid place-items-center">
-            <span className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-sm font-semibold tabular-nums text-blue-700 shadow-lg">{Math.round(p * 100)}%</span>
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-sm font-semibold tabular-nums text-slate-900 shadow-lg">{Math.round(p * 100)}%</span>
           </div>
         )}
         {stage === "done" && <span className="absolute left-2.5 top-2.5 rounded-full bg-emerald-600/90 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-white">READY · 0:08</span>}
@@ -384,7 +384,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
         ) : (
           <>
             {busy !== null && logo && <span className="mr-auto text-xs font-medium tabular-nums text-slate-500">Preparing file… {Math.round(busy * 100)}%</span>}
-            <button onClick={() => setStage("form")} className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Change and regenerate</button>
+            <button onClick={() => setStage("form")} className="rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Change and regenerate</button>
             <button onClick={download} disabled={busy !== null} className={primaryBtn}><Icon.Download className="h-4 w-4" /> {busy !== null ? "Working…" : "Download video"}</button>
           </>
         )
@@ -414,7 +414,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
                 <span className={lab}>Logo position</span>
                 <div className="grid grid-cols-3 gap-2" role="group" aria-label="Logo position">
                   {SPOTS.map(([id, name]) => (
-                    <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${spot === id ? "border-blue-600 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
+                    <button key={id} onClick={() => setSpot(id)} aria-pressed={spot === id} className={`rounded-xl border px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${spot === id ? "border-slate-300 bg-slate-100 text-slate-900" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"}`}>{name}</button>
                   ))}
                 </div>
               </div>
@@ -451,7 +451,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
               <span className={lab}>Suggested caption</span>
               <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3.5">
                 <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700">{caption}</p>
-                <button onClick={copyCaption} aria-label="Copy caption" className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20"><Icon.Copy className="h-4 w-4" /></button>
+                <button onClick={copyCaption} aria-label="Copy caption" className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20"><Icon.Copy className="h-4 w-4" /></button>
               </div>
             </div>
             <div>

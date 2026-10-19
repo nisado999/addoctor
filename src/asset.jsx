@@ -288,7 +288,7 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
       <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400" id="ex-asset-label">Upload Ad Creative (Image or Video thumbnail)</p>
       <input ref={inputRef} id="ex-file" type="file" accept="image/*,video/*" className="sr-only" tabIndex={-1} aria-labelledby="ex-asset-label" onChange={(e) => { take(e.target.files[0]); e.target.value = ""; }} />
       {asset ? (
-        <div {...drag} className={`mt-2 flex items-center gap-4 rounded-2xl border-2 border-dashed bg-white p-3.5 transition ${over ? "border-blue-500 bg-blue-50/70" : "border-slate-200"}`}>
+        <div {...drag} className={`mt-2 flex items-center gap-4 rounded-2xl border-2 border-dashed bg-white p-3.5 transition ${over ? "border-slate-300 bg-slate-100/70" : "border-slate-200"}`}>
           <img src={asset.thumb} alt="Creative preview" className="h-20 w-16 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-slate-900">{asset.name}</p>
@@ -296,11 +296,11 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-slate-600">{asset.w}×{asset.h}</span>
               <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${ri.good ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>{ri.label}{ri.land ? " landscape" : ""}</span>
               {asset.kind === "video" && asset.dur ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium tabular-nums text-slate-600">{Math.round(asset.dur)}s video</span> : null}
-              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">{asset.sample ? "Sample creative" : "Your upload"}</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-900">{asset.sample ? "Sample creative" : "Your upload"}</span>
             </div>
           </div>
           <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
-            <button onClick={pick} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 disabled:cursor-wait disabled:text-slate-400 disabled:hover:bg-transparent">
+            <button onClick={pick} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-slate-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 disabled:cursor-wait disabled:text-slate-400 disabled:hover:bg-transparent">
               {busy ? <><Spinner className="h-3.5 w-3.5" /> Reading…</> : "Replace"}
             </button>
             <button onClick={onClear} className="rounded-full px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">Remove</button>
@@ -311,9 +311,9 @@ function AssetZone({ asset, busy, error, onFile, onClear }) {
           {...drag} role="button" tabIndex={0} onClick={pick}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), pick())}
           aria-describedby="ex-asset-label"
-          className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-7 text-center transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${over ? "border-blue-500 bg-blue-50/70" : "border-slate-300 bg-white hover:border-blue-400 hover:bg-blue-50/30"}`}
+          className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-7 text-center transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${over ? "border-slate-300 bg-slate-100/70" : "border-slate-300 bg-white hover:border-slate-300 hover:bg-slate-100/30"}`}
         >
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-600">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-slate-100 text-slate-900">
             {busy ? (
               <Spinner className="h-5 w-5" />
             ) : (

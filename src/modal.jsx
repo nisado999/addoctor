@@ -140,7 +140,7 @@ function Report({ input, r }) {
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-6">
+      <section className="rounded-2xl border border-blue-100 bg-slate-100/40 p-6">
         <div className="flex items-center gap-2.5">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-950 text-xs font-bold text-white">Rx</span>
           <h3 className="text-base font-semibold tracking-tight text-slate-900">The Doctor's Prescription</h3>
@@ -152,7 +152,7 @@ function Report({ input, r }) {
             <li key={h.text} className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <span className="text-[15px] font-semibold leading-snug text-slate-900">{h.text}</span>
               <span className="mt-3 flex items-center justify-between text-[11px]">
-                <span className="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-700">{h.tag}</span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-900">{h.tag}</span>
                 <span className="font-medium tabular-nums text-slate-400">{h.text.length}/40</span>
               </span>
             </li>
@@ -164,14 +164,14 @@ function Report({ input, r }) {
           {r.hooks.map((h) => (
             <li key={h.text} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-sm leading-relaxed text-slate-800">“{h.text}”</p>
-              <span className="mt-3 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">{h.tag}</span>
+              <span className="mt-3 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-900">{h.tag}</span>
             </li>
           ))}
         </ul>
 
         <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Visual layout recommendation</p>
         <div className="mt-2 flex gap-3.5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-600"><Icon.Layout className="h-[18px] w-[18px]" /></span>
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-900"><Icon.Layout className="h-[18px] w-[18px]" /></span>
           <p className="text-sm leading-relaxed text-slate-700">{r.layout}</p>
         </div>
 
@@ -203,7 +203,7 @@ function ScanView({ steps, step, template, asset }) {
             <span className="h-2 w-full rounded-full bg-slate-100" />
             <span className="h-2 w-11/12 rounded-full bg-slate-100" />
             <span className="h-2 w-4/5 rounded-full bg-slate-100" />
-            <span className="mt-auto h-8 w-24 rounded-full bg-blue-100" />
+            <span className="mt-auto h-8 w-24 rounded-full bg-slate-100" />
           </div>
         )}
         <span className="scan-line" />
@@ -212,7 +212,7 @@ function ScanView({ steps, step, template, asset }) {
       <div className="mt-4 h-1.5 w-64 max-w-full overflow-hidden rounded-full bg-slate-200"><i className="scan-fill block h-full rounded-full bg-slate-950" /></div>
       <ul className="mt-6 flex flex-wrap justify-center gap-2">
         {chips.map((s, i) => (
-          <li key={s} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${i <= step ? "border-blue-200 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-400"}`}>
+          <li key={s} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${i <= step ? "border-slate-300 bg-slate-100 text-slate-900" : "border-slate-200 bg-white text-slate-400"}`}>
             {i < step ? <Icon.Check className="h-3 w-3" /> : <span className={`h-1.5 w-1.5 rounded-full ${i === step ? "bg-slate-950" : "bg-slate-300"}`} />}
             {s}
           </li>
@@ -388,7 +388,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
                     <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{tpl.label}</p>
                     <p className="mt-1 text-base font-semibold text-slate-900">{tpl.title}</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{tpl.framework}</span>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-900">{tpl.framework}</span>
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{tpl.format}</span>
                     </div>
                     <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Why this converts</p>
@@ -414,7 +414,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
                       return (
                         <button
                           key={s.id} onClick={() => loadSample(s)} aria-pressed={on}
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${on ? "border-blue-600 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700"}`}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 ${on ? "border-slate-300 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-slate-400 hover:text-slate-900"}`}
                         >
                           <Icon.Bolt className="h-3.5 w-3.5" />
                           {s.label}
@@ -491,7 +491,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
               <button onClick={() => setStage("input")} className="mr-auto rounded-full px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
                 Edit ad
               </button>
-              <button onClick={doCopy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:text-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
+              <button onClick={doCopy} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-300 hover:text-slate-900 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
                 {copied ? <Icon.Check className="h-4 w-4 text-emerald-600" /> : <Icon.Copy className="h-4 w-4" />}
                 {copied ? "Copied" : "Copy Prescription"}
               </button>

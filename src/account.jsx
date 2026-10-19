@@ -105,7 +105,7 @@ function AuthModal({ onClose, notify }) {
 
             <p className="mt-4 text-center text-[13px] text-slate-500">
               {mode === "up" ? "Already have an account?" : "New to AdDoctor?"}{" "}
-              <button id="auth-switch" type="button" onClick={() => { setMode(mode === "up" ? "in" : "up"); setErr(""); }} className="font-semibold text-blue-600 hover:text-blue-700">{mode === "up" ? "Sign in" : "Create an account"}</button>
+              <button id="auth-switch" type="button" onClick={() => { setMode(mode === "up" ? "in" : "up"); setErr(""); }} className="font-semibold text-slate-900 hover:text-slate-900">{mode === "up" ? "Sign in" : "Create an account"}</button>
             </p>
             <p className="mt-3 text-center text-[11px] text-slate-400">By continuing you agree to how AdDoctor handles data. <a href="./privacy.html" className="underline hover:text-slate-600">Privacy</a></p>
           </>
