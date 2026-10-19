@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, useDeferredValue, Suspense } from "react";
 import { CATEGORIES, TEMPLATES } from "./data";
+import { ADDED } from "./addedDates.js";
+import { FEATURED_TOP, FEATURED_LAST } from "./featuredOrder.js";
 import { Icon, TemplateCard, TemplateGrid, Sidebar, BottomNav, holdClips } from "./ui";
 import { Bento } from "./bento.jsx";
 import SplitText from "./components/bits/SplitText/SplitText.jsx";
@@ -141,8 +143,18 @@ const FAVS_KEY = "addoctor.favs.v1";
 const CREDITS_KEY = "addoctor.credits.v1";
 const PER_DAY = 15; // free credits a day on this device
 const TEMPLATE_IDS = new Set(TEMPLATES.map((t) => t.id));
-const SORTS = [["featured", "Featured"], ["trending", "Trending first"], ["az", "A to Z"]];
-const QUICK = [["new", "New"], ["trending", "Trending"], ["video", "Video"], ["favs", "Favourites"]];
+const SORTS = [["featured", "Featured"], ["recent", "Recently added"], ["trending", "Trending first"], ["az", "A to Z"]];
+const QUICK = [["new", "Recently added"], ["trending", "Trending"], ["video", "Video"], ["favs", "Favourites"]];
+/* "Recently added" means the newest RECENT_N templates by upload time, so it stays useful after a big batch. */
+const addedAt = (t) => ADDED[t.id] || 0;
+const RECENT_N = 60;
+const RECENT_IDS = new Set([...TEMPLATES].sort((a, b) => addedAt(b) - addedAt(a)).slice(0, RECENT_N).map((t) => t.id));
+const TOP_RANK = new Map(FEATURED_TOP.map((id, i) => [id, i]));
+const LAST_SET = new Set(FEATURED_LAST);
+const featuredOrder = (arr) => {
+  const top = arr.filter((t) => TOP_RANK.has(t.id)).sort((a, b) => TOP_RANK.get(a.id) - TOP_RANK.get(b.id));
+  return [...top, ...arr.filter((t) => !TOP_RANK.has(t.id) && !LAST_SET.has(t.id)), ...arr.filter((t) => LAST_SET.has(t.id))];
+};
 // The words each template can be found by, worked out once rather than on every keystroke.
 const HAY = new Map(TEMPLATES.map((t) => [t.id, [
   t.title, t.label, t.category, t.niche, t.framework, t.format, t.headline, t.desc,
@@ -626,7 +638,7 @@ function App() {
   const s = dq.trim().toLowerCase();
   const words = useMemo(() => s.split(/\s+/).filter(Boolean), [s]);
   const passQuick = useCallback(
-    (t) => !quick || (quick === "new" ? !!t.isNew : quick === "trending" ? !!t.trending : quick === "video" ? t.type === "video" : favs.includes(t.id)),
+    (t) => !quick || (quick === "new" ? RECENT_IDS.has(t.id) : quick === "trending" ? !!t.trending : quick === "video" ? t.type === "video" : favs.includes(t.id)),
     [quick, favs]
   );
   const list = useMemo(() => {
@@ -640,7 +652,8 @@ function App() {
     });
     if (sort === "az") return [...out].sort((x, y) => x.title.localeCompare(y.title));
     if (sort === "trending") return [...out].sort((x, y) => (y.trending ? 1 : 0) - (x.trending ? 1 : 0));
-    return out;
+    if (sort === "recent") return [...out].sort((x, y) => addedAt(y) - addedAt(x));
+    return featuredOrder(out);
   }, [view, cat, words, sort, passQuick]);
   const catCounts = useMemo(() => {
     const m = { All: 0 };
