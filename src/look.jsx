@@ -106,22 +106,20 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
           )}
 
           <div className="fx-in mt-auto pt-8">
-            <div className="grid gap-3">
-              <button id="look-product" onClick={() => onProduct(tpl, "exact")} className="group relative flex min-h-[132px] flex-col justify-between rounded-2xl bg-slate-950 p-6 text-left text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white/45">One result</span>
-                <span className="mt-6 block pr-12">
-                  <span className="block text-[17px] font-semibold leading-snug tracking-[-0.01em]">Put my product in this ad</span>
-                  <span className="mt-2 block text-[13px] leading-relaxed text-white/65" style={{ textWrap: "pretty" }}>The same ad, one to one, with your real product swapped in.</span>
+            <div className="grid gap-2">
+              <button id="look-product" onClick={() => onProduct(tpl, "exact")} className="group flex items-center justify-between gap-4 rounded-xl bg-slate-950 px-5 py-4 text-left text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
+                <span>
+                  <span className="block text-[15px] font-semibold">Put my product in this ad</span>
+                  <span className="mt-0.5 block text-[12.5px] text-white/60">The same ad, one to one, with your product swapped in.</span>
                 </span>
-                <span aria-hidden="true" className="absolute right-6 top-6 grid h-9 w-9 place-items-center rounded-full bg-white/10 text-sm transition duration-500 group-hover:translate-x-0.5 group-hover:bg-white group-hover:text-slate-950">→</span>
+                <span aria-hidden="true" className="text-base transition group-hover:translate-x-0.5">→</span>
               </button>
-              <button id="look-inspired" onClick={() => onProduct(tpl, "inspired")} className="group relative flex min-h-[132px] flex-col justify-between rounded-2xl border border-slate-900/[.1] bg-white p-6 text-left text-slate-950 shadow-sm shadow-slate-900/[.03] transition hover:border-slate-900/25 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/15">
-                <span className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">3 options</span>
-                <span className="mt-6 block pr-12">
-                  <span className="block text-[17px] font-semibold leading-snug tracking-[-0.01em]">Create a new image inspired by it</span>
-                  <span className="mt-2 block text-[13px] leading-relaxed text-slate-500" style={{ textWrap: "pretty" }}>A brand new ad with your product, in the mood of this one. Pick the one you like.</span>
+              <button id="look-inspired" onClick={() => onProduct(tpl, "inspired")} className="group flex items-center justify-between gap-4 rounded-xl border border-slate-900/10 bg-white px-5 py-4 text-left text-slate-950 transition hover:border-slate-900/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/15">
+                <span>
+                  <span className="block text-[15px] font-semibold">Create a new image inspired by it</span>
+                  <span className="mt-0.5 block text-[12.5px] text-slate-500">A new ad with your product. You pick from 3 options.</span>
                 </span>
-                <span aria-hidden="true" className="absolute right-6 top-6 grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-sm text-slate-900 transition duration-500 group-hover:translate-x-0.5 group-hover:bg-slate-950 group-hover:text-white">→</span>
+                <span aria-hidden="true" className="text-base transition group-hover:translate-x-0.5">→</span>
               </button>
             </div>
 
