@@ -7,6 +7,7 @@ import { apiFetch } from "./api.js";
 import { makeCost } from "./billing.js";
 import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
+import { saveMyAd } from "./myads.jsx";
 
 gsap.registerPlugin(useGSAP);
 const calm = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -208,6 +209,19 @@ const TEXT_THEMES = [
   { id: "outline", name: "Outline", family: '"Arial Black", Impact, "Segoe UI", sans-serif', weight: 900, style: "normal", ink: "#ffffff", stroke: "#0b0b0f" },
   { id: "script", name: "Script", family: 'Georgia, "Times New Roman", serif', weight: 600, style: "italic", ink: "#ffffff", shadow: true },
 ];
+/* Fonts for the typed text. "theme" keeps the font of the style; the others replace it. All of them are installed on Windows and Mac. */
+const TEXT_FONTS = [
+  { id: "theme", name: "Style font", family: null },
+  { id: "sans", name: "Sans", family: '"Segoe UI", Arial, sans-serif', weight: 800, style: "normal" },
+  { id: "heavy", name: "Heavy", family: '"Arial Black", Arial, sans-serif', weight: 900, style: "normal" },
+  { id: "impact", name: "Impact", family: 'Impact, "Arial Narrow", sans-serif', weight: 400, style: "normal" },
+  { id: "condensed", name: "Condensed", family: '"Franklin Gothic Medium", "Arial Narrow", sans-serif', weight: 700, style: "normal" },
+  { id: "rounded", name: "Rounded", family: 'Verdana, "Trebuchet MS", sans-serif', weight: 800, style: "normal" },
+  { id: "serif", name: "Serif", family: 'Georgia, "Times New Roman", serif', weight: 700, style: "normal" },
+  { id: "elegant", name: "Elegant", family: '"Palatino Linotype", Palatino, "Book Antiqua", serif', weight: 600, style: "italic" },
+  { id: "mono", name: "Mono", family: '"Courier New", Courier, monospace', weight: 700, style: "normal" },
+  { id: "hand", name: "Handwritten", family: '"Segoe Script", cursive', weight: 700, style: "normal" },
+];
 const TEXT_MAX = 0.84;   // a line may take this share of the frame width at most
 const TEXT_LH = 1.2;     // line height
 const TEXT_PAD = 0.45;   // side padding of a boxed theme (top and bottom are 0.3)
@@ -256,6 +270,45 @@ function drawText(ctx, lines, theme, cx, cy, s, W) {
   ctx.shadowColor = "rgba(0,0,0,0)"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 }
 
+/* Curved text: every glyph sits on a gentle arc. Positions are shares of the frame width, centred on the text block. bend 0 is straight. */
+function arcGlyphs(lines, theme, s, bend) {
+  if (!lines.length) return { list: [], minX: 0, minY: 0, w: 0, h: 0 };
+  const A = 0.6 * s;
+  const list = [];
+  lines.forEach((line, row) => {
+    const chars = [...line];
+    const widths = chars.map((ch) => measureText(ch, theme) * s);
+    const total = widths.reduce((a, b) => a + b, 0);
+    const half = Math.max(total / 2, 1e-6);
+    const y0 = (row + 0.5 - lines.length / 2) * TEXT_LH * s;
+    let x = -total / 2;
+    chars.forEach((ch, j) => {
+      const cx = x + widths[j] / 2;
+      x += widths[j];
+      const u = cx / half;
+      list.push({ ch, x: cx, y: y0 - bend * A * (1 - u * u), a: (Math.atan((2 * bend * A * u) / half) * 180) / Math.PI });
+    });
+  });
+  const xs = list.map((g) => g.x), ys = list.map((g) => g.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  return { list, minX, minY, w: maxX - minX + s, h: maxY - minY + TEXT_LH * s };
+}
+
+/* Draws curved glyphs around (0, 0) of the canvas's current transform, sized as drawText sizes them. */
+function drawArc(ctx, glyphs, theme, s, W) {
+  const F = s * W;
+  ctx.font = `${theme.style} ${theme.weight} ${F}px ${theme.family}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = theme.ink; ctx.strokeStyle = theme.stroke || theme.ink; ctx.lineWidth = 0.16 * F; ctx.lineJoin = "round";
+  for (const g of glyphs) {
+    ctx.save();
+    ctx.translate(g.x * W, g.y * W); ctx.rotate((g.a * Math.PI) / 180);
+    if (theme.stroke) ctx.strokeText(g.ch, 0, 0);
+    ctx.fillText(g.ch, 0, 0);
+    ctx.restore();
+  }
+}
+
 /* The same look as drawText, for the live preview on the frame. The frame is a size container, so cqw is its width. */
 function textCss(theme, s) {
   return {
@@ -267,6 +320,20 @@ function textCss(theme, s) {
     background: theme.box, borderRadius: theme.box ? "0.22em" : undefined,
     padding: theme.box ? "0.3em 0.45em" : undefined,
   };
+}
+
+/* Handles on a placed logo or text: the four corners resize it, the dot above rotates it. They sit inside the rotated box, so they turn with it. */
+function Handles({ onHandle, onMove, onUp }) {
+  const corners = [[0, 0], [100, 0], [0, 100], [100, 100]];
+  const dot = "absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-slate-950 bg-white shadow-sm pointer-events-auto";
+  return (
+    <div className="pointer-events-none absolute inset-0" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      {corners.map(([x, y], i) => (
+        <span key={i} role="presentation" title="Drag to resize" onPointerDown={(e) => onHandle(e, "scale")} className={`${dot} cursor-nwse-resize`} style={{ left: `${x}%`, top: `${y}%` }} />
+      ))}
+      <span role="presentation" title="Drag to rotate" onPointerDown={(e) => onHandle(e, "rotate")} className={`${dot} cursor-grab`} style={{ left: "50%", top: "-24px" }} />
+    </div>
+  );
 }
 
 function LogoDrop({ logo, onLogo, notify, quiet }) {
@@ -581,7 +648,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   const [review, setReview] = useState(null);
   const [logo, setLogo] = useState(null);            // the logo being placed on the finished ad
   const [logoOpen, setLogoOpen] = useState(false);
-  const [lp, setLp] = useState({ x: 0.82, y: 0.9, s: 0.22 });   // logo centre and width, as shares of the frame
+  const [lp, setLp] = useState({ x: 0.82, y: 0.9, s: 0.22, r: 0 });   // logo centre and width, as shares of the frame, and its turn in degrees
   const fileRef = useRef(null);
   const ctrl = useRef(null);
   const frameRef = useRef(null);
@@ -601,11 +668,16 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   const [textOpen, setTextOpen] = useState(false);   // writing your own text on the finished ad
   const [textVal, setTextVal] = useState("");
   const [textTheme, setTextTheme] = useState("bold");
-  const [tp, setTp] = useState({ x: 0.5, y: 0.5, s: 0.09 });   // text centre and font size, as shares of the frame
+  const [textFont, setTextFont] = useState("theme");
+  const [tp, setTp] = useState({ x: 0.5, y: 0.5, s: 0.09, r: 0, bend: 0 });   // text centre and font size as shares of the frame, turn in degrees, curve from -1 to 1
   const tDrag = useRef(false);
+  const hDrag = useRef(null);   // an active resize or rotate handle
   const panelOpen = logoOpen || textOpen;
-  const tTheme = TEXT_THEMES.find((t) => t.id === textTheme) || TEXT_THEMES[0];
+  const tBase = TEXT_THEMES.find((t) => t.id === textTheme) || TEXT_THEMES[0];
+  const tFont = TEXT_FONTS.find((f) => f.id === textFont);
+  const tTheme = tFont && tFont.family ? { ...tBase, family: tFont.family, weight: tFont.weight, style: tFont.style } : tBase;
   const textLines = textOpen && textVal.trim() ? layoutText(textVal.trim(), tTheme, tp.s) : [];
+  const arc = tp.bend && textLines.length ? arcGlyphs(textLines, tTheme, tp.s, tp.bend) : null;
 
   /* ---- motion (GSAP). Scoped to this window and reverted on close; reduced-motion users get none of it. ---- */
   const root = useRef(null), panelRef = useRef(null), stageRef = useRef(null), beamRef = useRef(null), barRef = useRef(null), goRef = useRef(null);
@@ -699,7 +771,10 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(base, 0, 0);
       const lw = c.width * lp.s, lh = lw / shownLogo.ratio;
-      ctx.drawImage(shownLogo.img, c.width * lp.x - lw / 2, c.height * lp.y - lh / 2, lw, lh);
+      ctx.save();
+      ctx.translate(c.width * lp.x, c.height * lp.y); ctx.rotate(((lp.r || 0) * Math.PI) / 180);
+      ctx.drawImage(shownLogo.img, -lw / 2, -lh / 2, lw, lh);
+      ctx.restore();
       setPast((p) => [...p, ad].slice(-6));
       setAd(c.toDataURL("image/png"));
       setReview(null); setLogoOpen(false); setLogo(null); setLogoCut(false);
@@ -716,12 +791,26 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
       const ctx = c.getContext("2d");
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(base, 0, 0);
-      drawText(ctx, textLines, tTheme, c.width * tp.x, c.height * tp.y, tp.s, c.width);
+      ctx.save();
+      ctx.translate(c.width * tp.x, c.height * tp.y); ctx.rotate(((tp.r || 0) * Math.PI) / 180);
+      if (tp.bend) drawArc(ctx, arcGlyphs(textLines, tTheme, tp.s, tp.bend).list, tTheme, tp.s, c.width);
+      else drawText(ctx, textLines, tTheme, 0, 0, tp.s, c.width);
+      ctx.restore();
       setPast((p) => [...p, ad].slice(-6));
       setAd(c.toDataURL("image/png"));
       setReview(null); setTextOpen(false); setTextVal("");
       track("ad_text_added", { template_id: tpl.id, template_category: tpl.category, text_theme: tTheme.id });
     } catch (e) { notify("The text could not be added. Try again."); }
+  };
+
+  // Keeps the finished ad in the Vault, under My ads, so it can be downloaded again later.
+  const saveToVault = async () => {
+    if (!ad) return;
+    try {
+      await saveMyAd({ dataUrl: ad, title: tpl.title, category: tpl.category, templateId: tpl.id });
+      track("ad_saved_to_vault", { template_id: tpl.id, template_category: tpl.category });
+      notify("Saved to your Vault, under My ads");
+    } catch (e) { notify(e.message || "The ad could not be saved."); }
   };
 
   const startTextDrag = (e) => { e.preventDefault(); tDrag.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
@@ -731,6 +820,30 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     setTp((p) => ({ ...p, x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }));
   };
   const endTextDrag = () => { tDrag.current = false; };
+
+  /* Resize and rotate with the handles. The centre of the overlay stays put; a corner scales it by how far the pointer moves from the centre, the top dot turns it by the angle the pointer sweeps. */
+  const startHandle = (target, e, mode) => {
+    e.stopPropagation(); e.preventDefault();
+    const r = frameRef.current.getBoundingClientRect();
+    const st = target === "logo" ? lp : tp;
+    hDrag.current = { target, mode, p0: { x: e.clientX, y: e.clientY }, c: { x: r.left + st.x * r.width, y: r.top + st.y * r.height }, s0: st.s, r0: st.r || 0 };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const moveHandle = (e) => {
+    const d = hDrag.current;
+    if (!d) return;
+    const apply = (patch) => (d.target === "logo" ? setLp((p) => ({ ...p, ...patch })) : setTp((p) => ({ ...p, ...patch })));
+    if (d.mode === "rotate") {
+      const a0 = Math.atan2(d.p0.y - d.c.y, d.p0.x - d.c.x), a1 = Math.atan2(e.clientY - d.c.y, e.clientX - d.c.x);
+      const deg = d.r0 + ((a1 - a0) * 180) / Math.PI;
+      apply({ r: Math.round(((deg + 540) % 360) - 180) });
+    } else {
+      const d0 = Math.hypot(d.p0.x - d.c.x, d.p0.y - d.c.y) || 1, d1 = Math.hypot(e.clientX - d.c.x, e.clientY - d.c.y);
+      const [lo, hi] = d.target === "logo" ? [0.06, 0.7] : [0.03, 0.18];
+      apply({ s: Math.min(hi, Math.max(lo, (d.s0 * d1) / d0)) });
+    }
+  };
+  const endHandle = () => { hDrag.current = null; };
 
   const addPhotos = async (files) => {
     const ok = [...files].filter((f) => /^image\/(png|jpeg|webp)$/.test(f.type)).slice(0, 3 - photos.length);
@@ -828,6 +941,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
           {busy && <span className="mr-auto inline-flex items-center gap-2.5 text-xs font-medium text-slate-500"><span className="sx-dot" />{busy} This can take up to a minute.</span>}
           {!busy && !ad && !photos.length && <span className="mr-auto text-xs font-medium text-slate-400">Add a product photo to begin</span>}
           {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 transition hover:text-slate-900">Undo last change</button>}
+          {ad && <button onClick={saveToVault} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50">Save to Vault</button>}
           {ad && <button onClick={download} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
           <button id="make-go" ref={goRef} onClick={generate} disabled={!photos.length || !!busy} className={`${primaryBtn} !px-7 !py-3 !text-[15px]`}>
             {busy ? "Working…" : ad ? "Make another version" : inspired ? `Generate 3 options · ${VARIANTS * makeCost(premium)} credits` : `Generate my ad · ${makeCost(premium)} credits`}
@@ -844,34 +958,43 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
               <div ref={frameRef} className="sx-ad relative aspect-[4/5] w-full overflow-hidden" style={{ containerType: "inline-size" }}>
                 <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition-[filter,opacity] duration-700 ${busy ? "opacity-60 blur-[3px]" : ""}`} />
                 {ad && logoOpen && shownLogo && (
-                  <img
-                    src={shownLogo.src} alt="Your logo, drag to move" draggable={false}
-                    onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}
-                    className="absolute z-10 cursor-move touch-none select-none outline-dashed outline-2 outline-offset-2 outline-white/90"
-                    style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: "translate(-50%, -50%)" }}
-                  />
+                  <div className="absolute z-10" style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: `translate(-50%, -50%) rotate(${lp.r || 0}deg)` }}>
+                    <img
+                      src={shownLogo.src} alt="Your logo, drag to move" draggable={false}
+                      onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}
+                      className="block w-full cursor-move touch-none select-none outline-dashed outline-2 outline-offset-2 outline-white/90"
+                    />
+                    <Handles onHandle={(e, mode) => startHandle("logo", e, mode)} onMove={moveHandle} onUp={endHandle} />
+                  </div>
                 )}
-                {ad && textLines.length > 0 && (
+                {ad && textLines.length > 0 && arc && (
+                  <div
+                    onPointerDown={startTextDrag} onPointerMove={moveTextDrag} onPointerUp={endTextDrag} onPointerCancel={endTextDrag}
+                    title="Drag the text to move it"
+                    className="absolute z-10 cursor-move touch-none select-none outline-dashed outline-2 outline-offset-4 outline-white/90"
+                    style={{ left: `${tp.x * 100}%`, top: `${tp.y * 100}%`, width: `${arc.w * 100}cqw`, height: `${arc.h * 100}cqw`, transform: `translate(-50%, -50%) rotate(${tp.r || 0}deg)` }}
+                  >
+                    {arc.list.map((g, i) => (
+                      <span key={i} className="pointer-events-none absolute whitespace-pre" style={{ ...textCss(tTheme, tp.s), background: undefined, borderRadius: undefined, padding: undefined, lineHeight: 1, left: `${(g.x - arc.minX + tp.s / 2) * 100}cqw`, top: `${(g.y - arc.minY + (tp.s * TEXT_LH) / 2) * 100}cqw`, transform: `translate(-50%, -50%) rotate(${g.a}deg)` }}>{g.ch}</span>
+                    ))}
+                    <Handles onHandle={(e, mode) => startHandle("text", e, mode)} onMove={moveHandle} onUp={endHandle} />
+                  </div>
+                )}
+                {ad && textLines.length > 0 && !arc && (
                   <div
                     onPointerDown={startTextDrag} onPointerMove={moveTextDrag} onPointerUp={endTextDrag} onPointerCancel={endTextDrag}
                     title="Drag the text to move it"
                     className="absolute z-10 max-w-none cursor-move touch-none select-none outline-dashed outline-2 outline-offset-4 outline-white/90"
-                    style={{ ...textCss(tTheme, tp.s), left: `${tp.x * 100}%`, top: `${tp.y * 100}%`, transform: "translate(-50%, -50%)" }}
-                  >{textLines.join("\n")}</div>
+                    style={{ ...textCss(tTheme, tp.s), left: `${tp.x * 100}%`, top: `${tp.y * 100}%`, transform: `translate(-50%, -50%) rotate(${tp.r || 0}deg)` }}
+                  >
+                    {textLines.join("\n")}
+                    <Handles onHandle={(e, mode) => startHandle("text", e, mode)} onMove={moveHandle} onUp={endHandle} />
+                  </div>
                 )}
                 <span className="fx-flash pointer-events-none absolute inset-0 bg-white opacity-0" aria-hidden="true" />
                 {busy && <span ref={beamRef} className="sx-beam" aria-hidden="true" />}
               </div>
             </div>
-            {variants.length > 1 && !busy && (
-              <div className="mx-auto mt-6 flex w-full max-w-[290px] justify-center gap-3" role="group" aria-label="Pick one of the options">
-                {variants.map((v, i) => (
-                  <button key={i} onClick={() => pickVariant(v)} aria-pressed={ad === v} aria-label={`Option ${i + 1}`} className={`relative h-20 w-16 overflow-hidden rounded-xl ring-2 ring-offset-2 transition ${ad === v ? "ring-slate-950" : "ring-transparent hover:ring-slate-300"}`}>
-                    <img src={v} alt="" className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
             {variants.length > 1 && !busy && (
               <div className="mx-auto mt-6 flex w-full max-w-[290px] justify-center gap-3" role="group" aria-label="Pick one of the options">
                 {variants.map((v, i) => (
@@ -1011,6 +1134,10 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                           <label htmlFor="make-logo-size" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Size<span className="sx-val">{Math.round(lp.s * 100)}%</span></label>
                           <input id="make-logo-size" type="range" min="0.06" max="0.7" step="0.01" value={lp.s} onChange={(e) => setLp((p) => ({ ...p, s: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct(lp.s, 0.06, 0.7) }} />
                         </div>
+                        <div>
+                          <label htmlFor="make-logo-rot" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Rotate<span className="sx-val">{lp.r || 0}°</span></label>
+                          <input id="make-logo-rot" type="range" min="-180" max="180" step="1" value={lp.r || 0} onChange={(e) => setLp((p) => ({ ...p, r: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct((lp.r || 0) + 180, 0, 360) }} />
+                        </div>
                       </>
                     )}
                     <div className="sticky bottom-0 -mx-5 -mb-5 flex items-center gap-4 rounded-b-2xl border-t border-slate-100 bg-white/95 px-5 py-3.5 backdrop-blur">
@@ -1035,10 +1162,26 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                         ))}
                       </div>
                     </div>
-                    {textLines.length > 0 && <p className="text-xs text-slate-500">Drag the text on the image to put it anywhere.</p>}
+                    <div>
+                      <p className="mb-2.5 text-[13px] font-semibold text-slate-900">Font</p>
+                      <div className="flex flex-wrap gap-2">
+                        {TEXT_FONTS.map((f) => (
+                          <button key={f.id} onClick={() => setTextFont(f.id)} aria-pressed={textFont === f.id} style={{ fontFamily: f.family || undefined, fontWeight: f.weight, fontStyle: f.style }} className={`rounded-full px-3.5 py-1.5 text-xs transition ${textFont === f.id ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{f.name}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {textLines.length > 0 && <p className="text-xs text-slate-500">Drag the text on the image to put it anywhere. Drag its corners to resize and the dot above it to rotate.</p>}
                     <div>
                       <label htmlFor="make-text-size" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Size<span className="sx-val">{Math.round(tp.s * 100)}%</span></label>
                       <input id="make-text-size" type="range" min="0.03" max="0.18" step="0.005" value={tp.s} onChange={(e) => setTp((p) => ({ ...p, s: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct(tp.s, 0.03, 0.18) }} />
+                    </div>
+                    <div>
+                      <label htmlFor="make-text-curve" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Curve<span className="sx-val">{Math.round(tp.bend * 100)}</span></label>
+                      <input id="make-text-curve" type="range" min="-1" max="1" step="0.02" value={tp.bend} onChange={(e) => setTp((p) => ({ ...p, bend: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct(tp.bend, -1, 1) }} />
+                    </div>
+                    <div>
+                      <label htmlFor="make-text-rot" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Rotate<span className="sx-val">{tp.r || 0}°</span></label>
+                      <input id="make-text-rot" type="range" min="-180" max="180" step="1" value={tp.r || 0} onChange={(e) => setTp((p) => ({ ...p, r: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct((tp.r || 0) + 180, 0, 360) }} />
                     </div>
                     <div className="sticky bottom-0 -mx-5 -mb-5 flex items-center gap-4 rounded-b-2xl border-t border-slate-100 bg-white/95 px-5 py-3.5 backdrop-blur">
                       <button id="make-text-apply" onClick={applyText} disabled={!textLines.length || !!busy} className={primaryBtn}>Add to my ad</button>

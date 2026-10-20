@@ -12,6 +12,7 @@ import { useBilling } from "./billing.js";
 import { ErrorBoundary, lazyRetry } from "./boundary.jsx";
 import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
 import { SwipeView, useSwipe } from "./swipe.jsx";
+import { MyAdsView, useMyAds } from "./myads.jsx";
 import { CommandPalette } from "./palette.jsx";
 
 import { loadVault, sanitizeVault, loadFavs, loadCredits, saveCredits, writeJSON } from "./storage.js";
@@ -241,6 +242,7 @@ function App() {
   const [palette, setPalette] = useState(false);   // Ctrl/Cmd+K: jump to any page, action or template
   const [vaultTab, setVaultTab] = useState("reports");   // "reports" (examined ads) | "ads" (competitor ads saved from Spy)
   const swipeCount = useSwipe().length;
+  const myAds = useMyAds();
   const [exam, setExam] = useState(null); // null = closed, else init object
   const [examKey, setExamKey] = useState(0);
   const [cat, setCat] = useState("All");
@@ -914,7 +916,7 @@ function App() {
           ) : view === "vault" ? (
             <>
               <div className="mt-2 inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Saved items">
-                {[["reports", "Reports", vault.length], ["ads", "Competitor ads", swipeCount]].map(([id, label, count]) => (
+                {[["reports", "Reports", vault.length], ["mine", "My ads", myAds.length], ["ads", "Competitor ads", swipeCount]].map(([id, label, count]) => (
                   <button key={id} onClick={() => setVaultTab(id)} aria-pressed={vaultTab === id} className={`rounded-full px-4 py-1.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${vaultTab === id ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>{label}<span className="ml-1.5 tabular-nums text-slate-400">{count}</span></button>
                 ))}
               </div>
@@ -928,6 +930,8 @@ function App() {
                   onRemove={removeSaved}
                   onExamine={() => openExam({})}
                 />
+              ) : vaultTab === "mine" ? (
+                <MyAdsView query={q} />
               ) : (
                 <SwipeView query={q} onSpy={() => goto("spy")} />
               )}
