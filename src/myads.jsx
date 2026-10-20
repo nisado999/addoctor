@@ -69,7 +69,7 @@ export async function saveMyAd({ dataUrl, title, category, templateId }) {
 
 export const removeMyAd = (id) => commit(list.filter((x) => x.id !== id));
 
-export function MyAdsView({ query }) {
+export function MyAdsView({ query, onOpen }) {
   const all = useMyAds();
   const q = (query || "").trim().toLowerCase();
   const items = q ? all.filter((x) => [x.title, x.category].join(" ").toLowerCase().includes(q)) : all;
@@ -90,7 +90,12 @@ export function MyAdsView({ query }) {
       {items.map((x) => (
         <li key={x.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="relative aspect-[4/5] bg-slate-100">
-            {x.thumb ? <img src={x.thumb} alt={x.title || "Saved ad"} className="h-full w-full object-cover" loading="lazy" /> : <div className="grid h-full place-items-center px-6 text-center text-xs text-slate-400">The picture could not be kept</div>}
+            {x.thumb && onOpen ? (
+              <button onClick={() => onOpen(x)} aria-label={`Edit ${x.title || "saved ad"}`} className="group block h-full w-full focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-slate-900/25">
+                <img src={x.thumb} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.02]" loading="lazy" />
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/70 to-transparent px-4 pb-3 pt-10 text-left text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">Click to edit</span>
+              </button>
+            ) : x.thumb ? <img src={x.thumb} alt={x.title || "Saved ad"} className="h-full w-full object-cover" loading="lazy" /> : <div className="grid h-full place-items-center px-6 text-center text-xs text-slate-400">The picture could not be kept</div>}
           </div>
           <div className="flex flex-1 flex-col p-4">
             <p className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">{x.category || "Ad"}</p>

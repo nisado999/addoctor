@@ -931,7 +931,7 @@ function App() {
                   onExamine={() => openExam({})}
                 />
               ) : vaultTab === "mine" ? (
-                <MyAdsView query={q} />
+                <MyAdsView query={q} onOpen={(x) => { setLook(null); setProduct({ id: `saved-${x.id}`, title: x.title || "Saved ad", category: x.category || "", mode: "exact", editImage: x.thumb }); }} />
               ) : (
                 <SwipeView query={q} onSpy={() => goto("spy")} />
               )}
