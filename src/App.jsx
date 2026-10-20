@@ -972,7 +972,7 @@ function App() {
 
       {brand && <DialogSlot key={brand.id} label="brand" onClose={closeBrand}><BrandModal tpl={brand} onClose={closeBrand} notify={notify} /></DialogSlot>}
       {inspire && <DialogSlot key={inspire.id} label="inspire" onClose={closeInspire}><InspireModal tpl={inspire} onClose={closeInspire} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
-      {product && <DialogSlot key={product.id} label="product" onClose={closeProduct}><ProductModal tpl={product} onClose={closeProduct} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
+      {product && <DialogSlot key={product.id} label="product" onClose={closeProduct}><ProductModal tpl={product} onClose={closeProduct} onBack={() => { const { mode, ...back } = product; setProduct(null); setLook(back); }} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
       {studio && <DialogSlot key={studio.id} label="studio" onClose={closeStudio}><StudioModal tpl={studio} onClose={closeStudio} notify={notify} /></DialogSlot>}
       {authOpen && <DialogSlot key={authMode} label="auth" onClose={closeAuth}><AuthModal onClose={closeAuth} notify={notify} initialMode={authMode} /></DialogSlot>}
 

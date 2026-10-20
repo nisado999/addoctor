@@ -632,7 +632,7 @@ const readFile = (f) => new Promise((res, rej) => { const r = new FileReader(); 
 // apiFetch sends the visitor's sign-in token; a bare fetch here made the server treat signed-in users as anonymous.
 const makeCall = (path, body, signal) => apiFetch(path, { body, signal, timeout: 180000 });
 
-function ProductModal({ tpl, onClose, notify, onSpend }) {
+function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const inspired = tpl.mode === "inspired";          // a new ad in this mood, not a one-to-one copy
@@ -1019,6 +1019,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
 
         <div className="flex min-w-0 flex-col px-8 pb-9 pt-9 md:px-12 md:pt-12">
           <div className="fx-head pr-10">
+            {onBack && <button onClick={onBack} className="mb-4 text-xs font-semibold text-slate-500 transition hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 rounded">← Back to the template</button>}
             <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">{inspired ? "New ad studio" : "Product studio"}</p>
             <h2 className="mt-2 font-display text-[30px] font-extrabold leading-[1.05] tracking-[-0.035em] text-slate-950">{inspired ? "Create a new ad inspired by this" : "Put my product in this ad"}</h2>
             <p className="mt-2.5 max-w-md text-[13.5px] leading-relaxed text-slate-500">{inspired ? "A brand new ad with your real product, in the mood of this one." : "The same ad, one to one, with your real product in it."}</p>
