@@ -1005,7 +1005,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
           {busy && <span className="mr-auto inline-flex items-center gap-2.5 text-xs font-medium text-slate-500"><span className="sx-dot" />{busy} This can take up to a minute.</span>}
           {!busy && !ad && !photos.length && <span className="mr-auto text-xs font-medium text-slate-400">Add a product photo to begin</span>}
           {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 transition hover:text-slate-900">Undo last change</button>}
-          {ad && <button onClick={saveToVault} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50">Save to Vault</button>}
+          {ad && !editing && <button onClick={saveToVault} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50">Save to Vault</button>}
           {ad && <button onClick={download} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
           {!editing && (
             <button id="make-go" ref={goRef} onClick={generate} disabled={!photos.length || !!busy} className={`${primaryBtn} !px-7 !py-3 !text-[15px]`}>
@@ -1084,7 +1084,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
 
         <div className="flex min-w-0 flex-col px-8 pb-9 pt-9 md:px-12 md:pt-12">
           <div className="fx-head pr-10">
-            {onBack && <button onClick={onBack} className="mb-4 text-xs font-semibold text-slate-500 transition hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 rounded">← Back to the template</button>}
+            {onBack && !editing && <button onClick={onBack} className="mb-4 text-xs font-semibold text-slate-500 transition hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 rounded">← Back to the template</button>}
             <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">{inspired ? "New ad studio" : "Product studio"}</p>
             <h2 className="mt-2 font-display text-[30px] font-extrabold leading-[1.05] tracking-[-0.035em] text-slate-950">{editing ? tpl.title : inspired ? "Create a new ad inspired by this" : "Put my product in this ad"}</h2>
             <p className="mt-2.5 max-w-md text-[13.5px] leading-relaxed text-slate-500">{editing ? "Your saved ad. Add text or a logo, change it, then download or save it again." : inspired ? "A brand new ad with your real product, in the mood of this one." : "The same ad, one to one, with your real product in it."}</p>
