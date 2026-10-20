@@ -222,6 +222,30 @@ const TEXT_FONTS = [
   { id: "mono", name: "Mono", family: '"Courier New", Courier, monospace', weight: 700, style: "normal" },
   { id: "hand", name: "Handwritten", family: '"Segoe Script", cursive', weight: 700, style: "normal" },
 ];
+/* Colours for typed text: the letters, and the box behind them (the box can also be left off). */
+const TEXT_COLORS = ["#ffffff", "#0b0b0f", "#e11d48", "#f97316", "#facc15", "#22c55e", "#0ea5e9", "#8b5cf6"];
+/* Quick offers: one tap adds the line as a new text on the ad. */
+const TEXT_OFFERS = ["50% off", "Buy 1 get 1 free", "Free shipping", "Limited time", "Shop now", "New arrival"];
+/* One text on the ad. Its colour and box are optional: color null keeps the style's ink, box null keeps the style's box, box false has none. */
+let textSeq = 0;
+function newText(n, val = "") {
+  textSeq += 1;
+  return { id: `t${textSeq}`, val, theme: "bold", font: "theme", color: null, box: null, w: null, x: 0.5, y: 0.3 + 0.2 * (n % 4), s: 0.09, r: 0, bend: 0 };
+}
+/* The look of one text: its style, with the font, ink and box chosen for it on top. */
+function layerTheme(l) {
+  const base = TEXT_THEMES.find((t) => t.id === l.theme) || TEXT_THEMES[0];
+  const font = TEXT_FONTS.find((f) => f.id === l.font);
+  const t = font && font.family ? { ...base, family: font.family, weight: font.weight, style: font.style } : { ...base };
+  if (l.color) t.ink = l.color;
+  if (l.box === false) t.box = undefined;
+  else if (l.box) t.box = l.box;
+  return t;
+}
+/* The curved arrow the rotate dot shows, so it reads as a turn and not a grab. The dark stroke has a white edge, so it shows on any photo. */
+const ROTATE_SVG = "<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 26 26'><g fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M21 13a8 8 0 1 1-2.6-5.9' stroke='white' stroke-width='4.5'/><path d='M18.4 2.6v4.5h-4.5' stroke='white' stroke-width='4.5'/><path d='M21 13a8 8 0 1 1-2.6-5.9' stroke='black' stroke-width='2'/><path d='M18.4 2.6v4.5h-4.5' stroke='black' stroke-width='2'/></g></svg>";
+// Encoded, so the browser reads it as an image. The fallback is a crosshair, never a hand.
+const ROTATE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(ROTATE_SVG)}") 13 13, crosshair`;
 const TEXT_MAX = 0.84;   // a line may take this share of the frame width at most
 const TEXT_LH = 1.2;     // line height
 const TEXT_PAD = 0.45;   // side padding of a boxed theme (top and bottom are 0.3)
@@ -234,8 +258,8 @@ function measureText(text, theme) {
 }
 
 /* Breaks the text into lines: the user's own line breaks, plus a wrap where a line would get too wide. */
-function layoutText(text, theme, s) {
-  const room = TEXT_MAX / s - (theme.box ? 2 * TEXT_PAD : 0);
+function layoutText(text, theme, s, boxW) {
+  const room = (boxW || TEXT_MAX) / s - (theme.box ? 2 * TEXT_PAD : 0);
   const lines = [];
   for (const para of text.split("\n")) {
     let line = "";
@@ -250,12 +274,12 @@ function layoutText(text, theme, s) {
 }
 
 /* Draws the lines centred on (cx, cy) of a canvas that is W pixels wide. */
-function drawText(ctx, lines, theme, cx, cy, s, W) {
+function drawText(ctx, lines, theme, cx, cy, s, W, boxW) {
   const F = s * W, lh = TEXT_LH * F;
   const padX = theme.box ? TEXT_PAD * F : 0, padY = theme.box ? 0.3 * F : 0;
   ctx.font = `${theme.style} ${theme.weight} ${F}px ${theme.family}`;
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 2 * padX;
+  const w = boxW ? boxW * W : Math.max(...lines.map((l) => ctx.measureText(l).width)) + 2 * padX;   // a set width is the box the user stretched
   const h = lines.length * lh + 2 * padY;
   const top = cy - h / 2;
   if (theme.box) { ctx.fillStyle = theme.box; ctx.beginPath(); ctx.roundRect(cx - w / 2, top, w, h, 0.22 * F); ctx.fill(); }
@@ -310,8 +334,9 @@ function drawArc(ctx, glyphs, theme, s, W) {
 }
 
 /* The same look as drawText, for the live preview on the frame. The frame is a size container, so cqw is its width. */
-function textCss(theme, s) {
+function textCss(theme, s, boxW) {
   return {
+    width: boxW ? `${boxW * 100}cqw` : undefined, boxSizing: boxW ? "border-box" : undefined,
     fontFamily: theme.family, fontWeight: theme.weight, fontStyle: theme.style, fontSize: `${s * 100}cqw`,
     lineHeight: TEXT_LH, color: theme.ink, whiteSpace: "pre", textAlign: "center",
     textShadow: theme.shadow ? "0 0.05em 0.12em rgba(0,0,0,0.45)" : undefined,
@@ -323,15 +348,19 @@ function textCss(theme, s) {
 }
 
 /* Handles on a placed logo or text: the four corners resize it, the dot above rotates it. They sit inside the rotated box, so they turn with it. */
-function Handles({ onHandle, onMove, onUp }) {
+function Handles({ onHandle, onMove, onUp, wide }) {
   const corners = [[0, 0], [100, 0], [0, 100], [100, 100]];
+  const sides = [[0, 50], [100, 50]];
   const dot = "absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border-2 border-slate-950 bg-white shadow-sm pointer-events-auto";
   return (
     <div className="pointer-events-none absolute inset-0" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       {corners.map(([x, y], i) => (
         <span key={i} role="presentation" title="Drag to resize" onPointerDown={(e) => onHandle(e, "scale")} className={`${dot} cursor-nwse-resize`} style={{ left: `${x}%`, top: `${y}%` }} />
       ))}
-      <span role="presentation" title="Drag to rotate" onPointerDown={(e) => onHandle(e, "rotate")} className={`${dot} cursor-grab`} style={{ left: "50%", top: "-24px" }} />
+      {wide && sides.map(([x, y], i) => (
+        <span key={`w${i}`} role="presentation" title="Drag to make the box wider or narrower" onPointerDown={(e) => onHandle(e, "width")} className={`${dot} cursor-ew-resize`} style={{ left: `${x}%`, top: `${y}%` }} />
+      ))}
+      <span role="presentation" title="Drag to rotate" onPointerDown={(e) => onHandle(e, "rotate")} className={dot} style={{ left: "50%", top: "-24px", cursor: ROTATE_CURSOR }} />
     </div>
   );
 }
@@ -665,19 +694,36 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     return () => { off = true; };
   }, [logo, logoCut, cutTol]);
   const shownLogo = logoCut && cutLogo ? cutLogo : logo;
-  const [textOpen, setTextOpen] = useState(false);   // writing your own text on the finished ad
-  const [textVal, setTextVal] = useState("");
-  const [textTheme, setTextTheme] = useState("bold");
-  const [textFont, setTextFont] = useState("theme");
-  const [tp, setTp] = useState({ x: 0.5, y: 0.5, s: 0.09, r: 0, bend: 0 });   // text centre and font size as shares of the frame, turn in degrees, curve from -1 to 1
-  const tDrag = useRef(false);
-  const hDrag = useRef(null);   // an active resize or rotate handle
+  const [textOpen, setTextOpen] = useState(false);   // the text panel is open
+  const [texts, setTexts] = useState([]);            // the text layers on the ad, each with its own words and look
+  const [activeText, setActiveText] = useState(null); // the layer the panel edits
+  const [hov, setHov] = useState(null);              // the ad item under the pointer: "logo", a text id, or null. Only that one shows its frame and handles
+  const tDrag = useRef(null);                        // the text layer being dragged
+  const hDrag = useRef(null);                        // an active resize or rotate handle
   const panelOpen = logoOpen || textOpen;
-  const tBase = TEXT_THEMES.find((t) => t.id === textTheme) || TEXT_THEMES[0];
-  const tFont = TEXT_FONTS.find((f) => f.id === textFont);
-  const tTheme = tFont && tFont.family ? { ...tBase, family: tFont.family, weight: tFont.weight, style: tFont.style } : tBase;
-  const textLines = textOpen && textVal.trim() ? layoutText(textVal.trim(), tTheme, tp.s) : [];
-  const arc = tp.bend && textLines.length ? arcGlyphs(textLines, tTheme, tp.s, tp.bend) : null;
+  const cur = texts.find((t) => t.id === activeText) || texts[texts.length - 1] || null;
+  const curTheme = cur ? layerTheme(cur) : null;
+  const laid = textOpen ? texts.map((l) => {
+    const theme = layerTheme(l);
+    const lines = l.val.trim() ? layoutText(l.val.trim(), theme, l.s, l.bend ? 0 : l.w) : [];
+    return { l, theme, lines, arc: l.bend && lines.length ? arcGlyphs(lines, theme, l.s, l.bend) : null };
+  }) : [];
+  const patchText = (id, patch) => setTexts((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  const setCur = (patch) => { if (cur) patchText(cur.id, patch); };
+  const addText = (val = "") => {
+    const l = newText(texts.length, val);
+    setTexts((ls) => [...ls, l]); setActiveText(l.id); setTextOpen(true); setLogoOpen(false);
+  };
+  const openText = () => { if (texts.length) { setLogoOpen(false); setTextOpen(true); } else addText(); };
+  const closeText = () => { setTextOpen(false); setTexts([]); setActiveText(null); setHov(null); };
+  const removeCur = () => {
+    if (!cur) return;
+    const rest = texts.filter((l) => l.id !== cur.id);
+    setTexts(rest); setHov(null);
+    setActiveText(rest.length ? rest[rest.length - 1].id : null);
+    if (!rest.length) setTextOpen(false);
+  };
+
 
   /* ---- motion (GSAP). Scoped to this window and reverted on close; reduced-motion users get none of it. ---- */
   const root = useRef(null), panelRef = useRef(null), stageRef = useRef(null), beamRef = useRef(null), barRef = useRef(null), goRef = useRef(null);
@@ -754,7 +800,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     return () => { b.removeEventListener("pointermove", move); b.removeEventListener("pointerleave", leave); };
   });
 
-  const startDrag = (e) => { e.preventDefault(); dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
+  const startDrag = (e) => { e.stopPropagation(); e.preventDefault(); setHov("logo"); dragging.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
   const moveDrag = (e) => {
     if (!dragging.current || !frameRef.current) return;
     const r = frameRef.current.getBoundingClientRect();
@@ -782,65 +828,80 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     } catch (e) { notify("The logo could not be added. Try another file."); }
   };
 
-  const applyText = async () => {
-    if (!ad || !textLines.length) return;
-    try {
-      const base = await loadImage(ad);
-      const c = document.createElement("canvas");
-      c.width = base.naturalWidth; c.height = base.naturalHeight;
-      const ctx = c.getContext("2d");
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(base, 0, 0);
+  // Draws the typed text that is still in the panel into the image, so it becomes part of the photo. Returns the new image.
+  const commitText = async () => {
+    const ready = textOpen ? texts.filter((l) => l.val.trim()) : [];
+    if (!ad || !ready.length) return ad;
+    const base = await loadImage(ad);
+    const c = document.createElement("canvas");
+    c.width = base.naturalWidth; c.height = base.naturalHeight;
+    const ctx = c.getContext("2d");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(base, 0, 0);
+    for (const l of ready) {
+      const theme = layerTheme(l);
+      const lines = layoutText(l.val.trim(), theme, l.s, l.bend ? 0 : l.w);
       ctx.save();
-      ctx.translate(c.width * tp.x, c.height * tp.y); ctx.rotate(((tp.r || 0) * Math.PI) / 180);
-      if (tp.bend) drawArc(ctx, arcGlyphs(textLines, tTheme, tp.s, tp.bend).list, tTheme, tp.s, c.width);
-      else drawText(ctx, textLines, tTheme, 0, 0, tp.s, c.width);
+      ctx.translate(c.width * l.x, c.height * l.y); ctx.rotate(((l.r || 0) * Math.PI) / 180);
+      if (l.bend) drawArc(ctx, arcGlyphs(lines, theme, l.s, l.bend).list, theme, l.s, c.width);
+      else drawText(ctx, lines, theme, 0, 0, l.s, c.width, l.w);
       ctx.restore();
-      setPast((p) => [...p, ad].slice(-6));
-      setAd(c.toDataURL("image/png"));
-      setReview(null); setTextOpen(false); setTextVal("");
-      track("ad_text_added", { template_id: tpl.id, template_category: tpl.category, text_theme: tTheme.id });
-    } catch (e) { notify("The text could not be added. Try again."); }
+    }
+    const url = c.toDataURL("image/png");
+    setPast((p) => [...p, ad].slice(-6));
+    setAd(url); setReview(null); closeText();
+    track("ad_text_added", { template_id: tpl.id, template_category: tpl.category, text_layers: ready.length });
+    return url;
+  };
+  const applyText = async () => {
+    try { await commitText(); } catch (e) { notify("The text could not be added. Try again."); }
   };
 
-  // Keeps the finished ad in the Vault, under My ads, so it can be downloaded again later.
+  // Keeps the finished ad in the Vault, under My ads, so it can be downloaded again later. Text still in the panel goes in first.
   const saveToVault = async () => {
     if (!ad) return;
     try {
-      await saveMyAd({ dataUrl: ad, title: tpl.title, category: tpl.category, templateId: tpl.id });
+      const src = await commitText();
+      await saveMyAd({ dataUrl: src, title: tpl.title, category: tpl.category, templateId: tpl.id });
       track("ad_saved_to_vault", { template_id: tpl.id, template_category: tpl.category });
       notify("Saved to your Vault, under My ads");
     } catch (e) { notify(e.message || "The ad could not be saved."); }
   };
 
-  const startTextDrag = (e) => { e.preventDefault(); tDrag.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
+  const startTextDrag = (e, id) => { e.stopPropagation(); e.preventDefault(); tDrag.current = id; setHov(id); setActiveText(id); e.currentTarget.setPointerCapture(e.pointerId); };
   const moveTextDrag = (e) => {
     if (!tDrag.current || !frameRef.current) return;
     const r = frameRef.current.getBoundingClientRect();
-    setTp((p) => ({ ...p, x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }));
+    patchText(tDrag.current, { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) });
   };
-  const endTextDrag = () => { tDrag.current = false; };
+  const endTextDrag = () => { tDrag.current = null; };
 
   /* Resize and rotate with the handles. The centre of the overlay stays put; a corner scales it by how far the pointer moves from the centre, the top dot turns it by the angle the pointer sweeps. */
   const startHandle = (target, e, mode) => {
     e.stopPropagation(); e.preventDefault();
     const r = frameRef.current.getBoundingClientRect();
-    const st = target === "logo" ? lp : tp;
-    hDrag.current = { target, mode, p0: { x: e.clientX, y: e.clientY }, c: { x: r.left + st.x * r.width, y: r.top + st.y * r.height }, s0: st.s, r0: st.r || 0 };
+    const st = target === "logo" ? lp : texts.find((t) => t.id === target);
+    hDrag.current = { target, mode, p0: { x: e.clientX, y: e.clientY }, c: { x: r.left + st.x * r.width, y: r.top + st.y * r.height }, s0: st.s, r0: st.r || 0, w0: st.w || 0 };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const moveHandle = (e) => {
     const d = hDrag.current;
     if (!d) return;
-    const apply = (patch) => (d.target === "logo" ? setLp((p) => ({ ...p, ...patch })) : setTp((p) => ({ ...p, ...patch })));
+    const apply = (patch) => (d.target === "logo" ? setLp((p) => ({ ...p, ...patch })) : patchText(d.target, patch));
     if (d.mode === "rotate") {
       const a0 = Math.atan2(d.p0.y - d.c.y, d.p0.x - d.c.x), a1 = Math.atan2(e.clientY - d.c.y, e.clientX - d.c.x);
       const deg = d.r0 + ((a1 - a0) * 180) / Math.PI;
       apply({ r: Math.round(((deg + 540) % 360) - 180) });
+    } else if (d.mode === "width") {
+      // The side handles stretch the box from its centre: the distance from the centre to the pointer is half the width.
+      const r = frameRef.current.getBoundingClientRect();
+      apply({ w: Math.min(0.95, Math.max(0.08, (2 * Math.abs(e.clientX - d.c.x)) / r.width)) });
     } else {
       const d0 = Math.hypot(d.p0.x - d.c.x, d.p0.y - d.c.y) || 1, d1 = Math.hypot(e.clientX - d.c.x, e.clientY - d.c.y);
       const [lo, hi] = d.target === "logo" ? [0.06, 0.7] : [0.03, 0.18];
-      apply({ s: Math.min(hi, Math.max(lo, (d.s0 * d1) / d0)) });
+      const s = Math.min(hi, Math.max(lo, (d.s0 * d1) / d0));
+      // A text box that was stretched keeps its stretch in proportion to the text.
+      apply(d.w0 ? { s, w: Math.min(0.95, d.w0 * (s / d.s0)) } : { s });
     }
   };
   const endHandle = () => { hDrag.current = null; };
@@ -921,7 +982,9 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   };
 
   const download = async () => {
-    const blob = await (await fetch(ad)).blob();
+    let src = ad;
+    try { src = await commitText(); } catch (e) { notify("The text could not be added. Try again."); return; }   // text still in the panel goes into the photo first
+    const blob = await (await fetch(src)).blob();
     track("ad_downloaded", { template_id: tpl.id, template_category: tpl.category });
     saveBlob(blob, `${tpl.id}-my-product.${blob.type.includes("png") ? "png" : "jpg"}`);
   };
@@ -958,39 +1021,38 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
               <div ref={frameRef} className="sx-ad relative aspect-[4/5] w-full overflow-hidden" style={{ containerType: "inline-size" }}>
                 <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition-[filter,opacity] duration-700 ${busy ? "opacity-60 blur-[3px]" : ""}`} />
                 {ad && logoOpen && shownLogo && (
-                  <div className="absolute z-10" style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: `translate(-50%, -50%) rotate(${lp.r || 0}deg)` }}>
+                  <div className="absolute z-10" onPointerEnter={() => setHov("logo")} onPointerLeave={() => { if (!dragging.current) setHov(null); }} style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: `translate(-50%, -50%) rotate(${lp.r || 0}deg)` }}>
                     <img
                       src={shownLogo.src} alt="Your logo, drag to move" draggable={false}
                       onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}
-                      className="block w-full cursor-move touch-none select-none outline-dashed outline-2 outline-offset-2 outline-white/90"
+                      className="block w-full cursor-move touch-none select-none"
                     />
-                    <Handles onHandle={(e, mode) => startHandle("logo", e, mode)} onMove={moveHandle} onUp={endHandle} />
+                    {hov === "logo" && <span className="pointer-events-none absolute inset-0 outline-dashed outline-2 outline-offset-2 outline-white/90" />}
+                    {hov === "logo" && <Handles onHandle={(e, mode) => startHandle("logo", e, mode)} onMove={moveHandle} onUp={endHandle} />}
                   </div>
                 )}
-                {ad && textLines.length > 0 && arc && (
-                  <div
-                    onPointerDown={startTextDrag} onPointerMove={moveTextDrag} onPointerUp={endTextDrag} onPointerCancel={endTextDrag}
-                    title="Drag the text to move it"
-                    className="absolute z-10 cursor-move touch-none select-none outline-dashed outline-2 outline-offset-4 outline-white/90"
-                    style={{ left: `${tp.x * 100}%`, top: `${tp.y * 100}%`, width: `${arc.w * 100}cqw`, height: `${arc.h * 100}cqw`, transform: `translate(-50%, -50%) rotate(${tp.r || 0}deg)` }}
-                  >
-                    {arc.list.map((g, i) => (
-                      <span key={i} className="pointer-events-none absolute whitespace-pre" style={{ ...textCss(tTheme, tp.s), background: undefined, borderRadius: undefined, padding: undefined, lineHeight: 1, left: `${(g.x - arc.minX + tp.s / 2) * 100}cqw`, top: `${(g.y - arc.minY + (tp.s * TEXT_LH) / 2) * 100}cqw`, transform: `translate(-50%, -50%) rotate(${g.a}deg)` }}>{g.ch}</span>
-                    ))}
-                    <Handles onHandle={(e, mode) => startHandle("text", e, mode)} onMove={moveHandle} onUp={endHandle} />
-                  </div>
-                )}
-                {ad && textLines.length > 0 && !arc && (
-                  <div
-                    onPointerDown={startTextDrag} onPointerMove={moveTextDrag} onPointerUp={endTextDrag} onPointerCancel={endTextDrag}
-                    title="Drag the text to move it"
-                    className="absolute z-10 max-w-none cursor-move touch-none select-none outline-dashed outline-2 outline-offset-4 outline-white/90"
-                    style={{ ...textCss(tTheme, tp.s), left: `${tp.x * 100}%`, top: `${tp.y * 100}%`, transform: `translate(-50%, -50%) rotate(${tp.r || 0}deg)` }}
-                  >
-                    {textLines.join("\n")}
-                    <Handles onHandle={(e, mode) => startHandle("text", e, mode)} onMove={moveHandle} onUp={endHandle} />
-                  </div>
-                )}
+                {ad && laid.map(({ l, theme, lines, arc }) => {
+                  if (!lines.length) return null;
+                  const on = hov === l.id;
+                  const pos = { left: `${l.x * 100}%`, top: `${l.y * 100}%`, transform: `translate(-50%, -50%) rotate(${l.r || 0}deg)` };
+                  const drag = { onPointerDown: (e) => startTextDrag(e, l.id), onPointerMove: moveTextDrag, onPointerUp: endTextDrag, onPointerCancel: endTextDrag, onPointerEnter: () => setHov(l.id), onPointerLeave: () => { if (!tDrag.current) setHov(null); } };
+                  // The frame and handles show only while the pointer is on this text, so nothing is left on the ad after you click away.
+                  const frame = on ? "outline-dashed outline-2 outline-offset-4 outline-white/90" : "";
+                  if (arc) return (
+                    <div key={l.id} {...drag} title="Drag the text to move it" className={`absolute z-10 cursor-move touch-none select-none ${frame}`} style={{ ...pos, width: `${arc.w * 100}cqw`, height: `${arc.h * 100}cqw` }}>
+                      {arc.list.map((g, i) => (
+                        <span key={i} className="pointer-events-none absolute whitespace-pre" style={{ ...textCss(theme, l.s), background: undefined, borderRadius: undefined, padding: undefined, lineHeight: 1, left: `${(g.x - arc.minX + l.s / 2) * 100}cqw`, top: `${(g.y - arc.minY + (l.s * TEXT_LH) / 2) * 100}cqw`, transform: `translate(-50%, -50%) rotate(${g.a}deg)` }}>{g.ch}</span>
+                      ))}
+                      {on && <Handles onHandle={(e, mode) => startHandle(l.id, e, mode)} onMove={moveHandle} onUp={endHandle} />}
+                    </div>
+                  );
+                  return (
+                    <div key={l.id} {...drag} title="Drag the text to move it" className={`absolute z-10 max-w-none cursor-move touch-none select-none ${frame}`} style={{ ...textCss(theme, l.s, l.w), ...pos }}>
+                      {lines.join("\n")}
+                      {on && <Handles wide onHandle={(e, mode) => startHandle(l.id, e, mode)} onMove={moveHandle} onUp={endHandle} />}
+                    </div>
+                  );
+                })}
                 <span className="fx-flash pointer-events-none absolute inset-0 bg-white opacity-0" aria-hidden="true" />
                 {busy && <span ref={beamRef} className="sx-beam" aria-hidden="true" />}
               </div>
@@ -1106,7 +1168,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                       </button>
                     )}
                     {!panelOpen && (
-                      <button id="make-text" onClick={() => { setLogoOpen(false); setTextOpen(true); }} disabled={!!busy} className="sx-action disabled:opacity-50">
+                      <button id="make-text" onClick={openText} disabled={!!busy} className="sx-action disabled:opacity-50">
                         <span><b>Write your own text</b><small>Typed exactly as you write it, no AI</small></span><i aria-hidden="true">→</i>
                       </button>
                     )}
@@ -1147,19 +1209,37 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                     </div>
                   </div>
                 )}
-                {textOpen && (
+                {textOpen && cur && (
                   <div id="make-text-panel" className="sx-card space-y-5 rounded-2xl p-5">
-                    <span className="block text-[15px] font-semibold text-slate-950">Write your own text</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[15px] font-semibold text-slate-950">Your text</span>
+                      <button onClick={() => addText()} className="text-xs font-semibold text-slate-900 transition hover:text-slate-600">+ Add another text</button>
+                    </div>
+                    {texts.length > 1 && (
+                      <div className="flex flex-wrap gap-2" role="group" aria-label="Texts on the ad">
+                        {texts.map((l, i) => (
+                          <button key={l.id} onClick={() => setActiveText(l.id)} aria-pressed={cur.id === l.id} className={`max-w-[10rem] truncate rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${cur.id === l.id ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{l.val.trim() ? l.val.trim() : `Text ${i + 1}`}</button>
+                        ))}
+                      </div>
+                    )}
                     <div>
-                      <label htmlFor="make-text-input" className="mb-2.5 block text-[13px] font-semibold text-slate-900">Your text</label>
-                      <textarea id="make-text-input" rows={3} value={textVal} onChange={(e) => setTextVal(e.target.value)} maxLength={160} className={`${field} !rounded-xl !py-3`} placeholder="e.g. 50% off this weekend only" />
+                      <label htmlFor="make-text-input" className="mb-2.5 block text-[13px] font-semibold text-slate-900">The words</label>
+                      <textarea id="make-text-input" rows={3} value={cur.val} onChange={(e) => setCur({ val: e.target.value })} maxLength={160} className={`${field} !rounded-xl !py-3`} placeholder="e.g. 50% off this weekend only" />
                       <p className="mt-1.5 text-xs text-slate-400">Press Enter for a new line. The AI does not change these words.</p>
+                    </div>
+                    <div>
+                      <p className="mb-2.5 text-[13px] font-semibold text-slate-900">Quick offers</p>
+                      <div className="flex flex-wrap gap-2">
+                        {TEXT_OFFERS.map((o) => (
+                          <button key={o} onClick={() => addText(o)} className="sx-chip rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-slate-950">{o}</button>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <p className="mb-2.5 text-[13px] font-semibold text-slate-900">Style</p>
                       <div className="flex flex-wrap gap-2">
                         {TEXT_THEMES.map((t) => (
-                          <button key={t.id} onClick={() => setTextTheme(t.id)} aria-pressed={textTheme === t.id} className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${textTheme === t.id ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{t.name}</button>
+                          <button key={t.id} onClick={() => setCur({ theme: t.id })} aria-pressed={cur.theme === t.id} className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${cur.theme === t.id ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{t.name}</button>
                         ))}
                       </div>
                     </div>
@@ -1167,30 +1247,51 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                       <p className="mb-2.5 text-[13px] font-semibold text-slate-900">Font</p>
                       <div className="flex flex-wrap gap-2">
                         {TEXT_FONTS.map((f) => (
-                          <button key={f.id} onClick={() => setTextFont(f.id)} aria-pressed={textFont === f.id} style={{ fontFamily: f.family || undefined, fontWeight: f.weight, fontStyle: f.style }} className={`rounded-full px-3.5 py-1.5 text-xs transition ${textFont === f.id ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{f.name}</button>
+                          <button key={f.id} onClick={() => setCur({ font: f.id })} aria-pressed={cur.font === f.id} style={{ fontFamily: f.family || undefined, fontWeight: f.weight, fontStyle: f.style }} className={`rounded-full px-3.5 py-1.5 text-xs transition ${cur.font === f.id ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{f.name}</button>
                         ))}
                       </div>
                     </div>
-                    {textLines.length > 0 && <p className="text-xs text-slate-500">Drag the text on the image to put it anywhere. Drag its corners to resize and the dot above it to rotate.</p>}
                     <div>
-                      <label htmlFor="make-text-size" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Size<span className="sx-val">{Math.round(tp.s * 100)}%</span></label>
-                      <input id="make-text-size" type="range" min="0.03" max="0.18" step="0.005" value={tp.s} onChange={(e) => setTp((p) => ({ ...p, s: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct(tp.s, 0.03, 0.18) }} />
+                      <p className="mb-2.5 text-[13px] font-semibold text-slate-900">Colour</p>
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        {TEXT_COLORS.map((c) => (
+                          <button key={c} onClick={() => setCur({ color: c })} aria-label={`Text colour ${c}`} aria-pressed={cur.color === c} style={{ background: c }} className={`h-7 w-7 rounded-full border border-slate-200 ring-2 ring-offset-2 transition ${cur.color === c ? "ring-slate-950" : "ring-transparent hover:ring-slate-300"}`} />
+                        ))}
+                        <input type="color" aria-label="Your own text colour" value={cur.color || curTheme.ink} onChange={(e) => setCur({ color: e.target.value })} className="h-7 w-7 cursor-pointer rounded-full border-0 bg-transparent p-0" />
+                      </div>
                     </div>
                     <div>
-                      <label htmlFor="make-text-curve" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Curve<span className="sx-val">{Math.round(tp.bend * 100)}</span></label>
-                      <input id="make-text-curve" type="range" min="-1" max="1" step="0.02" value={tp.bend} onChange={(e) => setTp((p) => ({ ...p, bend: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct(tp.bend, -1, 1) }} />
+                      <p className="mb-2.5 text-[13px] font-semibold text-slate-900">Background</p>
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <button onClick={() => setCur({ box: false })} aria-pressed={cur.box === false} className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${cur.box === false ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>None</button>
+                        {TEXT_COLORS.map((c) => (
+                          <button key={c} onClick={() => setCur({ box: c })} aria-label={`Background colour ${c}`} aria-pressed={cur.box === c} style={{ background: c }} className={`h-7 w-7 rounded-full border border-slate-200 ring-2 ring-offset-2 transition ${cur.box === c ? "ring-slate-950" : "ring-transparent hover:ring-slate-300"}`} />
+                        ))}
+                        <input type="color" aria-label="Your own background colour" value={typeof cur.box === "string" ? cur.box : curTheme.box || "#e11d48"} onChange={(e) => setCur({ box: e.target.value })} className="h-7 w-7 cursor-pointer rounded-full border-0 bg-transparent p-0" />
+                      </div>
+                    </div>
+                    {cur.val.trim() && <p className="text-xs text-slate-500">Drag the text on the image to put it anywhere. Drag its corners to resize, its sides to make the box longer or shorter, and the curved arrow above it to rotate.</p>}
+                    {cur.w && <button onClick={() => setCur({ w: null })} className="text-xs font-semibold text-slate-500 transition hover:text-slate-900">Fit the box to the text</button>}
+                    <div>
+                      <label htmlFor="make-text-size" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Size<span className="sx-val">{Math.round(cur.s * 100)}%</span></label>
+                      <input id="make-text-size" type="range" min="0.03" max="0.18" step="0.005" value={cur.s} onChange={(e) => setCur({ s: +e.target.value })} className="rng mt-2.5 w-full" style={{ "--p": pct(cur.s, 0.03, 0.18) }} />
                     </div>
                     <div>
-                      <label htmlFor="make-text-rot" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Rotate<span className="sx-val">{tp.r || 0}°</span></label>
-                      <input id="make-text-rot" type="range" min="-180" max="180" step="1" value={tp.r || 0} onChange={(e) => setTp((p) => ({ ...p, r: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct((tp.r || 0) + 180, 0, 360) }} />
+                      <label htmlFor="make-text-curve" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Curve<span className="sx-val">{Math.round(cur.bend * 100)}</span></label>
+                      <input id="make-text-curve" type="range" min="-1" max="1" step="0.02" value={cur.bend} onChange={(e) => setCur({ bend: +e.target.value })} className="rng mt-2.5 w-full" style={{ "--p": pct(cur.bend, -1, 1) }} />
                     </div>
+                    <div>
+                      <label htmlFor="make-text-rot" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Rotate<span className="sx-val">{cur.r || 0}°</span></label>
+                      <input id="make-text-rot" type="range" min="-180" max="180" step="1" value={cur.r || 0} onChange={(e) => setCur({ r: +e.target.value })} className="rng mt-2.5 w-full" style={{ "--p": pct((cur.r || 0) + 180, 0, 360) }} />
+                    </div>
+                    <button onClick={removeCur} className="text-xs font-semibold text-rose-600 transition hover:text-rose-700">Remove this text</button>
                     <div className="sticky bottom-0 -mx-5 -mb-5 flex items-center gap-4 rounded-b-2xl border-t border-slate-100 bg-white/95 px-5 py-3.5 backdrop-blur">
-                      <button id="make-text-apply" onClick={applyText} disabled={!textLines.length || !!busy} className={primaryBtn}>Add to my ad</button>
-                      <button onClick={() => { setTextOpen(false); setTextVal(""); }} className="text-xs font-semibold text-slate-500 transition hover:text-slate-900">Cancel</button>
+                      <button id="make-text-apply" onClick={applyText} disabled={!texts.some((l) => l.val.trim()) || !!busy} className={primaryBtn}>Add to my ad</button>
+                      <button onClick={closeText} className="text-xs font-semibold text-slate-500 transition hover:text-slate-900">Cancel</button>
                     </div>
                   </div>
                 )}
-                <button onClick={() => { setPast([]); setAd(""); setReview(null); setLogoOpen(false); setLogo(null); setTextOpen(false); setTextVal(""); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 transition hover:text-slate-900">← Change the photos or the headline</button>
+                <button onClick={() => { setPast([]); setAd(""); setReview(null); setLogoOpen(false); setLogo(null); closeText(); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 transition hover:text-slate-900">← Change the photos or the headline</button>
               </>
             )}
           </div>
