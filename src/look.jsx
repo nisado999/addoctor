@@ -106,15 +106,18 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
           )}
 
           <div className="fx-in mt-auto pt-8">
-            <button id="look-product" onClick={() => onProduct(tpl, "exact")} className="group inline-flex items-center gap-2.5 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
-              Put my product in this ad <span aria-hidden="true" className="transition duration-500 group-hover:translate-x-1">→</span>
-            </button>
-            <p className="mt-2.5 max-w-sm text-xs leading-snug text-slate-400">The same ad, one to one, with your real product swapped in. Then edit it and score it.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button id="look-product" onClick={() => onProduct(tpl, "exact")} className="group flex flex-col items-start rounded-2xl bg-slate-950 p-5 text-left text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
+                <span className="text-[15px] font-semibold">Put my product in this ad <span aria-hidden="true" className="inline-block transition duration-500 group-hover:translate-x-1">→</span></span>
+                <span className="mt-1.5 text-xs leading-snug text-white/70">The same ad, one to one, with your real product swapped in. One result.</span>
+              </button>
+              <button id="look-inspired" onClick={() => onProduct(tpl, "inspired")} className="group flex flex-col items-start rounded-2xl border border-slate-900/[.12] bg-white p-5 text-left text-slate-950 transition hover:border-slate-900/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/15">
+                <span className="text-[15px] font-semibold">Create a new image inspired by it <span aria-hidden="true" className="inline-block transition duration-500 group-hover:translate-x-1">→</span></span>
+                <span className="mt-1.5 text-xs leading-snug text-slate-500">A brand new ad with your product, in the mood of this one. You get 3 options to pick from.</span>
+              </button>
+            </div>
 
             <div className="sx-actions mt-6">
-              <button id="look-inspired" onClick={() => onProduct(tpl, "inspired")} className="sx-action">
-                <span><b>Create a new image inspired by it</b><small>A brand new ad with your product, in the mood and style of this one, not a copy.</small></span><i aria-hidden="true">→</i>
-              </button>
               {isVideo && (
                 <button onClick={() => onInspire(tpl)} className="sx-action">
                   <span><b>Make a new one inspired by it</b><small>A new video in this style with your brand, product and logo.</small></span><i aria-hidden="true">→</i>

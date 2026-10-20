@@ -196,6 +196,79 @@ async function cutBackground(logo, tol) {
   return { ...logo, src, img, ratio: w / h };
 }
 
+/* ------------------------------ Write my own text ------------------------------ */
+
+/* Typed text, drawn as it is written. Sizes are in font sizes (em) and shares of the frame width, so the live preview
+   and the export use the same numbers. */
+const TEXT_THEMES = [
+  { id: "bold", name: "Bold", family: '"Arial Black", Impact, "Segoe UI", sans-serif', weight: 900, style: "normal", ink: "#ffffff", shadow: true },
+  { id: "ink", name: "Ink", family: '"Segoe UI", Arial, sans-serif', weight: 800, style: "normal", ink: "#0b0b0f" },
+  { id: "tag", name: "Tag", family: '"Segoe UI", Arial, sans-serif', weight: 800, style: "normal", ink: "#0b0b0f", box: "#ffffff" },
+  { id: "red", name: "Red", family: '"Arial Black", Impact, "Segoe UI", sans-serif', weight: 900, style: "normal", ink: "#ffffff", box: "#e11d48" },
+  { id: "outline", name: "Outline", family: '"Arial Black", Impact, "Segoe UI", sans-serif', weight: 900, style: "normal", ink: "#ffffff", stroke: "#0b0b0f" },
+  { id: "script", name: "Script", family: 'Georgia, "Times New Roman", serif', weight: 600, style: "italic", ink: "#ffffff", shadow: true },
+];
+const TEXT_MAX = 0.84;   // a line may take this share of the frame width at most
+const TEXT_LH = 1.2;     // line height
+const TEXT_PAD = 0.45;   // side padding of a boxed theme (top and bottom are 0.3)
+let measurer = null;
+
+function measureText(text, theme) {
+  if (!measurer) measurer = document.createElement("canvas").getContext("2d");
+  measurer.font = `${theme.style} ${theme.weight} 1000px ${theme.family}`;
+  return measurer.measureText(text).width / 1000;
+}
+
+/* Breaks the text into lines: the user's own line breaks, plus a wrap where a line would get too wide. */
+function layoutText(text, theme, s) {
+  const room = TEXT_MAX / s - (theme.box ? 2 * TEXT_PAD : 0);
+  const lines = [];
+  for (const para of text.split("\n")) {
+    let line = "";
+    for (const word of para.split(" ")) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && measureText(next, theme) > room) { lines.push(line); line = word; }
+      else line = next;
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+/* Draws the lines centred on (cx, cy) of a canvas that is W pixels wide. */
+function drawText(ctx, lines, theme, cx, cy, s, W) {
+  const F = s * W, lh = TEXT_LH * F;
+  const padX = theme.box ? TEXT_PAD * F : 0, padY = theme.box ? 0.3 * F : 0;
+  ctx.font = `${theme.style} ${theme.weight} ${F}px ${theme.family}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const w = Math.max(...lines.map((l) => ctx.measureText(l).width)) + 2 * padX;
+  const h = lines.length * lh + 2 * padY;
+  const top = cy - h / 2;
+  if (theme.box) { ctx.fillStyle = theme.box; ctx.beginPath(); ctx.roundRect(cx - w / 2, top, w, h, 0.22 * F); ctx.fill(); }
+  ctx.fillStyle = theme.ink;
+  ctx.strokeStyle = theme.stroke || theme.ink; ctx.lineWidth = 0.16 * F; ctx.lineJoin = "round";
+  if (theme.shadow) { ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 0.12 * F; ctx.shadowOffsetY = 0.05 * F; }
+  lines.forEach((l, i) => {
+    const y = top + padY + (i + 0.5) * lh;
+    if (theme.stroke) ctx.strokeText(l, cx, y);
+    ctx.fillText(l, cx, y);
+  });
+  ctx.shadowColor = "rgba(0,0,0,0)"; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+}
+
+/* The same look as drawText, for the live preview on the frame. The frame is a size container, so cqw is its width. */
+function textCss(theme, s) {
+  return {
+    fontFamily: theme.family, fontWeight: theme.weight, fontStyle: theme.style, fontSize: `${s * 100}cqw`,
+    lineHeight: TEXT_LH, color: theme.ink, whiteSpace: "pre", textAlign: "center",
+    textShadow: theme.shadow ? "0 0.05em 0.12em rgba(0,0,0,0.45)" : undefined,
+    WebkitTextStroke: theme.stroke ? `0.16em ${theme.stroke}` : undefined,
+    paintOrder: theme.stroke ? "stroke fill" : undefined,
+    background: theme.box, borderRadius: theme.box ? "0.22em" : undefined,
+    padding: theme.box ? "0.3em 0.45em" : undefined,
+  };
+}
+
 function LogoDrop({ logo, onLogo, notify, quiet }) {
   const fileRef = useRef(null);
   const take = async (file) => { const l = await readLogo(file, notify); if (l) onLogo(l); };
@@ -516,6 +589,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
   const [logoCut, setLogoCut] = useState(false);     // remove the logo's background
   const [cutTol, setCutTol] = useState(45);
   const [cutLogo, setCutLogo] = useState(null);
+  const [variants, setVariants] = useState([]);       // the inspired options from the last run, shown to pick from
   useEffect(() => () => { if (ctrl.current) ctrl.current.abort(); }, []);
   useEffect(() => {
     let off = false;
@@ -524,6 +598,14 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     return () => { off = true; };
   }, [logo, logoCut, cutTol]);
   const shownLogo = logoCut && cutLogo ? cutLogo : logo;
+  const [textOpen, setTextOpen] = useState(false);   // writing your own text on the finished ad
+  const [textVal, setTextVal] = useState("");
+  const [textTheme, setTextTheme] = useState("bold");
+  const [tp, setTp] = useState({ x: 0.5, y: 0.5, s: 0.09 });   // text centre and font size, as shares of the frame
+  const tDrag = useRef(false);
+  const panelOpen = logoOpen || textOpen;
+  const tTheme = TEXT_THEMES.find((t) => t.id === textTheme) || TEXT_THEMES[0];
+  const textLines = textOpen && textVal.trim() ? layoutText(textVal.trim(), tTheme, tp.s) : [];
 
   /* ---- motion (GSAP). Scoped to this window and reverted on close; reduced-motion users get none of it. ---- */
   const root = useRef(null), panelRef = useRef(null), stageRef = useRef(null), beamRef = useRef(null), barRef = useRef(null), goRef = useRef(null);
@@ -559,7 +641,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     const el = frameRef.current, st = stageRef.current;
     if (!el || !st) return undefined;
     gsap.set(el, { transformPerspective: 1000 });
-    if (calm() || logoOpen) { gsap.to(el, { rotationX: 0, rotationY: 0, duration: 0.6, ease: "power3.out" }); return undefined; }
+    if (calm() || panelOpen) { gsap.to(el, { rotationX: 0, rotationY: 0, duration: 0.6, ease: "power3.out" }); return undefined; }
     const rx = gsap.quickTo(el, "rotationX", { duration: 0.9, ease: "power3.out" });
     const ry = gsap.quickTo(el, "rotationY", { duration: 0.9, ease: "power3.out" });
     const move = (e) => {
@@ -570,7 +652,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     const leave = () => { rx(0); ry(0); };
     st.addEventListener("pointermove", move); st.addEventListener("pointerleave", leave);
     return () => { st.removeEventListener("pointermove", move); st.removeEventListener("pointerleave", leave); };
-  }, { dependencies: [logoOpen], scope: root });
+  }, { dependencies: [panelOpen], scope: root });
 
   // While working: a thin light scans the ad and a progress line creeps along.
   useGSAP(() => {
@@ -625,6 +707,31 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
     } catch (e) { notify("The logo could not be added. Try another file."); }
   };
 
+  const applyText = async () => {
+    if (!ad || !textLines.length) return;
+    try {
+      const base = await loadImage(ad);
+      const c = document.createElement("canvas");
+      c.width = base.naturalWidth; c.height = base.naturalHeight;
+      const ctx = c.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(base, 0, 0);
+      drawText(ctx, textLines, tTheme, c.width * tp.x, c.height * tp.y, tp.s, c.width);
+      setPast((p) => [...p, ad].slice(-6));
+      setAd(c.toDataURL("image/png"));
+      setReview(null); setTextOpen(false); setTextVal("");
+      track("ad_text_added", { template_id: tpl.id, template_category: tpl.category, text_theme: tTheme.id });
+    } catch (e) { notify("The text could not be added. Try again."); }
+  };
+
+  const startTextDrag = (e) => { e.preventDefault(); tDrag.current = true; e.currentTarget.setPointerCapture(e.pointerId); };
+  const moveTextDrag = (e) => {
+    if (!tDrag.current || !frameRef.current) return;
+    const r = frameRef.current.getBoundingClientRect();
+    setTp((p) => ({ ...p, x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }));
+  };
+  const endTextDrag = () => { tDrag.current = false; };
+
   const addPhotos = async (files) => {
     const ok = [...files].filter((f) => /^image\/(png|jpeg|webp)$/.test(f.type)).slice(0, 3 - photos.length);
     if (!ok.length) { notify("Use PNG, JPG or WEBP photos."); return; }
@@ -653,10 +760,40 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
 
   const generate = async () => {
     const template = await shrinkPhoto(TEMPLATE_IMGS[tpl.id], 1000);
-    run(inspired ? "Creating a new ad around your product…" : "Putting your product into the photo…", { template, about: tpl.desc || "", note: note.trim(), keepText: headline.trim() === (tpl.headline || "").trim() }, true);
+    const body = { template, about: tpl.desc || "", note: note.trim(), keepText: headline.trim() === (tpl.headline || "").trim() };
+    if (inspired) return generateVariants(body);
+    run("Putting your product into the photo…", body, true);
   };
   const edit = async (text) => { const t = (text || "").trim(); if (t && ad && !busy) run("Applying your change…", { base: await shrinkPhoto(ad, 1600, 0.92), fix: t }, true); };
   const undo = () => { if (!past.length || busy) return; setAd(past[past.length - 1]); setPast((p) => p.slice(0, -1)); setReview(null); };
+
+  /* Inspired ads come in three options. Each option is its own request, so each one is charged, and the credits shown
+     on the button are the total for all three. Only the options that came back are charged. */
+  const VARIANTS = 3;
+  const generateVariants = async (body) => {
+    if (busy) return;
+    if (!SPY_API) { setErr("This needs the AdDoctor server. Open the published page, not the preview."); return; }
+    const c = new AbortController();
+    ctrl.current = c;
+    setBusy("Creating 3 new ads around your product…"); setErr("");
+    const one = () => makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: "inspired", ...body }, c.signal);
+    try {
+      const res = await Promise.allSettled(Array.from({ length: VARIANTS }, one));
+      const got = res.filter((r) => r.status === "fulfilled").map((r) => `data:${r.value.mime};base64,${r.value.data}`);
+      if (!got.length) throw res[0].reason || new Error("Something went wrong. Try again.");
+      if (ad) setPast((p) => [...p, ad].slice(-6));
+      setVariants(got); setAd(got[0]);
+      setReview(null); setFix("");
+      track("ad_generated", { template_id: tpl.id, template_category: tpl.category, quality: premium ? "premium" : "standard", product_photos: photos.length, has_headline: !!headline.trim(), options: got.length });
+      if (onSpend) onSpend(makeCost(premium) * got.length);
+    } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
+    setBusy("");
+  };
+  const pickVariant = (v) => {
+    if (v === ad || busy) return;
+    setPast((p) => [...p, ad].slice(-6));
+    setAd(v); setReview(null);
+  };
 
   const check = async () => {
     if (busy || !ad) return;
@@ -693,7 +830,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
           {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 transition hover:text-slate-900">Undo last change</button>}
           {ad && <button onClick={download} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
           <button id="make-go" ref={goRef} onClick={generate} disabled={!photos.length || !!busy} className={`${primaryBtn} !px-7 !py-3 !text-[15px]`}>
-            {busy ? "Working…" : ad ? "Make another version" : `Generate my ad · ${makeCost(premium)} credits`}
+            {busy ? "Working…" : ad ? "Make another version" : inspired ? `Generate 3 options · ${VARIANTS * makeCost(premium)} credits` : `Generate my ad · ${makeCost(premium)} credits`}
           </button>
         </>
       }
@@ -704,7 +841,7 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
           <div className="relative md:sticky md:top-8">
             <div className="fx-ad relative mx-auto w-full max-w-[290px]">
               <span className="fx-pulse sx-pulse" aria-hidden="true" />
-              <div ref={frameRef} className="sx-ad relative aspect-[4/5] w-full overflow-hidden">
+              <div ref={frameRef} className="sx-ad relative aspect-[4/5] w-full overflow-hidden" style={{ containerType: "inline-size" }}>
                 <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition-[filter,opacity] duration-700 ${busy ? "opacity-60 blur-[3px]" : ""}`} />
                 {ad && logoOpen && shownLogo && (
                   <img
@@ -714,10 +851,36 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                     style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: "translate(-50%, -50%)" }}
                   />
                 )}
+                {ad && textLines.length > 0 && (
+                  <div
+                    onPointerDown={startTextDrag} onPointerMove={moveTextDrag} onPointerUp={endTextDrag} onPointerCancel={endTextDrag}
+                    title="Drag the text to move it"
+                    className="absolute z-10 max-w-none cursor-move touch-none select-none outline-dashed outline-2 outline-offset-4 outline-white/90"
+                    style={{ ...textCss(tTheme, tp.s), left: `${tp.x * 100}%`, top: `${tp.y * 100}%`, transform: "translate(-50%, -50%)" }}
+                  >{textLines.join("\n")}</div>
+                )}
                 <span className="fx-flash pointer-events-none absolute inset-0 bg-white opacity-0" aria-hidden="true" />
                 {busy && <span ref={beamRef} className="sx-beam" aria-hidden="true" />}
               </div>
             </div>
+            {variants.length > 1 && !busy && (
+              <div className="mx-auto mt-6 flex w-full max-w-[290px] justify-center gap-3" role="group" aria-label="Pick one of the options">
+                {variants.map((v, i) => (
+                  <button key={i} onClick={() => pickVariant(v)} aria-pressed={ad === v} aria-label={`Option ${i + 1}`} className={`relative h-20 w-16 overflow-hidden rounded-xl ring-2 ring-offset-2 transition ${ad === v ? "ring-slate-950" : "ring-transparent hover:ring-slate-300"}`}>
+                    <img src={v} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {variants.length > 1 && !busy && (
+              <div className="mx-auto mt-6 flex w-full max-w-[290px] justify-center gap-3" role="group" aria-label="Pick one of the options">
+                {variants.map((v, i) => (
+                  <button key={i} onClick={() => pickVariant(v)} aria-pressed={ad === v} aria-label={`Option ${i + 1}`} className={`relative h-20 w-16 overflow-hidden rounded-xl ring-2 ring-offset-2 transition ${ad === v ? "ring-slate-950" : "ring-transparent hover:ring-slate-300"}`}>
+                    <img src={v} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
             {busy ? (
               <div className="mx-auto mt-7 w-full max-w-[290px]">
                 <p key={ad ? "e" : phase} className="sx-phase text-center text-[12px] font-medium tracking-wide text-slate-600">{ad ? busy : PHASES[phase]}…</p>
@@ -806,16 +969,21 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                   </div>
                 )}
 
-                {(!review || !logoOpen) && (
+                {(!review || !panelOpen) && (
                   <div className="sx-actions">
                     {!review && (
                       <button id="make-check" onClick={check} disabled={!!busy} className="sx-action disabled:opacity-50">
                         <span><b>Score this ad</b><small>Check it before you run it</small></span><i aria-hidden="true">→</i>
                       </button>
                     )}
-                    {!logoOpen && (
-                      <button id="make-logo" onClick={() => setLogoOpen(true)} disabled={!!busy} className="sx-action disabled:opacity-50">
+                    {!panelOpen && (
+                      <button id="make-logo" onClick={() => { setTextOpen(false); setLogoOpen(true); }} disabled={!!busy} className="sx-action disabled:opacity-50">
                         <span><b>Add your logo</b><small>Place it anywhere on the ad</small></span><i aria-hidden="true">→</i>
+                      </button>
+                    )}
+                    {!panelOpen && (
+                      <button id="make-text" onClick={() => { setLogoOpen(false); setTextOpen(true); }} disabled={!!busy} className="sx-action disabled:opacity-50">
+                        <span><b>Write your own text</b><small>Typed exactly as you write it, no AI</small></span><i aria-hidden="true">→</i>
                       </button>
                     )}
                   </div>
@@ -851,7 +1019,34 @@ function ProductModal({ tpl, onClose, notify, onSpend }) {
                     </div>
                   </div>
                 )}
-                <button onClick={() => { setPast([]); setAd(""); setReview(null); setLogoOpen(false); setLogo(null); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 transition hover:text-slate-900">← Change the photos or the headline</button>
+                {textOpen && (
+                  <div id="make-text-panel" className="sx-card space-y-5 rounded-2xl p-5">
+                    <span className="block text-[15px] font-semibold text-slate-950">Write your own text</span>
+                    <div>
+                      <label htmlFor="make-text-input" className="mb-2.5 block text-[13px] font-semibold text-slate-900">Your text</label>
+                      <textarea id="make-text-input" rows={3} value={textVal} onChange={(e) => setTextVal(e.target.value)} maxLength={160} className={`${field} !rounded-xl !py-3`} placeholder="e.g. 50% off this weekend only" />
+                      <p className="mt-1.5 text-xs text-slate-400">Press Enter for a new line. The AI does not change these words.</p>
+                    </div>
+                    <div>
+                      <p className="mb-2.5 text-[13px] font-semibold text-slate-900">Style</p>
+                      <div className="flex flex-wrap gap-2">
+                        {TEXT_THEMES.map((t) => (
+                          <button key={t.id} onClick={() => setTextTheme(t.id)} aria-pressed={textTheme === t.id} className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${textTheme === t.id ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{t.name}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {textLines.length > 0 && <p className="text-xs text-slate-500">Drag the text on the image to put it anywhere.</p>}
+                    <div>
+                      <label htmlFor="make-text-size" className="flex items-center justify-between text-[13px] font-semibold text-slate-900">Size<span className="sx-val">{Math.round(tp.s * 100)}%</span></label>
+                      <input id="make-text-size" type="range" min="0.03" max="0.18" step="0.005" value={tp.s} onChange={(e) => setTp((p) => ({ ...p, s: +e.target.value }))} className="rng mt-2.5 w-full" style={{ "--p": pct(tp.s, 0.03, 0.18) }} />
+                    </div>
+                    <div className="sticky bottom-0 -mx-5 -mb-5 flex items-center gap-4 rounded-b-2xl border-t border-slate-100 bg-white/95 px-5 py-3.5 backdrop-blur">
+                      <button id="make-text-apply" onClick={applyText} disabled={!textLines.length || !!busy} className={primaryBtn}>Add to my ad</button>
+                      <button onClick={() => { setTextOpen(false); setTextVal(""); }} className="text-xs font-semibold text-slate-500 transition hover:text-slate-900">Cancel</button>
+                    </div>
+                  </div>
+                )}
+                <button onClick={() => { setPast([]); setAd(""); setReview(null); setLogoOpen(false); setLogo(null); setTextOpen(false); setTextVal(""); }} disabled={!!busy} className="w-fit text-xs font-semibold text-slate-500 transition hover:text-slate-900">← Change the photos or the headline</button>
               </>
             )}
           </div>
