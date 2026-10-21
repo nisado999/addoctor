@@ -16,7 +16,7 @@ export const PLAN_NAME = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 export const TOPUP = { price: 15, credits: 250 };
 
 // What one action costs, in credits.
-export const COSTS = { breakdown: 1, ask: 3, organic: 3, analyze: 15, review: 1, packText: 2, image: 5, imagePremium: 12 };
+export const COSTS = { breakdown: 1, ask: 3, organic: 3, rivals: 3, analyze: 15, review: 1, packText: 2, image: 5, imagePremium: 12 };
 
 const EMPTY = { config: null, account: null };
 let state = EMPTY;

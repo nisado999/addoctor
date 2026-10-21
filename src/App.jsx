@@ -35,6 +35,8 @@ const SpyView = lazyRetry(() => import("./spy"), (m) => m.SpyView);
 const PlansView = lazyRetry(() => import("./plans"), (m) => m.PlansView);
 const PackView = lazyRetry(() => import("./pack"), (m) => m.PackView);
 const LabView = lazyRetry(() => import("./lab"), (m) => m.LabView);
+const WinnersView = lazyRetry(() => import("./winners"), (m) => m.WinnersView);
+const RivalsView = lazyRetry(() => import("./rivals"), (m) => m.RivalsView);
 
 const scrollTop = () => {
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -133,11 +135,13 @@ const VIEWS = {
   pack: { title: "30-Day Drop", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Spy", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
+  rivals: { title: "Find Competitors", sub: "Enter your brand and we research who you are really up against." },
+  winners: { title: "Winning Ads", sub: "Ads other brands have kept running for months. Proven, so you can learn from them." },
   vault: { title: "Saved Vault", sub: "Prescriptions you saved, and competitor ads you kept from Spy." },
   plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
-const KEEP = ["spy", "pack", "lab"];
+const KEEP = ["spy", "pack", "lab", "rivals", "winners"];
 
 const VAULT_KEY = "addoctor.vault.v1";
 const FAVS_KEY = "addoctor.favs.v1";
@@ -716,9 +720,12 @@ function App() {
   const quickChips = view === "static" ? QUICK.filter(([id]) => id !== "video") : QUICK;
   const noFavs = quick === "favs" && !favs.length;
 
+  const toSpy = (name) => { setSpySeed(name || ""); goto("spy"); };
   const screen = (id) => (
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
+    : id === "rivals" ? <RivalsView onSpy={toSpy} />
+    : id === "winners" ? <WinnersView notify={notify} onSpy={toSpy} active={view === "winners"} />
     : <SpyView notify={notify} onRebuild={rebuild} active={view === "spy"} seed={spySeed} />
   );
 

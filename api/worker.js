@@ -929,6 +929,107 @@ ${lines}`;
   return { answer: String(o.answer || "").slice(0, 3000), evidence: [...new Set(ev)].slice(0, 6).map((n) => String(ads[n - 1].id || "")) };
 }
 
+/* ------------------------ Winning ads library ------------------------ */
+// Ads that have run for a month or more are the ones their advertiser keeps paying for, so they are the best public
+// sign of a winner. Each category names well-known advertisers; their ads are read from the Ad Library once, kept
+// for two days, and every visitor after that is served the saved copy (about 2 credits per brand per refresh).
+const LIBRARY = {
+  skincare: { label: "Skincare & beauty", brands: ["Glow Recipe", "Summer Fridays", "Tatcha", "Sol de Janeiro", "Rare Beauty", "Olaplex", "Function of Beauty"] },
+  fashion: { label: "Fashion & apparel", brands: ["Gymshark", "SKIMS", "Fabletics", "Princess Polly", "Vuori", "Allbirds", "Bombas"] },
+  health: { label: "Health & supplements", brands: ["Athletic Greens", "Ritual", "Huel", "Bloom Nutrition", "Liquid I.V.", "Transparent Labs", "Hims"] },
+  home: { label: "Home & living", brands: ["Brooklinen", "Parachute", "Our Place", "Ruggable", "Purple Mattress", "Casper", "Quip"] },
+  pets: { label: "Pets", brands: ["BarkBox", "The Farmer's Dog", "Ollie", "Wild One", "Chewy", "Fi Collar"] },
+  food: { label: "Food & drink", brands: ["Magic Spoon", "Olipop", "Athletic Brewing", "Graza", "Liquid Death", "Poppi", "HelloFresh"] },
+  tech: { label: "Tech & gadgets", brands: ["Oura", "Anker", "Casetify", "Ember", "Therabody", "Whoop", "Peloton"] },
+  jewelry: { label: "Jewelry & accessories", brands: ["Mejuri", "Pandora", "Gorjana", "Brilliant Earth", "Missoma", "Vrai"] },
+};
+const LIB_TTL = 2 * 86400;
+const LIB_MIN_DAYS = 30;
+
+const nameKey = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const metaHostOk = (u) => { try { return AD_IMG_HOST.test(new URL(String(u)).hostname); } catch (e) { return false; } };
+
+// The Ad Library page for a brand name: an exact name match, else the most followed result.
+async function findPage(env, name) {
+  const j = await scGet(env, "/v1/facebook/adLibrary/search/companies", { query: name });
+  const list = (Array.isArray(j.searchResults) ? j.searchResults : []).filter((x) => x && x.page_id && !x.page_is_deleted);
+  const hit = list.find((x) => nameKey(x.name) === nameKey(name)) || list.slice().sort((a, c) => (Number(c.likes) || 0) - (Number(a.likes) || 0))[0];
+  if (!hit) return null;
+  return { id: String(hit.page_id).replace(/\D/g, ""), name: clip(hit.name, 120), ig: clip(hit.ig_username, 60), avatar: metaHostOk(hit.image_uri) ? String(hit.image_uri) : "" };
+}
+
+async function winningAds(env, b) {
+  const niche = Object.prototype.hasOwnProperty.call(LIBRARY, b.niche) ? b.niche : "";
+  if (!niche) throw bad("Pick a category");
+  if (!env.SCRAPECREATORS_KEY) throw bad("The winning ads library is not set up on the server yet.");
+  const key = "https://library.addoctor.internal/v1/" + niche;
+  const hit = typeof caches !== "undefined" ? await caches.default.match(key) : null;
+  if (hit) { try { return await hit.json(); } catch (e) { /* read it again below */ } }
+  const lists = await Promise.all(LIBRARY[niche].brands.map(async (name) => {
+    try {
+      const pg = await findPage(env, name);
+      if (!pg) return [];
+      const { items } = await scAds(env, { id: pg.id, country: "ALL" }, "", 1, 40);
+      const seen = new Set();
+      return items.map(normalize)
+        .filter((a) => a.libId && a.img && a.days !== null && a.days >= LIB_MIN_DAYS && (a.headline || a.body) && !seen.has(a.libId) && seen.add(a.libId))
+        .sort((x, y) => y.days - x.days).slice(0, 6)
+        .map((a) => ({ libId: a.libId, advertiser: pg.name, avatar: pg.avatar, headline: a.headline, body: a.body, cta: a.cta, format: a.format, days: a.days, active: a.active, img: a.img, link: a.link }));
+    } catch (e) { return []; }
+  }));
+  const ads = lists.flat().sort((x, y) => y.days - x.days).slice(0, 48);
+  if (!ads.length) throw new Error("Could not load winning ads for this category right now. Try again in a minute.");
+  const out = { niche, label: LIBRARY[niche].label, ads, updated: new Date().toISOString(), minDays: LIB_MIN_DAYS };
+  if (typeof caches !== "undefined") { try { await caches.default.put(key, new Response(JSON.stringify(out), { headers: { "Cache-Control": `max-age=${LIB_TTL}`, "Content-Type": "application/json" } })); } catch (e) { /* served uncached */ } }
+  return out;
+}
+
+/* ------------------------ Find your competitors ------------------------ */
+// Claude searches the web to learn what the brand sells and who it sells to, then names the brands that compete
+// for the same buyer. Each one is matched to its Ad Library page so the page can open Competitor Spy on it.
+async function askClaudeSearch(env, prompt, maxTokens = 3000) {
+  const call = async (withSearch) => {
+    const body = { model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] };
+    if (withSearch) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }];
+    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error((j.error && j.error.message) || "Anthropic error " + r.status), { status: r.status });
+    return (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n");
+  };
+  let text;
+  try { text = await call(true); } catch (e) { if ([400, 403, 404].includes(e.status)) text = await call(false); else throw e; }   // no web search for this key or model: answer from what the model knows
+  try { return parseLoose(text); } catch (e) { return askClaude(env, "Return the following answer as the JSON object it describes, and nothing else:\n\n" + text, maxTokens); }
+}
+
+async function findRivals(env, b) {
+  const input = clip(b.brand, 200).trim();
+  if (input.length < 2) throw bad("Type your brand name or paste your website");
+  const looksUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(input);
+  const site = looksUrl ? safeUrl(input).hostname.replace(/^www\./, "") : "";
+  const prompt = `You are a market analyst finding the DIRECT competitors of one brand, so a marketer can study the ads those competitors run. Brand: ${site ? site : input}.
+Use web search to learn what this brand sells, its price level and who buys it. Then find the brands that sell a similar product to the same buyer at a similar price and that advertise online.
+Rules: only real brands that are operating now and that you found evidence for. Never invent a brand or a website. Do not list the brand itself. Do not list marketplaces or giant general retailers (Amazon, Walmart, Target) unless the brand is itself one.
+Return ONLY JSON: {"brand":{"name":"the brand's name","sells":"what it sells, one sentence","buyer":"who buys it, one sentence"},"competitors":[{"name":"","site":"domain.com","why":"one sentence on why they compete head to head","type":"direct or adjacent","price":"cheaper, similar, pricier or unknown"}]}
+Give 8 competitors, direct ones first, at most 2 adjacent. Inside JSON strings use single quotes when you quote words, never double quotes.`;
+  const o = await askClaudeSearch(env, prompt);
+  const seen = new Set([nameKey(o && o.brand && o.brand.name), nameKey(site.split(".")[0])]);
+  const comps = (Array.isArray(o && o.competitors) ? o.competitors : []).filter((c) => c && typeof c === "object" && c.name).map((c) => {
+    const host = String(c.site || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#\s]/)[0];
+    return {
+      name: clip(c.name, 80), site: /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host) ? host.slice(0, 80) : "", why: clip(c.why, 260),
+      type: /adjacent/i.test(c.type) ? "adjacent" : "direct", price: ["cheaper", "similar", "pricier"].find((p) => new RegExp("^" + p, "i").test(String(c.price || ""))) || "",
+    };
+  }).filter((c) => c.name && !seen.has(nameKey(c.name)) && seen.add(nameKey(c.name))).slice(0, 10);
+  if (!comps.length) throw new Error("No competitors came back for that brand. Check the name and try again.");
+  if (env.SCRAPECREATORS_KEY) {
+    await Promise.all(comps.map(async (c) => {
+      try { const pg = await findPage(env, c.name); if (pg) Object.assign(c, { pageId: pg.id, pageName: pg.name, avatar: pg.avatar, ig: pg.ig }); } catch (e) { /* shown without an ads link */ }
+    }));
+  }
+  const br = o && o.brand && typeof o.brand === "object" ? o.brand : {};
+  return { brand: { name: clip(br.name, 80) || input, site, sells: clip(br.sells, 240), buyer: clip(br.buyer, 240) }, competitors: comps };
+}
+
 // The score is a fixed rubric. The model only rates each point (full, partial or miss) and names what is wrong; the
 // arithmetic is done here, so every lost point has a stated reason. The same ad always gets the same review.
 const RUBRIC = [
@@ -1116,7 +1217,7 @@ async function deleteAccount(env, req) {
   return json(env, { ok: true });
 }
 
-const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|pack\/|make\/)/;
+const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -1184,6 +1285,7 @@ function creditCost(path, b) {
     case "/creative": return 1;
     case "/ask": return 3;
     case "/organic": return 3;
+    case "/rivals": return 3;
     case "/make/ad": return premium ? 12 : 5;
     case "/make/review": return 1;
     case "/make/improve": return 2;
@@ -1428,8 +1530,10 @@ async function handle(req, rawEnv, hooks) {
       if (u.pathname === "/brands" && req.method === "POST") return json(env, await brandSearch(env, await req.json()));
       if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await req.json()));
       if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await req.json()));
+      if (u.pathname === "/rivals" && req.method === "POST") return json(env, await findRivals(env, await req.json()));
+      if (u.pathname === "/library" && req.method === "POST") return json(env, await winningAds(env, await req.json()));
       // what this server can do, so the page can offer the right way to read the Ad Library
-      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic"] : [])] });
+      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library"] : [])] });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
         const b = await req.json();
