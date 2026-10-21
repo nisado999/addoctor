@@ -720,6 +720,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const [vGrants, setVGrants] = useState([]);         // the grant of each inspired option
   const freeLeft = grant ? (leftBy[grant] ?? FREE_CHANGES) : 0;
   const [sizeOpen, setSizeOpen] = useState(false);
+  const [savedAd, setSavedAd] = useState("");        // the version already saved to the Vault, so the button does not offer it twice
   const [improveOpen, setImproveOpen] = useState(false);
   const [picks, setPicks] = useState({ offer: false, proof: false, line: false });
   const [inOffer, setInOffer] = useState("");
@@ -951,8 +952,9 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     try {
       const src = await commitText();
       await saveMyAd({ dataUrl: src, title: tpl.title, category: tpl.category, templateId: tpl.id });
+      setSavedAd(src);
       track("ad_saved_to_vault", { template_id: tpl.id, template_category: tpl.category });
-      notify("Saved to your Vault, under My ads");
+      notify(editing ? "Saved as a new ad in My ads. Your original is kept" : "Saved to your Vault, under My ads");
     } catch (e) { notify(e.message || "The ad could not be saved."); }
   };
 
@@ -1158,7 +1160,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
           {busy && <span className="mr-auto inline-flex items-center gap-2.5 text-xs font-medium text-slate-500"><span className="sx-dot" />{busy} This can take up to a minute.</span>}
           {!busy && !ad && !photos.length && <span className="mr-auto text-xs font-medium text-slate-400">Add a product photo to begin</span>}
           {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 transition hover:text-slate-900">Undo last change</button>}
-          {ad && !editing && <button onClick={saveToVault} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50">Save to Vault</button>}
+          {ad && (!editing || ad !== tpl.editImage) && ad !== savedAd && <button onClick={saveToVault} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50">Save to Vault</button>}
           {ad && <button onClick={download} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
           {!editing && (
             <button id="make-go" ref={goRef} onClick={generate} disabled={!photos.length || !!busy} className={`${primaryBtn} !px-7 !py-3 !text-[15px]`}>
