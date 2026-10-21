@@ -701,7 +701,7 @@ async function makeAd(env, b) {
     const fix = clip(b.fix, 500).trim();
     if (!fix) throw new Error("Say what to change");
     const base = await loadRef({ data: b.base });
-    return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise.\nChange: ${fix}\n${PRODUCT_TRUTH(refs.length)} The product in the advert must stay identical to it. Any text on the image must be spelled exactly and stay sharp.` }], b.quality, ratio);
+    return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise. Do NOT resize, move, crop, re-space or re-layout any element: every headline, text block, product and picture keeps exactly the same size and position as in this first image, and nothing may overlap anything it did not overlap before. Change only the one thing named below, as little as possible.\nChange: ${fix}\n${PRODUCT_TRUTH(refs.length)} The product in the advert must stay identical to it. Any text on the image must be spelled exactly and stay sharp.` }], b.quality, ratio);
   }
   if (!b.template) throw new Error("template required");
   const style = await loadRef({ data: b.template });
@@ -912,7 +912,7 @@ async function makeReview(env, b) {
   if (!data || data.length > 3000000) throw new Error("image missing or too large");
   const headline = clip(b.headline, 90).trim(), format = clip(b.format, 200).trim(), note = clip(b.note, 300).trim();
   // The same ad, wording and context always returns the same review.
-  const cacheUrl = typeof caches !== "undefined" ? "https://review.addoctor.internal/" + (await reviewKey([data, headline, format, note, String((b.refs || []).length), "v3"])) : "";
+  const cacheUrl = typeof caches !== "undefined" ? "https://review.addoctor.internal/" + (await reviewKey([data, headline, format, note, String((b.refs || []).length), "v4"])) : "";
   if (cacheUrl) { const hit = await caches.default.match(cacheUrl).catch(() => null); if (hit) return hit.json(); }
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 2).catch(() => []);
   const tpl = b.template ? await loadRef({ data: b.template }).catch(() => null) : null;
@@ -922,7 +922,8 @@ THE AD'S FORMAT IS INTENDED. This ad was deliberately built to follow a referenc
 Rate each point "full", "partial" or "miss", or "na" when its question says it may be answered na:
 ${RUBRIC.map((r) => `- ${r.id}: ${r.ask}`).join("\n")}
 Rules: rate "full" unless you can name a concrete, visible flaw. "partial" is a real but small flaw, "miss" is a serious one. For every point that is not "full", "note" must say exactly what the flaw is and how to fix it, in one short sentence starting with a verb, so the customer knows why points were lost. For the offer, never invent a discount or deal: say to show the offer from the customer's note, or to add one they really have (for example free shipping, a guarantee, a bundle or a deadline). For a "full" point, "note" is a short phrase on what works.
-Return ONLY JSON: {"verdict":"one plain sentence","criteria":[{"id":"stop","rating":"full|partial|miss|na","note":"..."}, one entry for each of the ${RUBRIC.length} ids],"regen":"one paragraph telling an image model what to change in the picture to fix the visual flaws, or an empty string if no picture change is needed"}
+Return ONLY JSON: {"verdict":"one plain sentence","criteria":[{"id":"stop","rating":"full|partial|miss|na","note":"..."}, one entry for each of the ${RUBRIC.length} ids],"regen":"a short edit instruction for an image editor, or an empty string"}
+REGEN RULES: regen may only ask for SMALL, local corrections to things already in the picture, for example darken a pale grey text colour, make one blurred word sharp, fix a misspelled word, or tidy a garbled logo so it matches the product photo. It must NEVER ask to enlarge, shrink, move, crop, add or remove any element, never touch the layout, the headline, the product size or position, and never add an offer or any new wording. If a flaw can only be fixed by changing size, layout or adding something, leave it out of regen. If nothing qualifies, regen is an empty string.
 Inside the JSON strings use single quotes when you quote words, never double quotes.`;
   const imgBlock = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
   const blocks = [
@@ -954,7 +955,7 @@ Inside the JSON strings use single quotes when you quote words, never double quo
     if (got === 1) { if (text) strengths.push(`${r.label}: ${text}`); }
     else fixes.push(`${text || r.label} (-${Math.max(1, Math.round(share * (1 - got)))} points: ${r.label.toLowerCase()})`);
   }
-  const out = { score: Math.round(score), verdict: clip(o.verdict, 240), strengths: strengths.slice(0, 3), fixes: fixes.slice(0, 5), regen: fixes.length ? clip(o.regen, 500) : "" };
+  const out = { needsOffer: rated.some((x) => x.r.id === "offer" && x.got < 1), score: Math.round(score), verdict: clip(o.verdict, 240), strengths: strengths.slice(0, 3), fixes: fixes.slice(0, 5), regen: fixes.length ? clip(o.regen, 500) : "" };
   if (cacheUrl) await caches.default.put(cacheUrl, new Response(JSON.stringify(out), { headers: { "Cache-Control": "max-age=2592000", "content-type": "application/json" } })).catch(() => {});
   return out;
 }

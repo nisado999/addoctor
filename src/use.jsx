@@ -695,6 +695,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const [vGrants, setVGrants] = useState([]);         // the grant of each inspired option
   const freeLeft = grant ? (leftBy[grant] ?? FREE_CHANGES) : 0;
   const [sizeOpen, setSizeOpen] = useState(false);
+  const [offerText, setOfferText] = useState("");     // the real offer the customer types, added to the ad as text
   const [sizes, setSizes] = useState({});             // the same ad in other placements, by ratio. Made only when asked for
   const [placement, setPlacement] = useState("");    // fashion: where and how big the customer's logo or print goes on the garment
   const fashion = tpl.category === "Fashion" && !editing;
@@ -1248,7 +1249,17 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                     {review.strengths.length > 0 && <ul className="mt-4 space-y-2 text-[13px] text-slate-600">{review.strengths.map((s) => <li key={s} className="flex gap-2.5"><Icon.Check className="mt-1 h-3 w-3 shrink-0 text-emerald-600" /><span>{s}</span></li>)}</ul>}
                     {review.fixes.length > 0 && <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Why it is not 100</p>}
                     {review.fixes.length > 0 && <ul className="mt-2.5 space-y-2 text-[13px] text-slate-600">{review.fixes.map((s) => <li key={s} className="flex gap-2.5"><Icon.Alert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" /><span>{s}</span></li>)}</ul>}
-                    {review.regen && <button id="make-autofix" onClick={() => edit(review.regen)} disabled={!!busy} className="mt-4 inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50">Apply these fixes</button>}
+                    {review.needsOffer && (
+                      <div className="mt-4 rounded-xl bg-slate-50 p-3.5">
+                        <label htmlFor="make-offer" className="block text-[13px] font-semibold text-slate-900">Add your offer to the ad</label>
+                        <p className="mt-0.5 text-xs text-slate-500">Only an offer you really have. It is added as text, exactly as you write it, and you can move it.</p>
+                        <div className="mt-2.5 flex items-center gap-2">
+                          <input id="make-offer" value={offerText} onChange={(e) => setOfferText(e.target.value)} maxLength={60} placeholder="e.g. Free shipping over €50" className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none focus:border-slate-400" />
+                          <button onClick={() => { if (offerText.trim()) { addText(offerText.trim()); setOfferText(""); } }} disabled={!offerText.trim() || !!busy} className="shrink-0 rounded-lg bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Add</button>
+                        </div>
+                      </div>
+                    )}
+                    {review.regen && <button id="make-autofix" onClick={() => edit(review.regen)} disabled={!!busy} className="mt-4 inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50">Fix the small things</button>}
                   </div>
                 )}
 
