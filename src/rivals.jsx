@@ -98,10 +98,8 @@ export function RivalsView({ onSpy }) {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <p className="max-w-2xl text-sm leading-relaxed text-slate-500">Enter your brand name or paste your website. We research your market on the live web and list the brands fighting for the same buyer, so you can go and study their ads.</p>
-
-      <form onSubmit={find} className="mt-5 flex flex-col gap-2 sm:flex-row" role="search">
+    <div className="max-w-5xl">
+      <form onSubmit={find} className="flex flex-col gap-2 sm:flex-row" role="search">
         <div className="relative flex-1">
           <Icon.Target className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Your brand or website, e.g. glossier.com" aria-label="Your brand or website" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10" />

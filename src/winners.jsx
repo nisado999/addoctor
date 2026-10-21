@@ -87,10 +87,8 @@ export function WinnersView({ onSpy, notify, active = true }) {
   const label = NICHES.find((n) => n[0] === niche)[1];
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <p className="max-w-2xl text-sm leading-relaxed text-slate-500">Ads from well-known brands that have been running for a month or more. Advertisers only keep paying for ads that work, so these are proven. Use them as inspiration, then build your own version.</p>
-
-      <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Category">
+    <div className="max-w-6xl">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Category">
         {NICHES.map(([id, name]) => <button key={id} onClick={() => setNiche(id)} aria-pressed={niche === id} className={chip(niche === id)}>{name}</button>)}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Format">
