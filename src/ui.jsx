@@ -283,19 +283,19 @@ function TemplateGrid({ className = "", label = "Templates", children }) {
 
 const NAV = [
   { head: "Create", items: [
-    { id: "explore", label: "Explore Templates", icon: Icon.Grid, emoji: "✨" },
-    { id: "static", label: "Static Ads", icon: Icon.Layout, emoji: "🎨" },
-    { id: "pack", label: "30-Day Drop", icon: Icon.Image, note: "New", emoji: "📅" },
-    { id: "video", label: "Video Generator", icon: Icon.Video, note: "Soon", quiet: true, emoji: "🎬" },
+    { id: "explore", label: "Explore Templates", icon: Icon.Grid },
+    { id: "static", label: "Static Ads", icon: Icon.Layout },
+    { id: "pack", label: "30-Day Drop", icon: Icon.Image, note: "New" },
+    { id: "video", label: "Video Generator", icon: Icon.Video, note: "Soon", quiet: true },
   ] },
   { head: "Analyse", items: [
-    { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope, emoji: "🩺" },
-    { id: "rivals", label: "Find Competitors", icon: Icon.Target, note: "New", emoji: "🎯" },
-    { id: "spy", label: "Competitor Spy", icon: Icon.Eye, emoji: "🔍" },
+    { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope },
+    { id: "rivals", label: "Find Competitors", icon: Icon.Target, note: "New" },
+    { id: "spy", label: "Competitor Spy", icon: Icon.Eye },
   ] },
   { head: "Library", items: [
-    { id: "winners", label: "Winning Ads", icon: Icon.Trophy, note: "New", emoji: "🏆" },
-    { id: "vault", label: "Saved Vault", icon: Icon.Bookmark, emoji: "🔖" },
+    { id: "winners", label: "Winning Ads", icon: Icon.Trophy, note: "New" },
+    { id: "vault", label: "Saved Vault", icon: Icon.Bookmark },
   ] },
 ];
 const navHead = "px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500";
@@ -378,7 +378,6 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
                         className={`group flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 ${on ? "nav-on font-semibold text-slate-950" : n.quiet ? "text-slate-500 hover:bg-white/70 hover:text-slate-700" : "text-slate-600 hover:translate-x-0.5 hover:bg-white/70 hover:text-slate-950"}`}
                       >
                         <I className={`h-4 w-4 shrink-0 ${on ? "text-slate-950" : "text-slate-400 group-hover:text-slate-500"}`} />
-                        {n.emoji && <span aria-hidden="true" className="w-4 shrink-0 text-center text-[14px] leading-none">{n.emoji}</span>}
                         <span className="flex-1 truncate">{n.label}</span>
                         {n.note && <span className={`text-[10px] font-semibold uppercase tracking-wider ${n.quiet ? "text-slate-400" : "text-slate-600"}`}>{n.note}</span>}
                         {count > 0 && <span className="text-[11px] font-semibold tabular-nums text-slate-500">{count}</span>}
