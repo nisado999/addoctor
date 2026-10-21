@@ -751,12 +751,29 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   }) : [];
   const patchText = (id, patch) => setTexts((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
   const setCur = (patch) => { if (cur) patchText(cur.id, patch); };
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const t = document.activeElement && document.activeElement.tagName;
+      if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || !textOpen) return;
+      const id = hov && hov !== "logo" ? hov : activeText;
+      if (id) { e.preventDefault(); removeText(id); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
   const addText = (val = "") => {
     const l = newText(texts.length, val);
     setTexts((ls) => [...ls, l]); setActiveText(l.id); setTextOpen(true); setLogoOpen(false);
   };
   const openText = () => { if (texts.length) { setLogoOpen(false); setTextOpen(true); } else addText(); };
   const closeText = () => { setTextOpen(false); setTexts([]); setActiveText(null); setHov(null); };
+  const removeText = (id) => {
+    const rest = texts.filter((l) => l.id !== id);
+    setTexts(rest); setHov(null);
+    setActiveText(rest.length ? rest[rest.length - 1].id : null);
+    if (!rest.length) setTextOpen(false);
+  };
   const removeCur = () => {
     if (!cur) return;
     const rest = texts.filter((l) => l.id !== cur.id);
@@ -1105,6 +1122,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                       className="block w-full cursor-move touch-none select-none"
                     />
                     {hov === "logo" && <span className="pointer-events-none absolute inset-0 outline-dashed outline-2 outline-offset-2 outline-white/90" />}
+                    {hov === "logo" && <button type="button" aria-label="Remove the logo" title="Remove" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setLogo(null); setHov(null); }} className="absolute -right-3 -top-3 z-20 grid h-6 w-6 place-items-center rounded-full bg-white text-sm font-bold leading-none text-rose-600 shadow-md ring-1 ring-black/10 hover:bg-rose-50">×</button>}
                     {hov === "logo" && <Handles onHandle={(e, mode) => startHandle("logo", e, mode)} onMove={moveHandle} onUp={endHandle} />}
                   </div>
                 )}
@@ -1120,12 +1138,14 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                       {arc.list.map((g, i) => (
                         <span key={i} className="pointer-events-none absolute whitespace-pre" style={{ ...textCss(theme, l.s), background: undefined, borderRadius: undefined, padding: undefined, lineHeight: 1, left: `${(g.x - arc.minX + l.s / 2) * 100}cqw`, top: `${(g.y - arc.minY + (l.s * TEXT_LH) / 2) * 100}cqw`, transform: `translate(-50%, -50%) rotate(${g.a}deg)` }}>{g.ch}</span>
                       ))}
+                      {on && <button type="button" aria-label="Delete this text" title="Delete" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); removeText(l.id); }} className="absolute -right-3 -top-3 z-20 grid h-6 w-6 place-items-center rounded-full bg-white text-sm font-bold leading-none text-rose-600 shadow-md ring-1 ring-black/10 hover:bg-rose-50">×</button>}
                       {on && <Handles onHandle={(e, mode) => startHandle(l.id, e, mode)} onMove={moveHandle} onUp={endHandle} />}
                     </div>
                   );
                   return (
                     <div key={l.id} {...drag} title="Drag the text to move it" className={`absolute z-10 max-w-none cursor-move touch-none select-none ${frame}`} style={{ ...textCss(theme, l.s, l.w), ...pos }}>
                       {lines.join("\n")}
+                      {on && <button type="button" aria-label="Delete this text" title="Delete" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); removeText(l.id); }} className="absolute -right-3 -top-3 z-20 grid h-6 w-6 place-items-center rounded-full bg-white text-sm font-bold leading-none text-rose-600 shadow-md ring-1 ring-black/10 hover:bg-rose-50">×</button>}
                       {on && <Handles wide onHandle={(e, mode) => startHandle(l.id, e, mode)} onMove={moveHandle} onUp={endHandle} />}
                     </div>
                   );
@@ -1252,10 +1272,10 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                     {review.needsOffer && (
                       <div className="mt-4 rounded-xl bg-slate-50 p-3.5">
                         <label htmlFor="make-offer" className="block text-[13px] font-semibold text-slate-900">Add your offer to the ad</label>
-                        <p className="mt-0.5 text-xs text-slate-500">Only an offer you really have. It is added as text, exactly as you write it, and you can move it.</p>
+                        <p className="mt-0.5 text-xs text-slate-500">Only an offer you really have. It is added in the style of your ad, spelled exactly as you write it.</p>
                         <div className="mt-2.5 flex items-center gap-2">
                           <input id="make-offer" value={offerText} onChange={(e) => setOfferText(e.target.value)} maxLength={60} placeholder="e.g. Free shipping over €50" className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none focus:border-slate-400" />
-                          <button onClick={() => { if (offerText.trim()) { addText(offerText.trim()); setOfferText(""); } }} disabled={!offerText.trim() || !!busy} className="shrink-0 rounded-lg bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Add</button>
+                          <button onClick={() => { const o = offerText.trim(); if (o) { setOfferText(""); edit(`Add this offer to the ad as a small, clean line or badge in the same typography and colours as the existing text, in an empty area (usually near the bottom), spelled exactly: "${o}". Do not move, resize or overlap anything that is already in the image; every existing element stays exactly as it is.`); } }} disabled={!offerText.trim() || !!busy} className="shrink-0 rounded-lg bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Add to my ad</button>
                         </div>
                       </div>
                     )}

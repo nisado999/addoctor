@@ -685,7 +685,7 @@ Return ONLY JSON: {"format":"the kind of ad, one line","layout":"where each elem
 async function makeAd(env, b) {
   const ratio = RATIOS.includes(b.ratio) ? b.ratio : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
-  if (!refs.length && !b.resize) throw new Error("Add a photo of your product first");
+  if (!refs.length && !b.resize && !b.base) throw new Error("Add a photo of your product first");   // a saved ad opened from the Vault is edited without product photos
   const headline = clip(b.headline, 90).trim(), sub = clip(b.sub, 120).trim();
   const text = headline
     ? `Put this headline in the advert, spelled exactly as written, readable with strong contrast and generous margins: "${headline}". ${NATIVE_TEXT}${sub ? ` Under it, smaller, exactly: "${sub}".` : ""} Write nothing else anywhere, apart from what is on the product itself.`
@@ -701,7 +701,7 @@ async function makeAd(env, b) {
     const fix = clip(b.fix, 500).trim();
     if (!fix) throw new Error("Say what to change");
     const base = await loadRef({ data: b.base });
-    return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise. Do NOT resize, move, crop, re-space or re-layout any element: every headline, text block, product and picture keeps exactly the same size and position as in this first image, and nothing may overlap anything it did not overlap before. Change only the one thing named below, as little as possible.\nChange: ${fix}\n${PRODUCT_TRUTH(refs.length)} The product in the advert must stay identical to it. Any text on the image must be spelled exactly and stay sharp.` }], b.quality, ratio);
+    return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise. Do NOT resize, move, crop, re-space or re-layout any element: every headline, text block, product and picture keeps exactly the same size and position as in this first image, and nothing may overlap anything it did not overlap before. Change only the one thing named below, as little as possible.\nChange: ${fix}\n${refs.length ? PRODUCT_TRUTH(refs.length) + " The product in the advert must stay identical to it." : "The product in the advert must stay exactly as it is in the first image."} Any text on the image must be spelled exactly and stay sharp.` }], b.quality, ratio);
   }
   if (!b.template) throw new Error("template required");
   const style = await loadRef({ data: b.template });
