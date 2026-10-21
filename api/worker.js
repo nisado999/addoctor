@@ -671,7 +671,9 @@ async function makeAd(env, b) {
   const headline = clip(b.headline, 90).trim(), sub = clip(b.sub, 120).trim();
   const text = headline
     ? `Put this headline in the advert, spelled exactly as written, readable with strong contrast and generous margins: "${headline}". ${NATIVE_TEXT}${sub ? ` Under it, smaller, exactly: "${sub}".` : ""} Write nothing else anywhere, apart from what is on the product itself.`
-    : "No headline, caption, watermark or added logo anywhere. The only lettering allowed is what is on the product itself.";
+    : b.mode === "inspired"
+      ? "If the reference ad has wording on it (a script, headline, labels, a review), write NEW wording in the same style, length and layout for the customer's product, based on the product photos and the note, short and believable, with no false claims, spelled correctly and sharp. If the reference has no wording, add none. No watermark and no invented logo."
+      : "No headline, caption, watermark or added logo anywhere. The only lettering allowed is what is on the product itself.";
   if (b.base && b.resize) {
     // Same advert in another shape: the scene is extended or re-framed, nothing in it is redrawn.
     const base = await loadRef({ data: b.base });
@@ -703,10 +705,10 @@ FINAL CHECK before you answer: the result must look like the first image with on
   }
   return geminiImage(env, [inline(style), ...refs.map(inline), { text: `Create a photorealistic ${ratio} portrait advert for Facebook and Instagram.
 ${b.mode === "inspired"
-  ? "The FIRST image is an inspiration reference only, an existing advert. Create a completely NEW advert, not a copy: keep its kind of scene, mood, colour palette, lighting feel and overall energy, but use a fresh composition, a new camera angle, a different pose or arrangement and a different setting detail. It must feel like the same family of ad without matching it frame for frame. Do not copy its product, its wording, or any logo or brand name in it."
+  ? "The FIRST image is an inspiration reference, an existing advert. Make a NEW advert in the SAME FORMAT. First work out what kind of ad it is (for example a typed or notes text card, a script sheet, a review or testimonial card, a before and after split, a poster with a big headline, a UGC selfie, a model photo, a product on a surface, a screenshot style ad). The new ad MUST be that same kind of ad with the same structure and the same types of elements in the same kind of arrangement (text blocks, an inset product photo, badges, a person only if the reference has one). Rebuild it for the customer's product with fresh wording, new small details and a new look within the same mood and palette. Do not turn a text or graphic ad into a photo of a person, and do not turn a photo ad into a text card. Do not copy the reference's product, its wording about another product, or any logo or brand name in it."
   : "The FIRST image is the exact layout to reproduce, an existing advert. Recreate it one to one: same composition, camera angle, framing, setting, model pose, lighting, colour mood and the same place for the text. The only thing that changes is the product. Do not copy its product, its wording, or any logo or brand name in it."}${about ? `\nWhat the reference shows: ${about}` : ""}
 ${PRODUCT_TRUTH(refs.length)}
-Put the real product where the reference has its product: worn by the model if it is clothing, footwear or an accessory, otherwise held or standing in the scene, at a similar size in the frame. The whole product must be in frame and clearly visible. Anything else the model wears is plain and neutral (black, grey or white) and never matches the product's colour, so only the real product stands out. People must look real, with natural hands and faces. Natural or cool light, never an orange glow.${place}${note ? `\nAbout the product: ${note}` : ""}
+Put the real product where the reference has its product: worn by the model if the reference shows a model and the product is clothing, footwear or an accessory, otherwise held, standing in the scene, or shown as the reference shows its product (for example a small photo in a corner), at a similar size in the frame. The customer's photos only show the product: use the product from them, not the person wearing it, unless the reference format has a person. The whole product must be in frame and clearly visible. Anything else the model wears is plain and neutral (black, grey or white) and never matches the product's colour, so only the real product stands out. People must look real, with natural hands and faces. Natural or cool light, never an orange glow.${place}${note ? `\nAbout the product: ${note}` : ""}
 ${text}` }], b.quality, ratio);
 }
 

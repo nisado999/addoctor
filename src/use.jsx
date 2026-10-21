@@ -669,7 +669,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const inspired = tpl.mode === "inspired";          // a new ad in this mood, not a one-to-one copy
   const [photos, setPhotos] = useState([]);          // [{ src, name }]
-  const [headline, setHeadline] = useState(tpl.headline || "");
+  const [headline, setHeadline] = useState(inspired ? "" : tpl.headline || "");
   const [note, setNote] = useState("");
   const [premium, setPremium] = useState(false);
   const [busy, setBusy] = useState("");              // "" | what is happening now
@@ -1194,7 +1194,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                   <input ref={fileRef} id="make-file" type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
                 </Step>
                 {!fashion && (
-                  <Step n="02" done={!!headline.trim()} title="Headline on the image" hint="Leave empty for no text" htmlFor="make-headline">
+                  <Step n="02" done={!!headline.trim()} title={inspired ? "Your own wording" : "Headline on the image"} hint={inspired ? "Optional. Leave empty and we write it in the same style, if the ad has words" : "Leave empty for no text"} htmlFor="make-headline">
                     <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={`${field} !rounded-xl !py-3`} placeholder="e.g. Made to move in" />
                   </Step>
                 )}
