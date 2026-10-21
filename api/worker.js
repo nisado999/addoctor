@@ -632,7 +632,7 @@ async function packImage(env, b, who) {
 }
 
 // One 4:5 image from the image model. "parts" are the reference images and the instruction, in order.
-async function geminiImage(env, parts, quality) {
+async function geminiImage(env, parts, quality, ratio) {
   if (!env.GEMINI_KEY) throw new Error("GEMINI_KEY is not set on the server");
   const model = quality === "premium" ? (env.IMAGE_MODEL_PREMIUM || "gemini-3-pro-image") : (env.IMAGE_MODEL || "gemini-3.1-flash-image");
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
@@ -640,7 +640,7 @@ async function geminiImage(env, parts, quality) {
     headers: { "x-goog-api-key": env.GEMINI_KEY, "content-type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts }],
-      generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: "4:5" } },
+      generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: ratio === "9:16" ? "9:16" : "4:5" } },
     }),
   });
   const j = await r.json().catch(() => ({}));
@@ -664,6 +664,7 @@ const NATIVE_TEXT = `TEXT MUST LOOK NATIVE. The words must look like they were r
 const PRODUCT_TRUTH = (n) => `The ${n > 1 ? "other " + n + " images show" : "other image shows"} the REAL product${n > 1 ? " from different angles or in different colours" : ""}. ${n > 1 ? "They are" : "It is"} the only source of truth for the product: reproduce it exactly, with the same shape, material, colour, logo, artwork and text, in the same position and size. Do not add, invent, move, restyle or remove any print, logo, label or detail. A side of the product that the ${n > 1 ? "photos do" : "photo does"} not show stays plain.`;
 
 async function makeAd(env, b) {
+  const ratio = b.ratio === "9:16" ? "9:16" : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
   if (!refs.length) throw new Error("Add a photo of your product first");
   const headline = clip(b.headline, 90).trim(), sub = clip(b.sub, 120).trim();
@@ -674,11 +675,15 @@ async function makeAd(env, b) {
     const fix = clip(b.fix, 500).trim();
     if (!fix) throw new Error("Say what to change");
     const base = await loadRef({ data: b.base });
-    return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise.\nChange: ${fix}\n${PRODUCT_TRUTH(refs.length)} The product in the advert must stay identical to it. Any text on the image must be spelled exactly and stay sharp.` }], b.quality);
+    return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise.\nChange: ${fix}\n${PRODUCT_TRUTH(refs.length)} The product in the advert must stay identical to it. Any text on the image must be spelled exactly and stay sharp.` }], b.quality, ratio);
   }
   if (!b.template) throw new Error("template required");
   const style = await loadRef({ data: b.template });
-  const about = clip(b.about, 400).trim(), note = clip(b.note, 300).trim();
+  const about = clip(b.about, 400).trim(), note = clip(b.note, 300).trim(), where = clip(b.placement, 160).trim();
+  // A logo or print is not a whole garment: it goes small and neat on the garment unless the customer says where and how big.
+  const place = where
+    ? `\nLOGO PLACEMENT, follow exactly: if the customer's photo is a logo, graphic or print rather than a complete product, apply it on the product in the advert like this: ${where}. Keep that size and spot, judged against the garment as seen in the first image.`
+    : "\nIf the customer's photo is only a logo, graphic or print rather than a complete product, it is the print for the garment or product in the advert: place it SMALL and neat in the natural logo spot (for a top, on the chest, about the size of a palm, roughly 15 to 20 percent of the garment's width). Never blow it up across the whole front and never centre a huge print unless asked.";
   if (b.mode !== "inspired") {
     // One to one: the template photo is edited, not re-imagined, so the person, place and light stay as they are.
     const words = b.keepText ? "Keep every word of text in the image exactly as it is, in the same place and style."
@@ -688,15 +693,15 @@ async function makeAd(env, b) {
 The FIRST image is a finished advert photo. EDIT it, do not recreate it. The other image${refs.length > 1 ? "s are the customer's own photos" : " is the customer's own photo"} and must be used AS THEY ARE, never redrawn, restyled, re-posed or turned into a flat-lay or cut-out. If the first image shows a picture inside it (a photo printed in a newspaper or magazine, on a screen, a poster, a card), put the customer's photo there unchanged: same person, same clothes, same background, same crop, only scaled to fit that frame. If the first image shows the product physically worn or held, replace only that product with the real product from the customer's photo. Everything else must stay pixel-for-pixel the same: the same person with the same face, hair, skin, pose and expression, the same clothes other than the product, the same background, camera angle, framing, lighting and colours. Never change the person's skin tone, ethnicity, age, face, hair colour, hair length, hair texture or hairstyle, and never swap them for someone else, even slightly. If the person has dark skin or curly hair they keep it exactly. Do not move, raise, lower, resize, crop or re-pose anything: every hand, arm, object, prop and the whole body stay in exactly the same place in the frame, and a face that is visible stays fully visible and uncovered. Treat the first image as a locked layer and only paint the new product over the old one inside the area the old product occupied.
 ${words}
 ${PRODUCT_TRUTH(refs.length)}
-FINAL CHECK before you answer: the result must look like the first image with only the product area swapped. If the person, her hair, her skin tone, her pose, the newspaper position or the background differ from the first image in any way, you have failed; redo it. The customer's photo itself must look exactly like the uploaded photo.${note ? `\nAbout the product: ${note}` : ""}` }], b.quality);
+FINAL CHECK before you answer: the result must look like the first image with only the product area swapped. If the person, her hair, her skin tone, her pose, the newspaper position or the background differ from the first image in any way, you have failed; redo it. The customer's photo itself must look exactly like the uploaded photo.${place}${note ? `\nAbout the product: ${note}` : ""}` }], b.quality, ratio);
   }
-  return geminiImage(env, [inline(style), ...refs.map(inline), { text: `Create a photorealistic 4:5 portrait advert for Facebook and Instagram.
+  return geminiImage(env, [inline(style), ...refs.map(inline), { text: `Create a photorealistic ${ratio} portrait advert for Facebook and Instagram.
 ${b.mode === "inspired"
   ? "The FIRST image is an inspiration reference only, an existing advert. Create a completely NEW advert, not a copy: keep its kind of scene, mood, colour palette, lighting feel and overall energy, but use a fresh composition, a new camera angle, a different pose or arrangement and a different setting detail. It must feel like the same family of ad without matching it frame for frame. Do not copy its product, its wording, or any logo or brand name in it."
   : "The FIRST image is the exact layout to reproduce, an existing advert. Recreate it one to one: same composition, camera angle, framing, setting, model pose, lighting, colour mood and the same place for the text. The only thing that changes is the product. Do not copy its product, its wording, or any logo or brand name in it."}${about ? `\nWhat the reference shows: ${about}` : ""}
 ${PRODUCT_TRUTH(refs.length)}
-Put the real product where the reference has its product: worn by the model if it is clothing, footwear or an accessory, otherwise held or standing in the scene, at a similar size in the frame. The whole product must be in frame and clearly visible. Anything else the model wears is plain and neutral (black, grey or white) and never matches the product's colour, so only the real product stands out. People must look real, with natural hands and faces. Natural or cool light, never an orange glow.${note ? `\nAbout the product: ${note}` : ""}
-${text}` }], b.quality);
+Put the real product where the reference has its product: worn by the model if it is clothing, footwear or an accessory, otherwise held or standing in the scene, at a similar size in the frame. The whole product must be in frame and clearly visible. Anything else the model wears is plain and neutral (black, grey or white) and never matches the product's colour, so only the real product stands out. People must look real, with natural hands and faces. Natural or cool light, never an orange glow.${place}${note ? `\nAbout the product: ${note}` : ""}
+${text}` }], b.quality, ratio);
 }
 
 /* ------------------------ One competitor creative, broken down ------------------------ */

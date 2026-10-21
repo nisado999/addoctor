@@ -687,7 +687,37 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const [cutTol, setCutTol] = useState(45);
   const [cutLogo, setCutLogo] = useState(null);
   const [variants, setVariants] = useState([]);       // the inspired options from the last run, shown to pick from
+  const [placement, setPlacement] = useState("");    // fashion: where and how big the customer's logo or print goes on the garment
+  const fashion = tpl.category === "Fashion" && !editing;
+  const tall = isVideo && !editing;                  // a video template is a full-height frame: use its first frame, not the cropped 4:5 poster
+  const [still, setStill] = useState("");
+  const [ar, setAr] = useState(tall ? "9 / 16" : "4 / 5");
   useEffect(() => () => { if (ctrl.current) ctrl.current.abort(); }, []);
+  useEffect(() => {
+    if (!tall) return undefined;
+    let off = false;
+    const v = document.createElement("video");
+    v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = TEMPLATE_VIDS[tpl.id];
+    v.onloadeddata = () => {
+      if (off || !v.videoWidth) return;
+      try {
+        const c = document.createElement("canvas");
+        c.width = v.videoWidth; c.height = v.videoHeight;
+        c.getContext("2d").drawImage(v, 0, 0);
+        setStill(c.toDataURL("image/jpeg", 0.92));
+      } catch (e) { /* the poster stays */ }
+    };
+    v.load();
+    return () => { off = true; v.removeAttribute("src"); v.load(); };
+  }, [tall, tpl.id]);
+  const templateSrc = tall && still ? still : TEMPLATE_IMGS[tpl.id];
+  const shown = ad || templateSrc;
+  useEffect(() => {
+    if (!shown) return undefined;
+    let off = false;
+    loadImage(shown).then((im) => { if (!off && im.naturalWidth) setAr(`${im.naturalWidth} / ${im.naturalHeight}`); }).catch(() => {});
+    return () => { off = true; };
+  }, [shown]);
   useEffect(() => {
     let off = false;
     if (!logo || !logoCut) { setCutLogo(null); return undefined; }
@@ -923,7 +953,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     ctrl.current = c;
     setBusy(label); setErr("");
     try {
-      const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: inspired ? "inspired" : "exact", ...body }, c.signal);
+      const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: inspired ? "inspired" : "exact", ratio: tall ? "9:16" : "4:5", ...body }, c.signal);
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setAd(`data:${out.mime};base64,${out.data}`);
       setReview(null); setFix("");
@@ -934,8 +964,8 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   };
 
   const generate = async () => {
-    const template = await shrinkPhoto(TEMPLATE_IMGS[tpl.id], 1000);
-    const body = { template, about: tpl.desc || "", note: note.trim(), keepText: headline.trim() === (tpl.headline || "").trim() };
+    const template = await shrinkPhoto(templateSrc, 1000);
+    const body = { template, about: tpl.desc || "", note: note.trim(), placement: fashion ? placement.trim() : "", keepText: headline.trim() === (tpl.headline || "").trim() };
     if (inspired) return generateVariants(body);
     run("Putting your product into the photo…", body, true);
   };
@@ -951,7 +981,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     const c = new AbortController();
     ctrl.current = c;
     setBusy("Creating 3 new ads around your product…"); setErr("");
-    const one = () => makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: "inspired", ...body }, c.signal);
+    const one = () => makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: "inspired", ratio: tall ? "9:16" : "4:5", ...body }, c.signal);
     try {
       const res = await Promise.allSettled(Array.from({ length: VARIANTS }, one));
       const got = res.filter((r) => r.status === "fulfilled").map((r) => `data:${r.value.mime};base64,${r.value.data}`);
@@ -993,6 +1023,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const scoreHex = review ? (review.score >= 75 ? "#059669" : review.score >= 55 ? "#d97706" : "#e11d48") : "#059669";
   const pct = (v, lo, hi) => `${((v - lo) / (hi - lo)) * 100}%`;
   const ideas = ["Make the background a gym", "Make it brighter", "Change the headline to Run further"];
+  const placeIdeas = ["Small, on the left chest", "Small, centred on the chest", "Large, across the front", "Small, on the sleeve"];
 
   return (
     <Shell
@@ -1021,8 +1052,8 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
           <div className="relative md:sticky md:top-8">
             <div className="fx-ad relative mx-auto w-full max-w-[290px]">
               <span className="fx-pulse sx-pulse" aria-hidden="true" />
-              <div ref={frameRef} className="sx-ad relative aspect-[4/5] w-full overflow-hidden" style={{ containerType: "inline-size" }}>
-                <img id="make-result" src={ad || TEMPLATE_IMGS[tpl.id]} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition-[filter,opacity] duration-700 ${busy ? "opacity-60 blur-[3px]" : ""}`} />
+              <div ref={frameRef} className="sx-ad relative w-full overflow-hidden" style={{ containerType: "inline-size", aspectRatio: ar }}>
+                <img id="make-result" src={shown} alt={ad ? "Your ad" : tpl.title} className={`absolute inset-0 h-full w-full object-cover transition-[filter,opacity] duration-700 ${busy ? "opacity-60 blur-[3px]" : ""}`} />
                 {ad && logoOpen && shownLogo && (
                   <div className="absolute z-10" onPointerEnter={() => setHov("logo")} onPointerLeave={() => { if (!dragging.current) setHov(null); }} style={{ left: `${lp.x * 100}%`, top: `${lp.y * 100}%`, width: `${lp.s * 100}%`, transform: `translate(-50%, -50%) rotate(${lp.r || 0}deg)` }}>
                     <img
@@ -1116,9 +1147,19 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                   </div>
                   <input ref={fileRef} id="make-file" type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ""; }} />
                 </Step>
-                <Step n="02" done={!!headline.trim()} title="Headline on the image" hint="Leave empty for no text" htmlFor="make-headline">
-                  <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={`${field} !rounded-xl !py-3`} placeholder="e.g. Made to move in" />
-                </Step>
+                {!fashion && (
+                  <Step n="02" done={!!headline.trim()} title="Headline on the image" hint="Leave empty for no text" htmlFor="make-headline">
+                    <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={`${field} !rounded-xl !py-3`} placeholder="e.g. Made to move in" />
+                  </Step>
+                )}
+                {fashion && (
+                  <Step n="02" done={!!placement.trim()} title="Where should the logo go?" hint="Optional. Say where and how big. Without it, a logo goes small on the chest" htmlFor="make-place">
+                    <input id="make-place" value={placement} onChange={(e) => setPlacement(e.target.value)} maxLength={120} className={`${field} !rounded-xl !py-3`} placeholder="e.g. small, on the left chest" />
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {placeIdeas.map((s) => <button key={s} type="button" onClick={() => setPlacement(s)} className="sx-chip rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-600">{s}</button>)}
+                    </div>
+                  </Step>
+                )}
                 <Step n="03" done={!!note.trim()} title="About your product" hint="Optional, facts only. To change the ad, use “Change something” after it is made" htmlFor="make-note">
                   <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={`${field} !rounded-xl !py-3`} placeholder="e.g. a sticker with a silver logo, not a shirt" />
                 </Step>
