@@ -909,7 +909,13 @@ Never invent facts about the product, and never suggest adding prices, discounts
     ...(refs.length ? [{ type: "text", text: "Reference photos of the REAL product:" }, ...refs.map(imgBlock)] : []),
     ...(tpl || refs.length ? [{ type: "text", text: "The ad to judge:" }] : []),
   ];
-  const o = await askClaude(env, [...blocks, { type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }], 900);
+  const content = [...blocks, { type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }];
+  // The reply sometimes comes wrapped in another object or without a score. Read it either way, ask once more, and never return an empty score.
+  const unwrap = (x) => (x && typeof x === "object" && x.score === undefined ? Object.values(x).find((v) => v && typeof v === "object" && !Array.isArray(v) && v.score !== undefined) || x : x);
+  const good = (x) => x && Number.isFinite(Number(x.score)) && String(x.verdict || "").trim();
+  let o = unwrap(await askClaude(env, content, 900));
+  if (!good(o)) o = unwrap(await askClaude(env, content, 900));
+  if (!good(o)) throw new Error("The check could not be read. Try again.");
   return {
     score: Math.max(0, Math.min(100, Math.round(Number(o.score) || 0))),
     verdict: clip(o.verdict, 240),
