@@ -393,9 +393,10 @@ function repairJson(s) {
 
 const parseLoose = (text) => { try { return parseJson(text); } catch (e) { return JSON.parse(repairJson(jsonSpan(text))); } };
 
-async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
+async function askClaude(env, content, maxTokens = 2000, mode = "tool", temp) {
   const parts = typeof content === "string" ? [{ type: "text", text: content }] : content;
   const body = { model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content: parts }] };
+  if (temp !== undefined) body.temperature = temp;
   if (mode === "tool") { body.tools = [REPLY_TOOL]; body.tool_choice = { type: "auto" }; body.messages[0].content = [...parts, { type: "text", text: "Give your answer by calling the reply tool with that JSON object." }]; }
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -405,7 +406,8 @@ async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
     const msg = (j.error && j.error.message) || "Anthropic error " + r.status;
-    if (mode === "tool" && r.status === 400 && /tool/i.test(msg)) return askClaude(env, content, maxTokens, "text");   // this model takes no tools
+    if (temp !== undefined && r.status === 400 && /temperature/i.test(msg)) return askClaude(env, content, maxTokens, mode);   // this model takes no temperature
+    if (mode === "tool" && r.status === 400 && /tool/i.test(msg)) return askClaude(env, content, maxTokens, "text", temp);   // this model takes no tools
     throw new Error(msg);
   }
   const tool = (j.content || []).find((b) => b.type === "tool_use");
@@ -414,7 +416,7 @@ async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
   try { return parseLoose(text); } catch (e) {
     // Still unreadable: ask once more, in plain text, for valid JSON.
     if (mode === "again") throw new Error("The analysis came back in a form that could not be read. Try again.");
-    return askClaude(env, [...parts, { type: "text", text: "Return valid JSON only. Inside strings use single quotes, never double quotes." }], maxTokens, "again");
+    return askClaude(env, [...parts, { type: "text", text: "Return valid JSON only. Inside strings use single quotes, never double quotes." }], maxTokens, "again", temp);
   }
 }
 
@@ -889,20 +891,39 @@ ${lines}`;
   return { answer: String(o.answer || "").slice(0, 3000), evidence: [...new Set(ev)].slice(0, 6).map((n) => String(ads[n - 1].id || "")) };
 }
 
+// The score is a fixed rubric. The model only rates each point (full, partial or miss) and names what is wrong; the
+// arithmetic is done here, so every lost point has a stated reason. The same ad always gets the same review.
+const RUBRIC = [
+  { id: "offer", w: 25, label: "A clear offer or reason to act", ask: "Does the ad give a concrete reason to act now: a discount, free shipping, a guarantee, a bundle, a trial, a deadline, or a clear call to action tied to a real benefit? full = a concrete offer or a clear call to action with a benefit is visible. partial = a benefit is shown but no concrete offer or call to action, or the customer's note has an offer that is not shown on the ad. miss = nothing gives a reason to act. Never answer na.", always: true },
+  { id: "stop", w: 15, label: "Stops the scroll and has one clear idea", ask: "Is the idea clear in one second, and would it stop a thumb scrolling a feed?", always: true },
+  { id: "product", w: 20, label: "Product clear and true to its photos", ask: "Is the product easy to see and identical to the reference photos (shape, colour, print, logo)? Answer na when this ad's format deliberately shows no product (for example a text-only card)." },
+  { id: "text", w: 15, label: "Text legible and correct", ask: "Is any wording spelled correctly, large enough for a phone and high contrast? Answer na when the ad has no wording." },
+  { id: "craft", w: 15, label: "Well made for its format", ask: "Is it executed well for its format: realistic if a photo, tidy and balanced if a graphic, nothing cut off, no distortions or odd hands and faces?", always: true },
+  { id: "claims", w: 10, label: "Believable wording, no unsupported claims", ask: "Is the wording believable? Only flag claims that contradict or go well beyond what the customer told us, and word that fix as something to check. Answer na when the ad has no wording." },
+];
+
+async function reviewKey(parts) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(parts.join("|")));
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
 async function makeReview(env, b) {
   const data = String(b.image || "").replace(/^data:image\/\w+;base64,/, "");
   if (!data || data.length > 3000000) throw new Error("image missing or too large");
-  const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 2).catch(() => []);
   const headline = clip(b.headline, 90).trim(), format = clip(b.format, 200).trim(), note = clip(b.note, 300).trim();
+  // The same ad, wording and context always returns the same review.
+  const cacheUrl = typeof caches !== "undefined" ? "https://review.addoctor.internal/" + (await reviewKey([data, headline, format, note, String((b.refs || []).length), "v3"])) : "";
+  if (cacheUrl) { const hit = await caches.default.match(cacheUrl).catch(() => null); if (hit) return hit.json(); }
+  const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 2).catch(() => []);
   const tpl = b.template ? await loadRef({ data: b.template }).catch(() => null) : null;
-  const prompt = `You are an elite direct-response creative strategist scoring one static Meta ad (Facebook and Instagram) before any money is spent on it. Be specific, practical and honest. No filler.
+  const prompt = `You are a strict, fair creative reviewer rating one static Meta ad (Facebook and Instagram) against a fixed rubric. Rate only what you can see. Be consistent: the same ad must always get the same ratings.
 ${headline ? `Headline the customer asked to have printed on the image: "${headline}"` : "The customer asked for no particular headline. Wording on the image is fine when it belongs to the ad's format."}
-THE AD'S FORMAT IS INTENDED. This ad was deliberately built to follow a reference ad${format ? ` of this kind: ${format}` : ""}${tpl ? ", shown in the first image" : ""}. Everything that belongs to that format (typed or handwritten text, numbered lines or labels such as Hook, Problem and Solution, a small product photo in a corner, a plain background, a UGC or screenshot look) is on purpose. Never list it as a flaw and never tell the customer to remove, enlarge or restyle it. Judge how well THIS ad does that format for the customer's product: is it readable on a phone, is the product clear and true to the photos, does it stop the scroll, is the wording believable.${note ? ` Facts the customer gave about their product, so wording that matches them is not an invented claim: ${note}` : ""}
-Be fair: a clean ad that executes its format well scores 70 or more. Give at most 2 fixes, only for real, concrete problems (a typo, unreadable text, wrong product detail, a cut-off subject); if there is nothing real to fix, return an empty fixes list and an empty regen. Never suggest changing the layout or the format.
-Judge: (1) does it stop the scroll in the first second, (2) is it clear at a glance what is being sold, (3) text on the image: spelled exactly as intended, legible on a phone, with contrast and margins, (4) does it look like a real photograph, with natural hands, faces and light, (5) one clear idea.${refs.length ? " (6) PRODUCT FIDELITY: compare the product in the ad with the reference photos of the real product. Flag ANY difference in shape, colour, print, logo or text. If you find one, make it the FIRST item in fixes, lower the score by at least 20, and write regen so the image model corrects it." : ""}
-Return ONLY JSON: {"score":0-100,"verdict":"one plain sentence","strengths":["max 2 short items"],"fixes":["max 3 concrete changes, each starting with a verb"],"regen":"one paragraph telling an image model what to change in the image to apply the visual fixes, or empty string if the image needs no change"}
-Inside the JSON strings use single quotes when you quote words, never double quotes.
-Never invent facts about the product, and never suggest adding prices, discounts or claims that are not on the image.`;
+THE AD'S FORMAT IS INTENDED. This ad was deliberately built to follow a reference ad${format ? ` of this kind: ${format}` : ""}${tpl ? ", shown in the first image" : ""}. Everything that belongs to that format (typed or handwritten text, numbered lines or labels such as Hook, Problem and Solution, a small product photo in a corner, a plain background, a UGC or screenshot look) is on purpose. Never list it as a flaw and never suggest changing the layout or the format.${note ? ` Facts the customer gave about their product, so wording that matches them is not an invented claim: ${note}` : ""}${refs.length ? " Compare the product with the reference photos of the real product; any difference in shape, colour, print, logo or text is a flaw." : ""}
+Rate each point "full", "partial" or "miss", or "na" when its question says it may be answered na:
+${RUBRIC.map((r) => `- ${r.id}: ${r.ask}`).join("\n")}
+Rules: rate "full" unless you can name a concrete, visible flaw. "partial" is a real but small flaw, "miss" is a serious one. For every point that is not "full", "note" must say exactly what the flaw is and how to fix it, in one short sentence starting with a verb, so the customer knows why points were lost. For the offer, never invent a discount or deal: say to show the offer from the customer's note, or to add one they really have (for example free shipping, a guarantee, a bundle or a deadline). For a "full" point, "note" is a short phrase on what works.
+Return ONLY JSON: {"verdict":"one plain sentence","criteria":[{"id":"stop","rating":"full|partial|miss|na","note":"..."}, one entry for each of the ${RUBRIC.length} ids],"regen":"one paragraph telling an image model what to change in the picture to fix the visual flaws, or an empty string if no picture change is needed"}
+Inside the JSON strings use single quotes when you quote words, never double quotes.`;
   const imgBlock = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
   const blocks = [
     ...(tpl ? [{ type: "text", text: "The reference ad whose format this ad follows:" }, imgBlock(tpl)] : []),
@@ -910,19 +931,32 @@ Never invent facts about the product, and never suggest adding prices, discounts
     ...(tpl || refs.length ? [{ type: "text", text: "The ad to judge:" }] : []),
   ];
   const content = [...blocks, { type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }];
-  // The reply sometimes comes wrapped in another object or without a score. Read it either way, ask once more, and never return an empty score.
-  const unwrap = (x) => (x && typeof x === "object" && x.score === undefined ? Object.values(x).find((v) => v && typeof v === "object" && !Array.isArray(v) && v.score !== undefined) || x : x);
-  const good = (x) => x && Number.isFinite(Number(x.score)) && String(x.verdict || "").trim();
-  let o = unwrap(await askClaude(env, content, 900));
-  if (!good(o)) o = unwrap(await askClaude(env, content, 900));
+  // The reply sometimes comes wrapped in another object. Read it either way, ask once more, and never return an empty score.
+  const unwrap = (x) => (x && typeof x === "object" && !Array.isArray(x.criteria) ? Object.values(x).find((v) => v && typeof v === "object" && Array.isArray(v.criteria)) || x : x);
+  const good = (x) => x && Array.isArray(x.criteria) && RUBRIC.every((r) => x.criteria.some((c) => c && c.id === r.id));
+  let o = unwrap(await askClaude(env, content, 1200, "tool", 0));
+  if (!good(o)) o = unwrap(await askClaude(env, content, 1200, "tool", 0));
   if (!good(o)) throw new Error("The check could not be read. Try again.");
-  return {
-    score: Math.max(0, Math.min(100, Math.round(Number(o.score) || 0))),
-    verdict: clip(o.verdict, 240),
-    strengths: (Array.isArray(o.strengths) ? o.strengths : []).map((x) => clip(x, 160)).slice(0, 2),
-    fixes: (Array.isArray(o.fixes) ? o.fixes : []).map((x) => clip(x, 200)).slice(0, 3),
-    regen: clip(o.regen, 500),
-  };
+  // Points that do not apply to this ad's format are left out and the rest are scaled to 100, so a good text-only ad can still score 100.
+  const rated = RUBRIC.map((r) => {
+    const c = o.criteria.find((x) => x && x.id === r.id);
+    const k = String(c.rating || "").toLowerCase();
+    return { r, c, na: k === "na" && !r.always, got: k === "full" ? 1 : k === "partial" ? 0.5 : 0 };
+  });
+  const total = rated.filter((x) => !x.na).reduce((a, x) => a + x.r.w, 0) || 100;
+  let score = 0;
+  const strengths = [], fixes = [];
+  for (const { r, c, na, got } of rated) {
+    if (na) continue;
+    const share = (r.w / total) * 100;
+    score += share * got;
+    const text = clip(c.note, 170).trim();
+    if (got === 1) { if (text) strengths.push(`${r.label}: ${text}`); }
+    else fixes.push(`${text || r.label} (-${Math.max(1, Math.round(share * (1 - got)))} points: ${r.label.toLowerCase()})`);
+  }
+  const out = { score: Math.round(score), verdict: clip(o.verdict, 240), strengths: strengths.slice(0, 3), fixes: fixes.slice(0, 5), regen: fixes.length ? clip(o.regen, 500) : "" };
+  if (cacheUrl) await caches.default.put(cacheUrl, new Response(JSON.stringify(out), { headers: { "Cache-Control": "max-age=2592000", "content-type": "application/json" } })).catch(() => {});
+  return out;
 }
 
 async function packReview(env, b) {

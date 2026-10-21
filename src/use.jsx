@@ -1039,12 +1039,15 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     setAd(v); setReview(null);
   };
 
+  const reviews = useRef({});                         // the score of each ad already checked: the same ad always shows the same score, and is not charged twice
   const check = async () => {
     if (busy || !ad) return;
+    if (reviews.current[ad]) { setReview(reviews.current[ad]); return; }
     setBusy("Scoring this ad…"); setErr("");
     try {
       const small = await shrinkPhoto(ad, 900, 0.85);
       const rv = await makeCall("/make/review", { image: small, headline: headline.trim(), refs: photos.slice(0, 2).map((p) => p.src), template: editing ? "" : await shrinkPhoto(templateSrc, 700, 0.8), format: [tpl.title, tpl.format].filter(Boolean).join(" · "), note: note.trim() });
+      reviews.current[ad] = rv;
       setReview(rv);
       track("ad_scored", { template_id: tpl.id, template_category: tpl.category, score: rv.score });
     } catch (e) { setErr(e.message || "The check failed. Try again."); }
@@ -1243,6 +1246,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                       <p className="text-[13.5px] font-medium leading-snug text-slate-700">{review.verdict}</p>
                     </div>
                     {review.strengths.length > 0 && <ul className="mt-4 space-y-2 text-[13px] text-slate-600">{review.strengths.map((s) => <li key={s} className="flex gap-2.5"><Icon.Check className="mt-1 h-3 w-3 shrink-0 text-emerald-600" /><span>{s}</span></li>)}</ul>}
+                    {review.fixes.length > 0 && <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Why it is not 100</p>}
                     {review.fixes.length > 0 && <ul className="mt-2.5 space-y-2 text-[13px] text-slate-600">{review.fixes.map((s) => <li key={s} className="flex gap-2.5"><Icon.Alert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" /><span>{s}</span></li>)}</ul>}
                     {review.regen && <button id="make-autofix" onClick={() => edit(review.regen)} disabled={!!busy} className="mt-4 inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50">Apply these fixes</button>}
                   </div>
