@@ -893,16 +893,22 @@ async function makeReview(env, b) {
   const data = String(b.image || "").replace(/^data:image\/\w+;base64,/, "");
   if (!data || data.length > 3000000) throw new Error("image missing or too large");
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 2).catch(() => []);
-  const headline = clip(b.headline, 90).trim();
-  const prompt = `You are an elite direct-response creative strategist scoring one static Meta ad (Facebook and Instagram feed, 4:5) before any money is spent on it. Be specific, practical and honest. No filler.
-Headline that was supposed to be printed on the image: ${headline ? '"' + headline + '"' : "none (the image should have no added text)"}
+  const headline = clip(b.headline, 90).trim(), format = clip(b.format, 200).trim(), note = clip(b.note, 300).trim();
+  const tpl = b.template ? await loadRef({ data: b.template }).catch(() => null) : null;
+  const prompt = `You are an elite direct-response creative strategist scoring one static Meta ad (Facebook and Instagram) before any money is spent on it. Be specific, practical and honest. No filler.
+${headline ? `Headline the customer asked to have printed on the image: "${headline}"` : "The customer asked for no particular headline. Wording on the image is fine when it belongs to the ad's format."}
+THE AD'S FORMAT IS INTENDED. This ad was deliberately built to follow a reference ad${format ? ` of this kind: ${format}` : ""}${tpl ? ", shown in the first image" : ""}. Everything that belongs to that format (typed or handwritten text, numbered lines or labels such as Hook, Problem and Solution, a small product photo in a corner, a plain background, a UGC or screenshot look) is on purpose. Never list it as a flaw and never tell the customer to remove, enlarge or restyle it. Judge how well THIS ad does that format for the customer's product: is it readable on a phone, is the product clear and true to the photos, does it stop the scroll, is the wording believable.${note ? ` Facts the customer gave about their product, so wording that matches them is not an invented claim: ${note}` : ""}
+Be fair: a clean ad that executes its format well scores 70 or more. Give at most 2 fixes, only for real, concrete problems (a typo, unreadable text, wrong product detail, a cut-off subject); if there is nothing real to fix, return an empty fixes list and an empty regen. Never suggest changing the layout or the format.
 Judge: (1) does it stop the scroll in the first second, (2) is it clear at a glance what is being sold, (3) text on the image: spelled exactly as intended, legible on a phone, with contrast and margins, (4) does it look like a real photograph, with natural hands, faces and light, (5) one clear idea.${refs.length ? " (6) PRODUCT FIDELITY: compare the product in the ad with the reference photos of the real product. Flag ANY difference in shape, colour, print, logo or text. If you find one, make it the FIRST item in fixes, lower the score by at least 20, and write regen so the image model corrects it." : ""}
 Return ONLY JSON: {"score":0-100,"verdict":"one plain sentence","strengths":["max 2 short items"],"fixes":["max 3 concrete changes, each starting with a verb"],"regen":"one paragraph telling an image model what to change in the image to apply the visual fixes, or empty string if the image needs no change"}
 Inside the JSON strings use single quotes when you quote words, never double quotes.
 Never invent facts about the product, and never suggest adding prices, discounts or claims that are not on the image.`;
-  const blocks = refs.length
-    ? [{ type: "text", text: "Reference photos of the REAL product:" }, ...refs.map((x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } })), { type: "text", text: "The ad to judge:" }]
-    : [];
+  const imgBlock = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
+  const blocks = [
+    ...(tpl ? [{ type: "text", text: "The reference ad whose format this ad follows:" }, imgBlock(tpl)] : []),
+    ...(refs.length ? [{ type: "text", text: "Reference photos of the REAL product:" }, ...refs.map(imgBlock)] : []),
+    ...(tpl || refs.length ? [{ type: "text", text: "The ad to judge:" }] : []),
+  ];
   const o = await askClaude(env, [...blocks, { type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }], 900);
   return {
     score: Math.max(0, Math.min(100, Math.round(Number(o.score) || 0))),

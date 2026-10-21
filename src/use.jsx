@@ -1044,7 +1044,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     setBusy("Scoring this ad…"); setErr("");
     try {
       const small = await shrinkPhoto(ad, 900, 0.85);
-      const rv = await makeCall("/make/review", { image: small, headline: headline.trim(), refs: photos.slice(0, 2).map((p) => p.src) });
+      const rv = await makeCall("/make/review", { image: small, headline: headline.trim(), refs: photos.slice(0, 2).map((p) => p.src), template: editing ? "" : await shrinkPhoto(templateSrc, 700, 0.8), format: [tpl.title, tpl.format].filter(Boolean).join(" · "), note: note.trim() });
       setReview(rv);
       track("ad_scored", { template_id: tpl.id, template_category: tpl.category, score: rv.score });
     } catch (e) { setErr(e.message || "The check failed. Try again."); }
