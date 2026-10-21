@@ -682,6 +682,18 @@ Return ONLY JSON: {"format":"the kind of ad, one line","layout":"where each elem
   return { format: clip(o.format, 200), layout: clip(o.layout, 400), hasText: !!o.hasText && lines.length > 0, lines };
 }
 
+// Looks at one finished ad and decides how an offer line should be added to it: where, how big, in what style.
+async function planOffer(env, base, offer) {
+  const content = [
+    { type: "image", source: { type: "base64", media_type: base.mime, data: base.data } },
+    { type: "text", text: `You are an art director. This is a finished ad. The customer wants this offer added to it: "${offer}".
+First study the ad: its format, what the eye reads first, the typography, the colours, the mood (quiet and premium, or loud and promotional), and where there is empty space. Then decide how the offer should appear so that it is noticed and believed but supports the ad instead of fighting its headline. There is no fixed rule: a minimal or luxury ad may want a small, quiet line; a sale or direct-response ad may want a big bold badge, banner or sticker. Choose the placement, the size, the style (plain line, pill badge, sticker, stamp, banner, handwritten note) and the colours that fit THIS ad, and keep it easy to read on a phone with a comfortable margin from the edges and from the product.
+Return ONLY JSON: {"thinking":"two short sentences on what you saw and why you chose this","instruction":"one paragraph for an image editor: exactly where the offer goes relative to the existing elements, its size relative to the image height, its style and colours, and its margin. It must not move, resize or overlap anything already in the image."} Inside strings use single quotes, never double quotes.` },
+  ];
+  const o = await askClaude(env, content, 700);
+  return clip(o.instruction, 700);
+}
+
 async function makeAd(env, b) {
   const ratio = RATIOS.includes(b.ratio) ? b.ratio : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
@@ -698,9 +710,15 @@ async function makeAd(env, b) {
     return geminiImage(env, [inline(base), { text: `This is a finished advert. Make the SAME advert as a ${ratio} image. Keep the person, the product, every logo and every word of text exactly as they are, the same colours, light and style. Do not redraw, restyle, move or crop anything that is in the image: only continue the background and scene naturally where the new shape needs more room (floor, wall, sky, surroundings), and when the new shape is narrower, keep the whole subject fully in frame. Text must stay spelled exactly and sharp. Nothing may be added that is not already part of this scene.` }], b.quality, ratio);
   }
   if (b.base) {
-    const fix = clip(b.fix, 500).trim();
-    if (!fix) throw new Error("Say what to change");
     const base = await loadRef({ data: b.base });
+    let fix = clip(b.fix, 500).trim();
+    const offer = clip(b.offer, 80).trim();
+    if (offer) {
+      // An art director's decision first: where this offer goes, how big and in what style depends on this particular ad.
+      const how = await planOffer(env, base, offer).catch(() => "");
+      fix = `Add this offer to the advert, spelled exactly as written: "${offer}". ${how || "Choose the placement, size and style that suit this advert, make it easy to read on a phone, and keep a margin from the edges."} Do not move, resize or overlap anything that is already in the image; every existing element stays exactly as it is.`;
+    }
+    if (!fix) throw new Error("Say what to change");
     return geminiImage(env, [inline(base), ...refs.map(inline), { text: `The FIRST image is an advert that already exists. Change it as described and keep everything else exactly as it is: same model, same framing, same light, same text unless told otherwise. Do NOT resize, move, crop, re-space or re-layout any element: every headline, text block, product and picture keeps exactly the same size and position as in this first image, and nothing may overlap anything it did not overlap before. Change only the one thing named below, as little as possible.\nChange: ${fix}\n${refs.length ? PRODUCT_TRUTH(refs.length) + " The product in the advert must stay identical to it." : "The product in the advert must stay exactly as it is in the first image."} Any text on the image must be spelled exactly and stay sharp.` }], b.quality, ratio);
   }
   if (!b.template) throw new Error("template required");

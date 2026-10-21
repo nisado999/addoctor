@@ -1023,6 +1023,8 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
     setBusy("");
   };
+  // The server decides where, how big and in what style the offer goes, after looking at this ad.
+  const offerTo = async (o) => { if (o && ad && !busy) run("Adding your offer…", { base: await shrinkPhoto(ad, 1600, 0.92), offer: o, fix: "offer", grant }, true); };
   const undo = () => { if (!past.length || busy) return; setAd(past[past.length - 1]); setPast((p) => p.slice(0, -1)); setReview(null); };
 
   /* Inspired ads come in three options. Each option is its own request, so each one is charged, and the credits shown
@@ -1275,7 +1277,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                         <p className="mt-0.5 text-xs text-slate-500">Only an offer you really have. It is added in the style of your ad, spelled exactly as you write it.</p>
                         <div className="mt-2.5 flex items-center gap-2">
                           <input id="make-offer" value={offerText} onChange={(e) => setOfferText(e.target.value)} maxLength={60} placeholder="e.g. Free shipping over €50" className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none focus:border-slate-400" />
-                          <button onClick={() => { const o = offerText.trim(); if (o) { setOfferText(""); edit(`Add this offer to the ad as a small, clean line or badge in the same typography and colours as the existing text, in an empty area (usually near the bottom), spelled exactly: "${o}". Do not move, resize or overlap anything that is already in the image; every existing element stays exactly as it is.`); } }} disabled={!offerText.trim() || !!busy} className="shrink-0 rounded-lg bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Add to my ad</button>
+                          <button onClick={() => { const o = offerText.trim(); if (o) { setOfferText(""); offerTo(o); } }} disabled={!offerText.trim() || !!busy} className="shrink-0 rounded-lg bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Add to my ad</button>
                         </div>
                       </div>
                     )}
