@@ -632,6 +632,7 @@ async function packImage(env, b, who) {
 }
 
 // One 4:5 image from the image model. "parts" are the reference images and the instruction, in order.
+const RATIOS = ["4:5", "9:16", "1:1", "16:9"];
 async function geminiImage(env, parts, quality, ratio) {
   if (!env.GEMINI_KEY) throw new Error("GEMINI_KEY is not set on the server");
   const model = quality === "premium" ? (env.IMAGE_MODEL_PREMIUM || "gemini-3-pro-image") : (env.IMAGE_MODEL || "gemini-3.1-flash-image");
@@ -640,7 +641,7 @@ async function geminiImage(env, parts, quality, ratio) {
     headers: { "x-goog-api-key": env.GEMINI_KEY, "content-type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts }],
-      generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: ratio === "9:16" ? "9:16" : "4:5" } },
+      generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: RATIOS.includes(ratio) ? ratio : "4:5" } },
     }),
   });
   const j = await r.json().catch(() => ({}));
@@ -664,13 +665,18 @@ const NATIVE_TEXT = `TEXT MUST LOOK NATIVE. The words must look like they were r
 const PRODUCT_TRUTH = (n) => `The ${n > 1 ? "other " + n + " images show" : "other image shows"} the REAL product${n > 1 ? " from different angles or in different colours" : ""}. ${n > 1 ? "They are" : "It is"} the only source of truth for the product: reproduce it exactly, with the same shape, material, colour, logo, artwork and text, in the same position and size. Do not add, invent, move, restyle or remove any print, logo, label or detail. A side of the product that the ${n > 1 ? "photos do" : "photo does"} not show stays plain.`;
 
 async function makeAd(env, b) {
-  const ratio = b.ratio === "9:16" ? "9:16" : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
+  const ratio = RATIOS.includes(b.ratio) ? b.ratio : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
-  if (!refs.length) throw new Error("Add a photo of your product first");
+  if (!refs.length && !b.resize) throw new Error("Add a photo of your product first");
   const headline = clip(b.headline, 90).trim(), sub = clip(b.sub, 120).trim();
   const text = headline
     ? `Put this headline in the advert, spelled exactly as written, readable with strong contrast and generous margins: "${headline}". ${NATIVE_TEXT}${sub ? ` Under it, smaller, exactly: "${sub}".` : ""} Write nothing else anywhere, apart from what is on the product itself.`
     : "No headline, caption, watermark or added logo anywhere. The only lettering allowed is what is on the product itself.";
+  if (b.base && b.resize) {
+    // Same advert in another shape: the scene is extended or re-framed, nothing in it is redrawn.
+    const base = await loadRef({ data: b.base });
+    return geminiImage(env, [inline(base), { text: `This is a finished advert. Make the SAME advert as a ${ratio} image. Keep the person, the product, every logo and every word of text exactly as they are, the same colours, light and style. Do not redraw, restyle, move or crop anything that is in the image: only continue the background and scene naturally where the new shape needs more room (floor, wall, sky, surroundings), and when the new shape is narrower, keep the whole subject fully in frame. Text must stay spelled exactly and sharp. Nothing may be added that is not already part of this scene.` }], b.quality, ratio);
+  }
   if (b.base) {
     const fix = clip(b.fix, 500).trim();
     if (!fix) throw new Error("Say what to change");

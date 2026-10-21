@@ -661,6 +661,8 @@ const readFile = (f) => new Promise((res, rej) => { const r = new FileReader(); 
 // apiFetch sends the visitor's sign-in token; a bare fetch here made the server treat signed-in users as anonymous.
 const makeCall = (path, body, signal) => apiFetch(path, { body, signal, timeout: 180000 });
 
+const SIZES = [["9:16", "Story or Reel", 9 / 16], ["4:5", "Feed", 4 / 5], ["1:1", "Square", 1], ["16:9", "Wide", 16 / 9]];
+const sizeKey = (ar) => { const [w, h] = String(ar).split("/").map(Number); const v = w / h; return SIZES.reduce((a, b) => (Math.abs(b[2] - v) < Math.abs(a[2] - v) ? b : a))[0]; };
 const FREE_CHANGES = 2;   // keep in step with FREE_EDITS in api/worker.js
 function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   useModal(onClose);
@@ -692,6 +694,8 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const [leftBy, setLeftBy] = useState({});           // free changes left, by grant
   const [vGrants, setVGrants] = useState([]);         // the grant of each inspired option
   const freeLeft = grant ? (leftBy[grant] ?? FREE_CHANGES) : 0;
+  const [sizeOpen, setSizeOpen] = useState(false);
+  const [sizes, setSizes] = useState({});             // the same ad in other placements, by ratio. Made only when asked for
   const [placement, setPlacement] = useState("");    // fashion: where and how big the customer's logo or print goes on the garment
   const fashion = tpl.category === "Fashion" && !editing;
   const tall = isVideo && !editing;                  // a video template is a full-height frame: use its first frame, not the cropped 4:5 poster
@@ -961,7 +965,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
       const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: inspired ? "inspired" : "exact", ratio: tall ? "9:16" : "4:5", ...body }, c.signal);
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setAd(`data:${out.mime};base64,${out.data}`);
-      if (out.grant) setGrant(out.grant);
+      if (out.grant) { setGrant(out.grant); setSizes({}); }
       const free = out.freeLeft !== undefined;
       if (free) setLeftBy((m) => ({ ...m, [grant]: out.freeLeft }));
       setReview(null); setFix("");
@@ -978,6 +982,29 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     run("Putting your product into the photo…", body, true);
   };
   const edit = async (text) => { const t = (text || "").trim(); if (t && ad && !busy) run("Applying your change…", { base: await shrinkPhoto(ad, 1600, 0.92), fix: t, grant }, true); };
+  // The same ad for another placement (Story, Feed, square, wide). Made only when the user asks; the ad they have stays as a version.
+  const resizeTo = async (r) => {
+    if (!ad || busy) return;
+    const cur = sizeKey(ar);
+    if (r === cur) return;
+    setSizeOpen(false);
+    if (sizes[r]) { setSizes((m) => ({ ...m, [cur]: ad })); setAd(sizes[r]); setReview(null); return; }   // already made: just show it, no charge
+    if (!SPY_API) { setErr("This needs the AdDoctor server. Open the published page, not the preview."); return; }
+    const c = new AbortController();
+    ctrl.current = c;
+    setBusy(`Making the ${r} version…`); setErr("");
+    try {
+      const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), quality: premium ? "premium" : "standard", base: await shrinkPhoto(ad, 1600, 0.92), fix: "resize", resize: true, ratio: r, grant }, c.signal);
+      const url = `data:${out.mime};base64,${out.data}`;
+      const free = out.freeLeft !== undefined;
+      if (free) setLeftBy((m) => ({ ...m, [grant]: out.freeLeft }));
+      setSizes((m) => ({ ...m, [cur]: ad, [r]: url }));
+      setAd(url); setReview(null);
+      track("ad_resized", { template_id: tpl.id, template_category: tpl.category, ratio: r });
+      if (onSpend && !free) onSpend(makeCost(premium));
+    } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
+    setBusy("");
+  };
   const undo = () => { if (!past.length || busy) return; setAd(past[past.length - 1]); setPast((p) => p.slice(0, -1)); setReview(null); };
 
   /* Inspired ads come in three options. Each option is its own request, so each one is charged, and the credits shown
@@ -995,7 +1022,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
       const okRes = res.filter((r) => r.status === "fulfilled");
       const got = okRes.map((r) => `data:${r.value.mime};base64,${r.value.data}`);
       setVGrants(okRes.map((r) => r.value.grant || ""));
-      setGrant(okRes[0] ? okRes[0].value.grant || "" : "");
+      setGrant(okRes[0] ? okRes[0].value.grant || "" : ""); setSizes({});
       if (!got.length) throw res[0].reason || new Error("Something went wrong. Try again.");
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setVariants(got); setAd(got[0]);
@@ -1029,7 +1056,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     try { src = await commitText(); } catch (e) { notify("The text could not be added. Try again."); return; }   // text still in the panel goes into the photo first
     const blob = await (await fetch(src)).blob();
     track("ad_downloaded", { template_id: tpl.id, template_category: tpl.category });
-    saveBlob(blob, `${tpl.id}-my-product.${blob.type.includes("png") ? "png" : "jpg"}`);
+    saveBlob(blob, `${tpl.id}-my-product${Object.keys(sizes).length > 1 ? "-" + sizeKey(ar).replace(":", "x") : ""}.${blob.type.includes("png") ? "png" : "jpg"}`);
   };
 
   const scoreHex = review ? (review.score >= 75 ? "#059669" : review.score >= 55 ? "#d97706" : "#e11d48") : "#059669";
@@ -1103,6 +1130,13 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                 {busy && <span ref={beamRef} className="sx-beam" aria-hidden="true" />}
               </div>
             </div>
+            {Object.keys(sizes).length > 1 && !busy && (
+              <div className="mx-auto mt-6 flex w-full max-w-[290px] flex-wrap justify-center gap-2" role="group" aria-label="Your sizes">
+                {SIZES.filter(([r]) => sizes[r] || r === sizeKey(ar)).map(([r, name]) => (
+                  <button key={r} onClick={() => resizeTo(r)} aria-pressed={sizeKey(ar) === r} className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${sizeKey(ar) === r ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{name} {r}</button>
+                ))}
+              </div>
+            )}
             {variants.length > 1 && !busy && (
               <div className="mx-auto mt-6 flex w-full max-w-[290px] justify-center gap-3" role="group" aria-label="Pick one of the options">
                 {variants.map((v, i) => (
@@ -1220,6 +1254,22 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                       <button id="make-check" onClick={check} disabled={!!busy} className="sx-action disabled:opacity-50">
                         <span><b>Score this ad</b><small>Check it before you run it</small></span><i aria-hidden="true">→</i>
                       </button>
+                    )}
+                    {!panelOpen && (
+                      <button id="make-size" onClick={() => setSizeOpen((o) => !o)} disabled={!!busy} aria-expanded={sizeOpen} className="sx-action disabled:opacity-50">
+                        <span><b>Get it for Stories, Reels and more</b><small>The same ad in another size, made when you ask</small></span><i aria-hidden="true">{sizeOpen ? "−" : "→"}</i>
+                      </button>
+                    )}
+                    {!panelOpen && sizeOpen && (
+                      <div className="py-4">
+                        <div className="flex flex-wrap gap-2" role="group" aria-label="Other sizes">
+                          {SIZES.map(([r, name, v]) => {
+                            const here = sizeKey(ar) === r;
+                            return <button key={r} onClick={() => resizeTo(r)} disabled={here || !!busy} className="sx-chip rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-600 disabled:opacity-40">{name} {r}{here ? " (this one)" : sizes[r] ? " · open" : ""}</button>;
+                          })}
+                        </div>
+                        <p className="mt-3 text-xs text-slate-400">Your current ad stays as it is. The scene is extended, your product and people stay the same. Make sizes before adding a logo or text. {grant && freeLeft > 0 ? "Each new size uses one of your free changes." : `Each new size costs ${makeCost(premium)} credits.`}</p>
+                      </div>
                     )}
                     {!panelOpen && (
                       <button id="make-logo" onClick={() => { setTextOpen(false); setLogoOpen(true); }} disabled={!!busy} className="sx-action disabled:opacity-50">
