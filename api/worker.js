@@ -664,6 +664,22 @@ const NATIVE_TEXT = `TEXT MUST LOOK NATIVE. The words must look like they were r
 
 const PRODUCT_TRUTH = (n) => `The ${n > 1 ? "other " + n + " images show" : "other image shows"} the REAL product${n > 1 ? " from different angles or in different colours" : ""}. ${n > 1 ? "They are" : "It is"} the only source of truth for the product: reproduce it exactly, with the same shape, material, colour, logo, artwork and text, in the same position and size. Do not add, invent, move, restyle or remove any print, logo, label or detail. A side of the product that the ${n > 1 ? "photos do" : "photo does"} not show stays plain.`;
 
+// Inspired ads: a text model first reads the reference and the customer's product, and writes down the ad format to keep
+// and, if the reference has words on it, the new wording for this product. The image model then follows that plan.
+async function planInspired(env, style, refs, note, headline, about) {
+  const img = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
+  const content = [
+    { type: "text", text: "IMAGE 1 is an inspiration ad. The images after it show the customer's REAL product." },
+    img(style), ...refs.map(img),
+    { type: "text", text: `Work out what kind of ad IMAGE 1 is (typed or notes text card, script sheet, review or testimonial card, before and after, poster with a headline, UGC selfie, model photo, product on a surface, screenshot style...) and how it is laid out, so another designer can rebuild the same kind of ad for the customer's product.${about ? ` What it shows: ${about}` : ""}
+If IMAGE 1 has wording on it, write the new wording for the customer's product: the same structure, number of lines, labels and tone (for example a numbered Hook, Problem, Solution script keeps those labels), about the customer's product only, short and believable, no invented numbers, prices, ratings or claims. ${headline ? `The customer's own wording is '${headline}': use it word for word as the main line.` : ""}${note ? ` About the product: ${note}` : ""} Write the wording in the language of the customer's note, or English.
+Return ONLY JSON: {"format":"the kind of ad, one line","layout":"where each element sits and how it looks, two sentences","hasText":true or false,"lines":["each line of the new wording, in order"]}. Inside strings use single quotes, never double quotes.` },
+  ];
+  const o = await askClaude(env, content, 900);
+  const lines = (Array.isArray(o.lines) ? o.lines : []).map((x) => clip(x, 160)).filter(Boolean).slice(0, 8);
+  return { format: clip(o.format, 200), layout: clip(o.layout, 400), hasText: !!o.hasText && lines.length > 0, lines };
+}
+
 async function makeAd(env, b) {
   const ratio = RATIOS.includes(b.ratio) ? b.ratio : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
@@ -703,13 +719,21 @@ ${words}
 ${PRODUCT_TRUTH(refs.length)}
 FINAL CHECK before you answer: the result must look like the first image with only the product area swapped. If the person, her hair, her skin tone, her pose, the newspaper position or the background differ from the first image in any way, you have failed; redo it. The customer's photo itself must look exactly like the uploaded photo.${place}${note ? `\nAbout the product: ${note}` : ""}` }], b.quality, ratio);
   }
+  let plan = null;
+  if (b.mode === "inspired" && env.ANTHROPIC_KEY) plan = await planInspired(env, style, refs, note, headline, about).catch(() => null);
+  const planned = plan && plan.format ? `\nAD FORMAT TO REPRODUCE: ${plan.format}. LAYOUT: ${plan.layout}` : "";
+  const finalText = plan && plan.format
+    ? (plan.hasText
+      ? `Print exactly this wording on the ad, spelled exactly as written, in the same lettering style, size and placement as the reference, crisp and fully readable, line by line:\n${plan.lines.map((l) => '"' + l + '"').join("\n")}\nWrite nothing else anywhere apart from what is on the product itself.`
+      : "The reference has no wording, so add no headline, caption, watermark or logo. The only lettering allowed is what is on the product itself.")
+    : text;
   return geminiImage(env, [inline(style), ...refs.map(inline), { text: `Create a photorealistic ${ratio} portrait advert for Facebook and Instagram.
 ${b.mode === "inspired"
   ? "The FIRST image is an inspiration reference, an existing advert. Make a NEW advert in the SAME FORMAT. First work out what kind of ad it is (for example a typed or notes text card, a script sheet, a review or testimonial card, a before and after split, a poster with a big headline, a UGC selfie, a model photo, a product on a surface, a screenshot style ad). The new ad MUST be that same kind of ad with the same structure and the same types of elements in the same kind of arrangement (text blocks, an inset product photo, badges, a person only if the reference has one). Rebuild it for the customer's product with fresh wording, new small details and a new look within the same mood and palette. Do not turn a text or graphic ad into a photo of a person, and do not turn a photo ad into a text card. Do not copy the reference's product, its wording about another product, or any logo or brand name in it."
-  : "The FIRST image is the exact layout to reproduce, an existing advert. Recreate it one to one: same composition, camera angle, framing, setting, model pose, lighting, colour mood and the same place for the text. The only thing that changes is the product. Do not copy its product, its wording, or any logo or brand name in it."}${about ? `\nWhat the reference shows: ${about}` : ""}
+  : "The FIRST image is the exact layout to reproduce, an existing advert. Recreate it one to one: same composition, camera angle, framing, setting, model pose, lighting, colour mood and the same place for the text. The only thing that changes is the product. Do not copy its product, its wording, or any logo or brand name in it."}${about ? `\nWhat the reference shows: ${about}` : ""}${planned}
 ${PRODUCT_TRUTH(refs.length)}
 Put the real product where the reference has its product: worn by the model if the reference shows a model and the product is clothing, footwear or an accessory, otherwise held, standing in the scene, or shown as the reference shows its product (for example a small photo in a corner), at a similar size in the frame. The customer's photos only show the product: use the product from them, not the person wearing it, unless the reference format has a person. The whole product must be in frame and clearly visible. Anything else the model wears is plain and neutral (black, grey or white) and never matches the product's colour, so only the real product stands out. People must look real, with natural hands and faces. Natural or cool light, never an orange glow.${place}${note ? `\nAbout the product: ${note}` : ""}
-${text}` }], b.quality, ratio);
+${finalText}` }], b.quality, ratio);
 }
 
 /* ------------------------ One competitor creative, broken down ------------------------ */
