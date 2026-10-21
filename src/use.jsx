@@ -663,6 +663,31 @@ const makeCall = (path, body, signal) => apiFetch(path, { body, signal, timeout:
 
 const SIZES = [["9:16", "Story or Reel", 9 / 16], ["4:5", "Feed", 4 / 5], ["1:1", "Square", 1], ["16:9", "Wide", 16 / 9]];
 const sizeKey = (ar) => { const [w, h] = String(ar).split("/").map(Number); const v = w / h; return SIZES.reduce((a, b) => (Math.abs(b[2] - v) < Math.abs(a[2] - v) ? b : a))[0]; };
+const IMPROVE_COST = 2;   // keep in step with creditCost("/make/improve") in api/worker.js
+const IMPROVES = [
+  { id: "offer", name: "Add an offer", desc: "Free shipping, a discount, a guarantee. Only one you really have.", ask: "inOffer", ph: "e.g. Free shipping over €50" },
+  { id: "proof", name: "Add social proof", desc: "A real rating, review or customer count. Never invented.", ask: "inProof", ph: "e.g. 4.8 ★ from 1,200 customers" },
+  { id: "line", name: "Add a supporting line", desc: "One short line written for your product that gives a reason to care." },
+];
+const pillarColor = (n) => (n >= 80 ? "#059669" : n >= 55 ? "#d97706" : "#e11d48");
+/* Draws text layers from the server's plan onto a copy of the ad. The picture is not redrawn: only the text is added, with the page's own text engine. */
+async function bakeLayers(src, layers) {
+  const base = await loadImage(src);
+  const c = document.createElement("canvas");
+  c.width = base.naturalWidth; c.height = base.naturalHeight;
+  const ctx = c.getContext("2d");
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(base, 0, 0);
+  for (const l of layers) {
+    const theme = layerTheme({ theme: l.theme, font: l.font, color: l.color, box: l.box });
+    const lines = layoutText(l.text, theme, l.s, 0);
+    ctx.save();
+    ctx.translate(c.width * l.x, c.height * l.y);
+    drawText(ctx, lines, theme, 0, 0, l.s, c.width, null);
+    ctx.restore();
+  }
+  return c.toDataURL("image/png");
+}
 const FREE_CHANGES = 2;   // keep in step with FREE_EDITS in api/worker.js
 function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   useModal(onClose);
@@ -695,7 +720,12 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const [vGrants, setVGrants] = useState([]);         // the grant of each inspired option
   const freeLeft = grant ? (leftBy[grant] ?? FREE_CHANGES) : 0;
   const [sizeOpen, setSizeOpen] = useState(false);
-  const [offerText, setOfferText] = useState("");     // the real offer the customer types, added to the ad as text
+  const [improveOpen, setImproveOpen] = useState(false);
+  const [picks, setPicks] = useState({ offer: false, proof: false, line: false });
+  const [inOffer, setInOffer] = useState("");
+  const [inProof, setInProof] = useState("");
+  const [orig, setOrig] = useState(null);              // the ad before the last improve, and the improved one, so the two can be compared
+  const [was, setWas] = useState(null);                // the score the ad had before it was improved
   const [sizes, setSizes] = useState({});             // the same ad in other placements, by ratio. Made only when asked for
   const [placement, setPlacement] = useState("");    // fashion: where and how big the customer's logo or print goes on the garment
   const fashion = tpl.category === "Fashion" && !editing;
@@ -983,7 +1013,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
       const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: inspired ? "inspired" : "exact", ratio: tall ? "9:16" : "4:5", ...body }, c.signal);
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setAd(`data:${out.mime};base64,${out.data}`);
-      if (out.grant) { setGrant(out.grant); setSizes({}); }
+      if (out.grant) { setGrant(out.grant); setSizes({}); setOrig(null); setWas(null); }
       const free = out.freeLeft !== undefined;
       if (free) setLeftBy((m) => ({ ...m, [grant]: out.freeLeft }));
       setReview(null); setFix("");
@@ -1023,8 +1053,6 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
     setBusy("");
   };
-  // The server decides where, how big and in what style the offer goes, after looking at this ad.
-  const offerTo = async (o) => { if (o && ad && !busy) run("Adding your offer…", { base: await shrinkPhoto(ad, 1600, 0.92), offer: o, fix: "offer", grant }, true); };
   const undo = () => { if (!past.length || busy) return; setAd(past[past.length - 1]); setPast((p) => p.slice(0, -1)); setReview(null); };
 
   /* Inspired ads come in three options. Each option is its own request, so each one is charged, and the credits shown
@@ -1042,7 +1070,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
       const okRes = res.filter((r) => r.status === "fulfilled");
       const got = okRes.map((r) => `data:${r.value.mime};base64,${r.value.data}`);
       setVGrants(okRes.map((r) => r.value.grant || ""));
-      setGrant(okRes[0] ? okRes[0].value.grant || "" : ""); setSizes({});
+      setGrant(okRes[0] ? okRes[0].value.grant || "" : ""); setSizes({}); setOrig(null); setWas(null);
       if (!got.length) throw res[0].reason || new Error("Something went wrong. Try again.");
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setVariants(got); setAd(got[0]);
@@ -1060,19 +1088,51 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   };
 
   const reviews = useRef({});                         // the score of each ad already checked: the same ad always shows the same score, and is not charged twice
+  const scoreOf = async (img) => makeCall("/make/review", { image: await shrinkPhoto(img, 900, 0.85), headline: headline.trim(), refs: photos.slice(0, 2).map((p) => p.src), template: editing ? "" : await shrinkPhoto(templateSrc, 700, 0.8), format: [tpl.title, tpl.format].filter(Boolean).join(" · "), note: note.trim() });
   const check = async () => {
     if (busy || !ad) return;
     if (reviews.current[ad]) { setReview(reviews.current[ad]); return; }
     setBusy("Scoring this ad…"); setErr("");
     try {
-      const small = await shrinkPhoto(ad, 900, 0.85);
-      const rv = await makeCall("/make/review", { image: small, headline: headline.trim(), refs: photos.slice(0, 2).map((p) => p.src), template: editing ? "" : await shrinkPhoto(templateSrc, 700, 0.8), format: [tpl.title, tpl.format].filter(Boolean).join(" · "), note: note.trim() });
+      const rv = await scoreOf(ad);
       reviews.current[ad] = rv;
       setReview(rv);
       track("ad_scored", { template_id: tpl.id, template_category: tpl.category, score: rv.score });
     } catch (e) { setErr(e.message || "The check failed. Try again."); }
     setBusy("");
   };
+
+  // Improve: the server designs a few text layers for this ad, the page draws them on a copy, and the new version is scored again. The original is kept.
+  const openImprove = () => {
+    const sc = (id) => { const p = review && review.pillars ? review.pillars.find((x) => x.id === id) : null; return p && !p.na ? p.score : 100; };
+    setPicks({ offer: sc("offer") < 80, proof: sc("proof") < 80, line: sc("hook") < 80 || sc("audience") < 80 });
+    setImproveOpen(true);
+  };
+  const improve = async () => {
+    const chosen = IMPROVES.filter((o) => picks[o.id]).map((o) => o.id);
+    if (busy || !ad || !chosen.length) return;
+    const before = ad, scoreBefore = review ? review.score : null;
+    const c = new AbortController();
+    ctrl.current = c;
+    setBusy("Designing your additions…"); setErr("");
+    try {
+      const out = await makeCall("/make/improve", { image: await shrinkPhoto(ad, 1400, 0.9), picks: chosen, inputs: { offer: inOffer.trim(), proof: inProof.trim() }, note: note.trim(), format: [tpl.title, tpl.format].filter(Boolean).join(" · "), grant }, c.signal);
+      const free = out.freeLeft !== undefined;
+      if (free) setLeftBy((m) => ({ ...m, [grant]: out.freeLeft }));
+      const url = await bakeLayers(before, out.layers);
+      if (onSpend && !free) onSpend(IMPROVE_COST);
+      setPast((p) => [...p, before].slice(-6));
+      setOrig({ before, after: url }); setWas(scoreBefore);
+      setAd(url); setReview(null); setImproveOpen(false); setInOffer(""); setInProof("");
+      track("ad_improved", { template_id: tpl.id, template_category: tpl.category, picks: chosen.join(",") });
+      setBusy("Scoring the improved ad…");
+      const rv = await scoreOf(url);
+      reviews.current[url] = rv;
+      setReview(rv);
+    } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
+    setBusy("");
+  };
+  const showVersion = (u) => { if (busy || u === ad) return; setAd(u); setReview(reviews.current[u] || null); };
 
   const download = async () => {
     let src = ad;
@@ -1156,6 +1216,13 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                 {busy && <span ref={beamRef} className="sx-beam" aria-hidden="true" />}
               </div>
             </div>
+            {orig && !busy && (
+              <div className="mx-auto mt-6 flex w-full max-w-[290px] justify-center gap-2" role="group" aria-label="Original or improved">
+                {[["Original", orig.before], ["Improved", orig.after]].map(([name, u]) => (
+                  <button key={name} onClick={() => showVersion(u)} aria-pressed={ad === u} className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${ad === u ? "bg-slate-950 text-white" : "sx-chip text-slate-600"}`}>{name}</button>
+                ))}
+              </div>
+            )}
             {Object.keys(sizes).length > 1 && !busy && (
               <div className="mx-auto mt-6 flex w-full max-w-[290px] flex-wrap justify-center gap-2" role="group" aria-label="Your sizes">
                 {SIZES.filter(([r]) => sizes[r] || r === sizeKey(ar)).map(([r, name]) => (
@@ -1268,20 +1335,45 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                       </span>
                       <p className="text-[13.5px] font-medium leading-snug text-slate-700">{review.verdict}</p>
                     </div>
+                    {was !== null && orig && ad === orig.after && <p className="mt-3 text-xs font-semibold" style={{ color: review.score >= was ? "#059669" : "#e11d48" }}>{review.score >= was ? `Up from ${was} to ${review.score}` : `Was ${was}, now ${review.score}. Your original is kept, switch back under the ad.`}</p>}
+                    {review.pillars && review.pillars.length > 0 && (
+                      <div className="mt-4 space-y-2.5">
+                        {review.pillars.filter((p) => !p.na).map((p) => (
+                          <div key={p.id}>
+                            <div className="flex items-center justify-between text-[12.5px]"><span className="font-semibold text-slate-800">{p.label}</span><span className="font-semibold tabular-nums" style={{ color: pillarColor(p.score) }}>{p.score}</span></div>
+                            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full" style={{ width: `${p.score}%`, background: pillarColor(p.score) }} /></div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {review.strengths.length > 0 && <ul className="mt-4 space-y-2 text-[13px] text-slate-600">{review.strengths.map((s) => <li key={s} className="flex gap-2.5"><Icon.Check className="mt-1 h-3 w-3 shrink-0 text-emerald-600" /><span>{s}</span></li>)}</ul>}
                     {review.fixes.length > 0 && <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Why it is not 100</p>}
                     {review.fixes.length > 0 && <ul className="mt-2.5 space-y-2 text-[13px] text-slate-600">{review.fixes.map((s) => <li key={s} className="flex gap-2.5"><Icon.Alert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" /><span>{s}</span></li>)}</ul>}
-                    {review.needsOffer && (
-                      <div className="mt-4 rounded-xl bg-slate-50 p-3.5">
-                        <label htmlFor="make-offer" className="block text-[13px] font-semibold text-slate-900">Add your offer to the ad</label>
-                        <p className="mt-0.5 text-xs text-slate-500">Only an offer you really have. It is added in the style of your ad, spelled exactly as you write it.</p>
-                        <div className="mt-2.5 flex items-center gap-2">
-                          <input id="make-offer" value={offerText} onChange={(e) => setOfferText(e.target.value)} maxLength={60} placeholder="e.g. Free shipping over €50" className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none focus:border-slate-400" />
-                          <button onClick={() => { const o = offerText.trim(); if (o) { setOfferText(""); offerTo(o); } }} disabled={!offerText.trim() || !!busy} className="shrink-0 rounded-lg bg-slate-950 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Add to my ad</button>
+                    {!improveOpen ? (
+                      <button id="make-improve" onClick={openImprove} disabled={!!busy} className="mt-5 inline-flex items-center rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50">Improve this ad</button>
+                    ) : (
+                      <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                        <p className="text-[13.5px] font-semibold text-slate-900">What should we add?</p>
+                        <p className="mt-0.5 text-xs leading-snug text-slate-500">Your picture is not redrawn. We only add text on top, designed for this ad, and your original is kept.</p>
+                        <div className="mt-3 space-y-2.5">
+                          {IMPROVES.map((o) => (
+                            <div key={o.id} className={`rounded-lg border bg-white p-3 transition ${picks[o.id] ? "border-slate-900" : "border-slate-200"}`}>
+                              <label className="flex cursor-pointer items-start gap-3">
+                                <input type="checkbox" checked={!!picks[o.id]} onChange={() => setPicks((p) => ({ ...p, [o.id]: !p[o.id] }))} className="mt-1 h-4 w-4 accent-slate-950" />
+                                <span className="block"><span className="block text-[13px] font-semibold text-slate-900">{o.name}</span><span className="block text-xs text-slate-500">{o.desc}</span></span>
+                              </label>
+                              {picks[o.id] && o.ask && (
+                                <input value={o.ask === "inOffer" ? inOffer : inProof} onChange={(e) => (o.ask === "inOffer" ? setInOffer : setInProof)(e.target.value)} maxLength={90} placeholder={o.ph} className="mt-2.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 outline-none focus:border-slate-400" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-4 flex items-center gap-4">
+                          <button id="make-improve-go" onClick={improve} disabled={!!busy || !IMPROVES.some((o) => picks[o.id]) || (picks.offer && !inOffer.trim()) || (picks.proof && !inProof.trim())} className="inline-flex items-center rounded-full bg-slate-950 px-5 py-2.5 text-[13px] font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">Improve · {grant && freeLeft > 0 ? "uses a free change" : `${IMPROVE_COST} credits`}</button>
+                          <button onClick={() => setImproveOpen(false)} className="text-xs font-semibold text-slate-500 transition hover:text-slate-900">Cancel</button>
                         </div>
                       </div>
                     )}
-                    {review.regen && <button id="make-autofix" onClick={() => edit(review.regen)} disabled={!!busy} className="mt-4 inline-flex items-center rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50">Fix the small things</button>}
                   </div>
                 )}
 

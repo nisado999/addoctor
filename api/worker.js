@@ -694,6 +694,21 @@ Return ONLY JSON: {"thinking":"two short sentences on what you saw and why you c
   return clip(o.instruction, 700);
 }
 
+// Turns a reviewer's fixes into one careful instruction for the image editor. A person decides, with the picture in front of them,
+// which fixes are safe to make and exactly how far to go, so nothing gets enlarged into something else or pushed into the headline.
+async function planFixes(env, base, list) {
+  const content = [
+    { type: "image", source: { type: "base64", media_type: base.mime, data: base.data } },
+    { type: "text", text: `You are an art director. This is a finished ad. A reviewer suggested these fixes:
+${list.map((x, i) => (i + 1) + ". " + x).join("\n")}
+Decide which of them you can make safely, and write the instruction for an image editor. Rules: keep the layout, the headline, all wording and the look exactly as they are. You may scale one element up by at most about 25 percent, or nudge it, only if there is clearly free space and the result keeps a comfortable margin from the edges and does not touch or overlap any other element or text. You may darken or lighten a colour, sharpen a blurred detail, or correct a misspelling. Do not add anything and do not remove anything. Skip any fix that cannot be made without crowding the layout. If you could not make any of them safely, return an empty instruction.
+Return ONLY JSON: {"thinking":"two short sentences","instruction":"one paragraph for the image editor naming exactly what to change, by how much, and what must stay exactly the same"}. Inside strings use single quotes, never double quotes.` },
+  ];
+  const o = await askClaude(env, content, 700);
+  const t = clip(o.instruction, 800).trim();
+  return t ? t + " Keep every other element exactly as it is, in the same size and place." : "";
+}
+
 async function makeAd(env, b) {
   const ratio = RATIOS.includes(b.ratio) ? b.ratio : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
@@ -712,6 +727,11 @@ async function makeAd(env, b) {
   if (b.base) {
     const base = await loadRef({ data: b.base });
     let fix = clip(b.fix, 500).trim();
+    const list = (Array.isArray(b.fixes) ? b.fixes : []).map((x) => clip(x, 220)).filter(Boolean).slice(0, 4);
+    if (list.length) {
+      const how = await planFixes(env, base, list).catch(() => "");
+      fix = how || "Improve the advert as described: " + list.join(" ") + " Do not change the layout, headline or wording; keep every element in its place.";
+    }
     const offer = clip(b.offer, 80).trim();
     if (offer) {
       // An art director's decision first: where this offer goes, how big and in what style depends on this particular ad.
@@ -912,13 +932,17 @@ ${lines}`;
 // The score is a fixed rubric. The model only rates each point (full, partial or miss) and names what is wrong; the
 // arithmetic is done here, so every lost point has a stated reason. The same ad always gets the same review.
 const RUBRIC = [
-  { id: "offer", w: 25, label: "A clear offer or reason to act", ask: "Does the ad give a concrete reason to act now: a discount, free shipping, a guarantee, a bundle, a trial, a deadline, or a clear call to action tied to a real benefit? full = a concrete offer or a clear call to action with a benefit is visible. partial = a benefit is shown but no concrete offer or call to action, or the customer's note has an offer that is not shown on the ad. miss = nothing gives a reason to act. Never answer na.", always: true },
-  { id: "stop", w: 15, label: "Stops the scroll and has one clear idea", ask: "Is the idea clear in one second, and would it stop a thumb scrolling a feed?", always: true },
-  { id: "product", w: 20, label: "Product clear and true to its photos", ask: "Is the product easy to see and the same product as in the reference photos? Flag only real differences: a different shape, colour or material, a print or logo that is missing, wrong or clearly changed, or a product too small to recognise. Small details being small is not a flaw: a chest logo on a garment that is small in the frame cannot be legible and must not be marked down if it is in the right place and looks like the real one. Answer na when this ad's format deliberately shows no product (for example a text-only card)." },
-  { id: "text", w: 15, label: "Text legible and correct", ask: "Is any wording spelled correctly, large enough for a phone and high contrast? Answer na when the ad has no wording." },
-  { id: "craft", w: 15, label: "Well made for its format", ask: "Is it executed well for its format: realistic if a photo, tidy and balanced if a graphic, nothing cut off, no distortions or odd hands and faces?", always: true },
-  { id: "claims", w: 10, label: "Believable wording, no unsupported claims", ask: "Is the wording believable? Only flag claims that contradict or go well beyond what the customer told us, and word that fix as something to check. Answer na when the ad has no wording." },
+  { id: "offer", w: 18, name: "Offer", label: "A clear offer or reason to act", ask: "Does the ad give a concrete reason to act now: a discount, free shipping, a guarantee, a bundle, a trial, a deadline, or a clear call to action tied to a real benefit? full = a concrete offer or a clear call to action with a benefit is visible. partial = a benefit is shown but no concrete offer or call to action, or the customer's note has an offer that is not shown on the ad. miss = nothing gives a reason to act. Never answer na.", always: true },
+  { id: "hook", w: 12, name: "Hook and scroll-stop", label: "Stops the scroll and has one clear idea", ask: "Is the idea clear in one second, and would it stop a thumb scrolling a feed?", always: true },
+  { id: "product", w: 14, name: "Product", label: "Product clear and true to its photos", ask: "Is the product easy to see and the same product as in the reference photos? Flag only real differences: a different shape, colour or material, a print or logo that is missing, wrong or clearly changed, or a product too small to recognise. Small details being small is not a flaw: a chest logo on a garment that is small in the frame cannot be legible and must not be marked down if it is in the right place and looks like the real one. Answer na when this ad's format deliberately shows no product (for example a text-only card)." },
+  { id: "text", w: 10, name: "Text", label: "Text legible and correct", ask: "Is any wording spelled correctly, large enough for a phone and high contrast? Answer na when the ad has no wording." },
+  { id: "craft", w: 10, name: "Visual quality", label: "Well made for its format", ask: "Is it executed well for its format: realistic if a photo, tidy and balanced if a graphic, nothing cut off, no distortions or odd hands and faces?", always: true },
+  { id: "claims", w: 6, name: "Wording", label: "Believable wording, no unsupported claims", ask: "Is the wording believable? Only flag claims that contradict or go well beyond what the customer told us, and word that fix as something to check. Answer na when the ad has no wording." },
+  { id: "proof", w: 10, name: "Social proof", label: "Trust signals", ask: "Is there a trust signal a stranger would believe: a star rating, review quote, customer count, press mention, guarantee badge or similar? full = a clear trust signal is visible. minor = a weak or generic one. partial or miss = none, with miss for ads that ask for a purchase with no trust at all. Never answer na. Never suggest inventing a rating or a review: the fix is to add a real one the customer has.", always: true },
+  { id: "audience", w: 10, name: "Audience fit", label: "Speaks to the right buyer", ask: "Do the wording, look and tone fit the kind of buyer this product is for, judged from the product and the customer's note?", always: true },
+  { id: "policy", w: 10, name: "Meta ad policy", label: "Safe under Meta's ad rules", ask: "Is the ad free of things Meta rejects: before and after body claims, guaranteed results, health or income promises, wording that points at a personal attribute of the viewer, misleading urgency or fake interface elements? full = no risk. A real risk is partial or miss and the note must name it.", always: true },
 ];
+
 
 async function reviewKey(parts) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(parts.join("|")));
@@ -930,17 +954,17 @@ async function makeReview(env, b) {
   if (!data || data.length > 3000000) throw new Error("image missing or too large");
   const headline = clip(b.headline, 90).trim(), format = clip(b.format, 200).trim(), note = clip(b.note, 300).trim();
   // The same ad, wording and context always returns the same review.
-  const cacheUrl = typeof caches !== "undefined" ? "https://review.addoctor.internal/" + (await reviewKey([data, headline, format, note, String((b.refs || []).length), "v5"])) : "";
+  const cacheUrl = typeof caches !== "undefined" ? "https://review.addoctor.internal/" + (await reviewKey([data, headline, format, note, String((b.refs || []).length), "v7"])) : "";
   if (cacheUrl) { const hit = await caches.default.match(cacheUrl).catch(() => null); if (hit) return hit.json(); }
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 2).catch(() => []);
   const tpl = b.template ? await loadRef({ data: b.template }).catch(() => null) : null;
   const prompt = `You are a strict, fair creative reviewer rating one static Meta ad (Facebook and Instagram) against a fixed rubric. Rate only what you can see. Be consistent: the same ad must always get the same ratings.
 ${headline ? `Headline the customer asked to have printed on the image: "${headline}"` : "The customer asked for no particular headline. Wording on the image is fine when it belongs to the ad's format."}
 THE AD'S FORMAT IS INTENDED. This ad was deliberately built to follow a reference ad${format ? ` of this kind: ${format}` : ""}${tpl ? ", shown in the first image" : ""}. Everything that belongs to that format (typed or handwritten text, numbered lines or labels such as Hook, Problem and Solution, a small product photo in a corner, a plain background, a UGC or screenshot look) is on purpose. Never list it as a flaw and never suggest changing the layout or the format.${note ? ` Facts the customer gave about their product, so wording that matches them is not an invented claim: ${note}` : ""}${refs.length ? " Compare the product with the reference photos of the real product; a real difference in shape, colour, print, logo design or text is a flaw, but a detail that is only small because the product is small in the frame is not." : ""}
-Rate each point "full", "partial" or "miss", or "na" when its question says it may be answered na:
+Rate each point "full" (no flaw), "minor" (a small flaw), "partial" (a real flaw) or "miss" (a serious flaw), or "na" when its question says it may be answered na:
 ${RUBRIC.map((r) => `- ${r.id}: ${r.ask}`).join("\n")}
-Rules: rate "full" unless you can name a concrete, visible flaw. "partial" is a real but small flaw, "miss" is a serious one. For every point that is not "full", "note" must say exactly what the flaw is and how to fix it, in one short sentence starting with a verb, so the customer knows why points were lost. For the offer, never invent a discount or deal: say to show the offer from the customer's note, or to add one they really have (for example free shipping, a guarantee, a bundle or a deadline). For a "full" point, "note" is a short phrase on what works.
-Return ONLY JSON: {"verdict":"one plain sentence","criteria":[{"id":"stop","rating":"full|partial|miss|na","note":"..."}, one entry for each of the ${RUBRIC.length} ids],"regen":"a short edit instruction for an image editor, or an empty string"}
+Rules: rate "full" unless you can name a concrete, visible flaw. "minor" is a small flaw, "partial" is a real flaw, "miss" is a serious one. For every point that is not "full", "note" must say exactly what the flaw is and how to fix it, in one short sentence starting with a verb, so the customer knows why points were lost. For the offer, never invent a discount or deal: say to show the offer from the customer's note, or to add one they really have (for example free shipping, a guarantee, a bundle or a deadline). For a "full" point, "note" is a short phrase on what works.
+Return ONLY JSON: {"verdict":"one plain sentence","criteria":[{"id":"stop","rating":"full|minor|partial|miss|na","note":"..."}, one entry for each of the ${RUBRIC.length} ids],"regen":"a short edit instruction for an image editor, or an empty string"}
 REGEN RULES: regen may only ask for SMALL, local corrections to things already in the picture, for example darken a pale grey text colour, make one blurred word sharp, fix a misspelled word, or tidy a garbled logo so it matches the product photo. It must NEVER ask to enlarge, shrink, move, crop, add or remove any element, never touch the layout, the headline, the product size or position, and never add an offer or any new wording. If a flaw can only be fixed by changing size, layout or adding something, leave it out of regen. If nothing qualifies, regen is an empty string.
 Inside the JSON strings use single quotes when you quote words, never double quotes.`;
   const imgBlock = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
@@ -957,25 +981,67 @@ Inside the JSON strings use single quotes when you quote words, never double quo
   if (!good(o)) o = unwrap(await askClaude(env, content, 1200, "tool", 0));
   if (!good(o)) throw new Error("The check could not be read. Try again.");
   // Points that do not apply to this ad's format are left out and the rest are scaled to 100, so a good text-only ad can still score 100.
+  const LEVEL = { full: 1, minor: 0.8, partial: 0.5, miss: 0.15 };
   const rated = RUBRIC.map((r) => {
     const c = o.criteria.find((x) => x && x.id === r.id);
     const k = String(c.rating || "").toLowerCase();
-    return { r, c, na: k === "na" && !r.always, got: k === "full" ? 1 : k === "partial" ? 0.5 : 0 };
+    return { r, c, na: k === "na" && !r.always, got: LEVEL[k] === undefined ? 0.5 : LEVEL[k] };
   });
   const total = rated.filter((x) => !x.na).reduce((a, x) => a + x.r.w, 0) || 100;
   let score = 0;
-  const strengths = [], fixes = [];
+  const strengths = [], fixes = [], pillars = [];
   for (const { r, c, na, got } of rated) {
-    if (na) continue;
+    const text = clip(c.note, 170).trim();
+    if (na) { pillars.push({ id: r.id, label: r.name, na: true, note: text }); continue; }
     const share = (r.w / total) * 100;
     score += share * got;
-    const text = clip(c.note, 170).trim();
-    if (got === 1) { if (text) strengths.push(`${r.label}: ${text}`); }
-    else fixes.push(`${text || r.label} (-${Math.max(1, Math.round(share * (1 - got)))} points: ${r.label.toLowerCase()})`);
+    pillars.push({ id: r.id, label: r.name, score: Math.round(got * 100), note: text });
+    if (got === 1) { if (text) strengths.push(`${r.name}: ${text}`); }
+    else fixes.push(`${text || r.label} (-${Math.max(1, Math.round(share * (1 - got)))} points: ${r.name.toLowerCase()})`);
   }
-  const out = { needsOffer: rated.some((x) => x.r.id === "offer" && x.got < 1), score: Math.round(score), verdict: clip(o.verdict, 240), strengths: strengths.slice(0, 3), fixes: fixes.slice(0, 5), regen: fixes.length ? clip(o.regen, 500) : "" };
+  const out = { score: Math.round(score), verdict: clip(o.verdict, 240), strengths: strengths.slice(0, 3), fixes: fixes.slice(0, 5), pillars };
   if (cacheUrl) await caches.default.put(cacheUrl, new Response(JSON.stringify(out), { headers: { "Cache-Control": "max-age=2592000", "content-type": "application/json" } })).catch(() => {});
   return out;
+}
+
+/* Improve: the picture is never redrawn. A text model looks at the finished ad and designs a few text layers (an offer, a proof line,
+   a supporting line); the page draws them itself with its own text engine, so the photo and the product stay exactly as they are. */
+const IMPROVE_PICKS = ["offer", "proof", "line"];
+const LAYER_THEMES = ["bold", "ink", "tag", "red", "outline", "script"];
+const LAYER_FONTS = ["theme", "sans", "heavy", "impact", "condensed", "rounded", "serif", "elegant", "mono", "hand"];
+async function makeImprove(env, b) {
+  const data = String(b.image || "").replace(/^data:image\/\w+;base64,/, "");
+  if (!data || data.length > 3000000) throw new Error("image missing or too large");
+  const picks = [...new Set((Array.isArray(b.picks) ? b.picks : []).filter((p) => IMPROVE_PICKS.includes(p)))].slice(0, 3);
+  if (!picks.length) throw new Error("Pick what to improve");
+  const inp = b.inputs && typeof b.inputs === "object" ? b.inputs : {};
+  const given = { offer: clip(inp.offer, 80).trim(), proof: clip(inp.proof, 90).trim() };
+  if (picks.includes("offer") && !given.offer) throw new Error("Type your real offer");
+  if (picks.includes("proof") && !given.proof) throw new Error("Type your real review, rating or customer count");
+  const note = clip(b.note, 300).trim(), format = clip(b.format, 200).trim();
+  const want = picks.map((p) => (p === "offer" ? `- kind "offer": print exactly "${given.offer}"` : p === "proof" ? `- kind "proof": print exactly "${given.proof}"` : `- kind "line": write ONE short supporting line, at most 8 words, that gives the buyer a reason to care, using only the product and the note: no numbers, no ratings, no claims, no prices`)).join("\n");
+  const prompt = `You are an art director adding a few text layers on top of a finished ad. The picture itself must not change, so you only design text. Layers wanted:
+${want}
+${format ? `The ad's format: ${format}.` : ""}${note ? ` About the product: ${note}` : ""}
+First study the ad: its typography, colours, mood (quiet and premium, or loud and promotional), what the eye reads first, and where it is empty. Then, for each layer, decide where it goes, how big, and in what style, so that it is noticed and believed but supports the ad instead of fighting its headline. There is no fixed rule: small and quiet can be right, big and bold can be right, depending on this ad. Every layer must sit in empty space, never over the product, a face or existing text, with at least 5 percent margin from the image edges, and its colours must contrast with what is behind it.
+Numbers: x and y are the CENTRE of the layer as a share of the image width and height (0 to 1). s is the letter size as a share of the image width (0.035 small, 0.05 medium, 0.08 big). theme is one of ${LAYER_THEMES.join(", ")}: ink = dark bold letters, tag = dark letters on a white pill, red = white letters on a red pill, bold = white letters with a shadow, outline = white letters with a dark outline, script = italic serif. font is one of ${LAYER_FONTS.join(", ")} (theme keeps the theme's font). color is a hex colour for the letters or null, box is a hex colour for a pill behind the letters, false for none, or null to keep the theme's.
+Return ONLY JSON: {"thinking":"two short sentences on what you saw and why","layers":[{"kind":"offer|proof|line","text":"...","x":0.5,"y":0.9,"s":0.05,"theme":"tag","font":"theme","color":null,"box":null}]}. Inside strings use single quotes, never double quotes.`;
+  const o = await askClaude(env, [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }], 900, "tool", 0);
+  const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
+  const hex = (c) => (/^#[0-9a-f]{6}$/i.test(String(c || "")) ? String(c) : null);
+  const got = Array.isArray(o.layers) ? o.layers : [];
+  const layers = picks.map((kind, i) => {
+    const l = got.find((x) => x && x.kind === kind) || {};
+    const text = kind === "offer" ? given.offer : kind === "proof" ? given.proof : clip(l.text, 70).trim();
+    return {
+      kind, text,
+      x: num(l.x, 0.1, 0.9, 0.5), y: num(l.y, 0.06, 0.94, 0.9 - 0.08 * i), s: num(l.s, 0.03, 0.11, 0.05),
+      theme: LAYER_THEMES.includes(l.theme) ? l.theme : "ink", font: LAYER_FONTS.includes(l.font) ? l.font : "theme",
+      color: hex(l.color), box: l.box === false ? false : hex(l.box),
+    };
+  }).filter((l) => l.text);
+  if (!layers.length) throw new Error("Nothing could be added. Try again.");
+  return { layers, thinking: clip(o.thinking, 300) };
 }
 
 async function packReview(env, b) {
@@ -1120,6 +1186,7 @@ function creditCost(path, b) {
     case "/organic": return 3;
     case "/make/ad": return premium ? 12 : 5;
     case "/make/review": return 1;
+    case "/make/improve": return 2;
     case "/pack/image": return premium ? 12 : 5;
     case "/pack/brief": case "/pack/posts": return 2;
     case "/pack/store": case "/pack/review": return 1;
@@ -1249,9 +1316,9 @@ async function handle(req, rawEnv, hooks) {
       if (!isOwner(env, who)) {
         try {
           let peek = {};
-          if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/pack/image")) peek = await req.clone().json().catch(() => ({}));
+          if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/make/improve" || u.pathname === "/pack/image")) peek = await req.clone().json().catch(() => ({}));
           let cost = creditCost(u.pathname, peek);
-          if (cost > 0 && u.pathname === "/make/ad" && peek.base && peek.grant) {
+          if (cost > 0 && peek.grant && ((u.pathname === "/make/ad" && peek.base) || u.pathname === "/make/improve")) {
             const left = await useGrant(env, who.id, peek.grant);
             if (left >= 0) { cost = 0; hooks.freeLeft = left; }
           }
@@ -1382,6 +1449,11 @@ async function handle(req, rawEnv, hooks) {
           return json(env, out);
         }
         if (u.pathname === "/make/review") return json(env, await makeReview(env, b));
+        if (u.pathname === "/make/improve") {
+          const out = await makeImprove(env, b);
+          if (hooks.freeLeft !== undefined) out.freeLeft = hooks.freeLeft;
+          return json(env, out);
+        }
       }
       return json(env, { error: "not found" }, 404);
     } catch (e) {
