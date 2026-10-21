@@ -6,21 +6,10 @@ import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
 import { CreativeGallery } from "./creatives.jsx";
 import { useBillingOn, COSTS } from "./billing.js";
+import { SPY_ANGLES, SPY_ANGLE } from "./angles.js";
 
 /* ============================ Competitor Spy ============================ */
 
-const SPY_ANGLES = [
-  { id: "offer", label: "Discount / offer", tpl: "price-receipt", re: /(\d{1,2}\s?%\s?off|\$\d+\s?off|save\s\$?\d+|\bsale\b|\bbogo\b|buy\s(?:one|two|\d)\b[^.]*\bget\b|free shipping|\bbundle\b|\bcode\s+[A-Z0-9]{3,}|discount)/gi },
-  { id: "urgency", label: "Urgency / scarcity", tpl: "offer-lookbook", re: /(ends\s+(?:tonight|today|soon|sunday|monday|tuesday|wednesday|thursday|friday|saturday)|last chance|limited time|final hours|today only|while (?:supplies|stock)s? last|selling out|hurry|don't miss|only \d+ left)/gi },
-  { id: "proof", label: "Social proof", tpl: "review-stack", re: /(\d[\d,]*\+?\s(?:five-star\s)?(?:reviews|customers|people|happy)|★|5-star|five-star|\brated\b|dermatolog|clinically|\bdoctor|testimonial|"[^"]{10,}"|“[^”]{10,}”|trusted by|best[- ]?seller|#1\b)/gi },
-  { id: "problem", label: "Problem → solution", tpl: "mirror-pas", re: /(tired of|sick of|struggl|still (?:dealing|using|paying)|no more\b|stop (?:\w+ing)|breakout|flare|redness|red, |frustrat|finally|if you(?:'re| are)|ever (?:feel|wonder))/gi },
-  { id: "mechanism", label: "Product mechanism", tpl: "ingredient-dissection", re: /(ingredient|formula|niacinamide|ceramide|hyaluronic|peptide|\bspf\s?\d+|no white cast|mineral|hall-effect|lightweight|absorbs|engineered|patent|technology|made with|infused)/gi },
-  { id: "compare", label: "Comparison", tpl: "us-vs-them", re: /(\svs\.?\s|versus|unlike|compared to|better than|other brands|the difference|switch(?:ed)? from|instead of)/gi },
-  { id: "founder", label: "Founder / brand story", tpl: "founder-note", re: /(founder|i built|i started|our story|why we (?:made|built|started)|we started|after years)/gi },
-  { id: "ugc", label: "UGC / honest review", tpl: "tweet-reaction", re: /(honest review|i tried|i tested|30 days|unboxing|\bhaul\b|my routine|get ready with me|grwm|results after|here's what happened)/gi },
-  { id: "new", label: "New launch", tpl: "hero-product", re: /(\bnew(?:ly)?\b|just launched|introducing|now (?:in|available)|\blaunch)/gi },
-];
-const SPY_ANGLE = Object.fromEntries(SPY_ANGLES.map((a) => [a.id, a]));
 
 const SPY_PROMOS = [
   { id: "pct", re: /(\d{1,2})\s?%\s?off|save\s(\d{1,2})\s?%|(?:up to|έως)\s*-?\s*(\d{1,2})\s?%|(?:^|[\s(])-\s?(\d{2})\s?%/i, fmt: (m) => `${m[1] || m[2] || m[3] || m[4]}% off`, name: "Percent-off discount" },

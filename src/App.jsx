@@ -136,12 +136,12 @@ const VIEWS = {
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Spy", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
   rivals: { title: "Find Competitors", sub: "Enter your brand and we research who you are really up against." },
-  winners: { title: "Winning Ads", sub: "Ads other brands have kept running for months. Proven, so you can learn from them." },
+  inspiration: { title: "Inspiration", sub: "Ads that kept running for a month or more. Brands only pay for ads that work, so these are proven. Find a style you like, then make it with your product." },
   vault: { title: "Saved Vault", sub: "Prescriptions you saved, and competitor ads you kept from Spy." },
   plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
-const KEEP = ["spy", "pack", "lab", "rivals", "winners"];
+const KEEP = ["spy", "pack", "lab", "rivals", "inspiration"];
 
 const VAULT_KEY = "addoctor.vault.v1";
 const FAVS_KEY = "addoctor.favs.v1";
@@ -721,11 +721,12 @@ function App() {
   const noFavs = quick === "favs" && !favs.length;
 
   const toSpy = (name) => { setSpySeed(name || ""); goto("spy"); };
+  const browseTemplates = (term) => { if (goto("explore") && typeof term === "string") { setQuick(null); setCat("All"); setQ(term); } };
   const screen = (id) => (
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
     : id === "rivals" ? <RivalsView onSpy={toSpy} />
-    : id === "winners" ? <WinnersView notify={notify} onSpy={toSpy} active={view === "winners"} />
+    : id === "inspiration" ? <WinnersView notify={notify} onMake={rebuild} onBrowse={browseTemplates} active={view === "inspiration"} />
     : <SpyView notify={notify} onRebuild={rebuild} active={view === "spy"} seed={spySeed} />
   );
 

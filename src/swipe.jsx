@@ -48,12 +48,16 @@ export const isSwiped = (id) => list.some((x) => x.id === id);
 
 // A small JPEG of the ad picture, so it still shows once Meta's link has expired.
 async function makeThumb(img) {
-  const r = await apiFetch("/thumb", { body: { img }, timeout: 30000, retries: 1 });
+  let src = img;
+  if (!(typeof location !== "undefined" && String(img).startsWith(location.origin))) {   // a picture from this site needs no trip to the Worker
+    const r = await apiFetch("/thumb", { body: { img }, timeout: 30000, retries: 1 });
+    src = `data:${r.mime};base64,${r.data}`;
+  }
   const el = await new Promise((resolve, reject) => {
     const i = new Image();
     i.onload = () => resolve(i);
     i.onerror = () => reject(new Error("The picture could not be read"));
-    i.src = `data:${r.mime};base64,${r.data}`;
+    i.src = src;
   });
   const k = Math.min(1, 420 / Math.max(el.width, el.height));
   const c = document.createElement("canvas");

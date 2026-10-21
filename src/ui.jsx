@@ -294,7 +294,7 @@ const NAV = [
     { id: "spy", label: "Competitor Spy", icon: Icon.Eye },
   ] },
   { head: "Library", items: [
-    { id: "winners", label: "Winning Ads", icon: Icon.Trophy, note: "New" },
+    { id: "inspiration", label: "Inspiration", icon: Icon.Trophy, note: "New" },
     { id: "vault", label: "Saved Vault", icon: Icon.Bookmark },
   ] },
 ];

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "library": "node tools/build-library.mjs"
   },
   "dependencies": {
     "@gsap/react": "2.1.2",
@@ -29,6 +30,7 @@
     "globals": "^17.13.0",
     "postcss": "^8.5.28",
     "shadcn": "^4.22.0",
+    "sharp": "^0.35.5",
     "tailwindcss": "3.4",
     "vite": "^5.4.0"
   }
