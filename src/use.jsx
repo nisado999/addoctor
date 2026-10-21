@@ -661,6 +661,7 @@ const readFile = (f) => new Promise((res, rej) => { const r = new FileReader(); 
 // apiFetch sends the visitor's sign-in token; a bare fetch here made the server treat signed-in users as anonymous.
 const makeCall = (path, body, signal) => apiFetch(path, { body, signal, timeout: 180000 });
 
+const FREE_CHANGES = 2;   // keep in step with FREE_EDITS in api/worker.js
 function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
@@ -687,6 +688,10 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const [cutTol, setCutTol] = useState(45);
   const [cutLogo, setCutLogo] = useState(null);
   const [variants, setVariants] = useState([]);       // the inspired options from the last run, shown to pick from
+  const [grant, setGrant] = useState("");           // the server's pass for this ad: edits that carry it are free until the free changes run out
+  const [leftBy, setLeftBy] = useState({});           // free changes left, by grant
+  const [vGrants, setVGrants] = useState([]);         // the grant of each inspired option
+  const freeLeft = grant ? (leftBy[grant] ?? FREE_CHANGES) : 0;
   const [placement, setPlacement] = useState("");    // fashion: where and how big the customer's logo or print goes on the garment
   const fashion = tpl.category === "Fashion" && !editing;
   const tall = isVideo && !editing;                  // a video template is a full-height frame: use its first frame, not the cropped 4:5 poster
@@ -956,9 +961,12 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
       const out = await makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: inspired ? "inspired" : "exact", ratio: tall ? "9:16" : "4:5", ...body }, c.signal);
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setAd(`data:${out.mime};base64,${out.data}`);
+      if (out.grant) setGrant(out.grant);
+      const free = out.freeLeft !== undefined;
+      if (free) setLeftBy((m) => ({ ...m, [grant]: out.freeLeft }));
       setReview(null); setFix("");
       track(body.base ? "ad_edited" : "ad_generated", { template_id: tpl.id, template_category: tpl.category, quality: premium ? "premium" : "standard", product_photos: photos.length, has_headline: !!headline.trim() });
-      if (spendNow && onSpend) onSpend(makeCost(premium));
+      if (spendNow && onSpend && !free) onSpend(makeCost(premium));
     } catch (e) { if (!c.signal.aborted) setErr(e.message || "Something went wrong. Try again."); }
     setBusy("");
   };
@@ -969,7 +977,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     if (inspired) return generateVariants(body);
     run("Putting your product into the photo…", body, true);
   };
-  const edit = async (text) => { const t = (text || "").trim(); if (t && ad && !busy) run("Applying your change…", { base: await shrinkPhoto(ad, 1600, 0.92), fix: t }, true); };
+  const edit = async (text) => { const t = (text || "").trim(); if (t && ad && !busy) run("Applying your change…", { base: await shrinkPhoto(ad, 1600, 0.92), fix: t, grant }, true); };
   const undo = () => { if (!past.length || busy) return; setAd(past[past.length - 1]); setPast((p) => p.slice(0, -1)); setReview(null); };
 
   /* Inspired ads come in three options. Each option is its own request, so each one is charged, and the credits shown
@@ -984,7 +992,10 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
     const one = () => makeCall("/make/ad", { refs: photos.map((p) => p.src), headline: headline.trim(), quality: premium ? "premium" : "standard", mode: "inspired", ratio: tall ? "9:16" : "4:5", ...body }, c.signal);
     try {
       const res = await Promise.allSettled(Array.from({ length: VARIANTS }, one));
-      const got = res.filter((r) => r.status === "fulfilled").map((r) => `data:${r.value.mime};base64,${r.value.data}`);
+      const okRes = res.filter((r) => r.status === "fulfilled");
+      const got = okRes.map((r) => `data:${r.value.mime};base64,${r.value.data}`);
+      setVGrants(okRes.map((r) => r.value.grant || ""));
+      setGrant(okRes[0] ? okRes[0].value.grant || "" : "");
       if (!got.length) throw res[0].reason || new Error("Something went wrong. Try again.");
       if (ad) setPast((p) => [...p, ad].slice(-6));
       setVariants(got); setAd(got[0]);
@@ -997,6 +1008,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const pickVariant = (v) => {
     if (v === ad || busy) return;
     setPast((p) => [...p, ad].slice(-6));
+    setGrant(vGrants[variants.indexOf(v)] || "");
     setAd(v); setReview(null);
   };
 
@@ -1182,7 +1194,10 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {ideas.map((s) => <button key={s} onClick={() => setFix(s)} className="sx-chip rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-600">{s}</button>)}
                   </div>
-                  <p className="mt-3 text-xs text-slate-400">Only what you ask for changes. Your product stays as it is in your photos.</p>
+                  <p className="mt-3 text-xs text-slate-400">Only what you ask for changes. Your product stays as it is in your photos.{" "}
+                    {grant && (freeLeft > 0
+                      ? <b className="font-semibold text-emerald-700">{freeLeft} free {freeLeft === 1 ? "change" : "changes"} left on this ad.</b>
+                      : <span>Free changes used. Each change now costs {makeCost(premium)} credits.</span>)}</p>
                 </div>
 
                 {review && (

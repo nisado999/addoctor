@@ -682,8 +682,8 @@ async function makeAd(env, b) {
   const about = clip(b.about, 400).trim(), note = clip(b.note, 300).trim(), where = clip(b.placement, 160).trim();
   // A logo or print is not a whole garment: it goes small and neat on the garment unless the customer says where and how big.
   const place = where
-    ? `\nLOGO PLACEMENT, follow exactly: if the customer's photo is a logo, graphic or print rather than a complete product, apply it on the product in the advert like this: ${where}. Keep that size and spot, judged against the garment as seen in the first image.`
-    : "\nIf the customer's photo is only a logo, graphic or print rather than a complete product, it is the print for the garment or product in the advert: place it SMALL and neat in the natural logo spot (for a top, on the chest, about the size of a palm, roughly 15 to 20 percent of the garment's width). Never blow it up across the whole front and never centre a huge print unless asked.";
+    ? `\nLOGO PLACEMENT, follow exactly: if the customer's photo is a logo, graphic or print rather than a complete product, apply it on the product in the advert like this: ${where}. Keep that size and spot, judged against the garment as seen in the first image. A "small" logo is pocket-sized, about 8 to 12 percent of the garment's width, much smaller than a palm.`
+    : "\nIf the customer's photo is only a logo, graphic or print rather than a complete product, it is the print for the garment or product in the advert: place it SMALL and neat in the natural logo spot (for a top, on the chest, about the size of a palm, a pocket-sized mark, roughly 8 to 12 percent of the garment's width). Never blow it up across the whole front and never centre a huge print unless asked.";
   if (b.mode !== "inspired") {
     // One to one: the template photo is edited, not re-imagined, so the person, place and light stay as they are.
     const words = b.keepText ? "Keep every word of text in the image exactly as it is, in the same place and style."
@@ -964,6 +964,29 @@ async function bump(key, ttl) {
   return n;
 }
 
+/* Free changes: a new ad comes back with a signed grant for its account. An edit that carries the grant is free
+   until FREE_EDITS uses of that grant have been counted. Forged, expired or other people's grants never match. */
+const FREE_EDITS = 2;
+const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+async function grantMac(env, body) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(env.GRANT_SECRET || env.GEMINI_KEY || "x"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return b64u(new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(body))));
+}
+async function signGrant(env, uid) {
+  const body = `${uid}.${crypto.randomUUID()}.${Date.now()}`;
+  return body + "." + (await grantMac(env, body));
+}
+// Counts one use. Returns the free changes left after it, or -1 when the grant is not valid or is used up.
+async function useGrant(env, uid, token) {
+  const p = String(token || "").split(".");
+  if (p.length !== 4 || p[0] !== uid) return -1;
+  if (p[3] !== (await grantMac(env, p.slice(0, 3).join(".")))) return -1;
+  if (Date.now() - Number(p[2]) > 6 * 3600000) return -1;
+  const n = await bump(`grant/${p[1]}`, 6 * 3600);
+  return n <= FREE_EDITS ? FREE_EDITS - n : -1;
+}
+
 // Used when ALLOW_ORIGIN is not set: the live site and local dev servers. Set ALLOW_ORIGIN in Cloudflare to change it.
 const DEFAULT_ORIGINS = "https://nisado999.github.io,http://localhost:5173,http://localhost:4173";
 
@@ -1130,7 +1153,11 @@ async function handle(req, rawEnv, hooks) {
         try {
           let peek = {};
           if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/pack/image")) peek = await req.clone().json().catch(() => ({}));
-          const cost = creditCost(u.pathname, peek);
+          let cost = creditCost(u.pathname, peek);
+          if (cost > 0 && u.pathname === "/make/ad" && peek.base && peek.grant) {
+            const left = await useGrant(env, who.id, peek.grant);
+            if (left >= 0) { cost = 0; hooks.freeLeft = left; }
+          }
           if (cost > 0) {
             const ref = `spend:${who.id}:${crypto.randomUUID()}`;
             const r = await dbRpc(env, "billing_spend", { uid: who.id, amount: cost, why: u.pathname, ref_id: ref });
@@ -1251,7 +1278,12 @@ async function handle(req, rawEnv, hooks) {
       // ---- an ad from a template and a product photo ----
       if (u.pathname.startsWith("/make/") && req.method === "POST") {
         const b = await req.json();
-        if (u.pathname === "/make/ad") return json(env, await makeAd(env, b));
+        if (u.pathname === "/make/ad") {
+          const out = await makeAd(env, b);
+          if (!b.base) out.grant = await signGrant(env, who ? who.id : "anon");
+          else if (hooks.freeLeft !== undefined) out.freeLeft = hooks.freeLeft;
+          return json(env, out);
+        }
         if (u.pathname === "/make/review") return json(env, await makeReview(env, b));
       }
       return json(env, { error: "not found" }, 404);
