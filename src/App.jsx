@@ -34,6 +34,7 @@ const AuthModal = lazyRetry(() => import("./account"), (m) => m.AuthModal);
 const SpyView = lazyRetry(() => import("./spy"), (m) => m.SpyView);
 const PlansView = lazyRetry(() => import("./plans"), (m) => m.PlansView);
 const PackView = lazyRetry(() => import("./pack"), (m) => m.PackView);
+const GuidedView = lazyRetry(() => import("./guided"), (m) => m.GuidedView);
 const LabView = lazyRetry(() => import("./lab"), (m) => m.LabView);
 const WinnersView = lazyRetry(() => import("./winners"), (m) => m.WinnersView);
 const RivalsView = lazyRetry(() => import("./rivals"), (m) => m.RivalsView);
@@ -130,8 +131,8 @@ const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(naviga
 const VIEWS = {
   home: { title: "Home" },
   explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one, add your logo, or make a new one in its style." },
-  video: { title: "Video Generator", studio: true },
-  static: { title: "Static Ads", studio: true },
+  video: { title: "Video Generator", sub: "Answer a few questions and we build a brief made for your brand. Video creation is coming soon." },
+  static: { title: "Static Ads", sub: "Answer a few questions and we design ads from scratch, made for you. No templates." },
   pack: { title: "30-Day Drop", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Spy", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
@@ -141,7 +142,7 @@ const VIEWS = {
   plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
-const KEEP = ["spy", "pack", "lab", "rivals", "inspiration"];
+const KEEP = ["spy", "pack", "lab", "rivals", "inspiration", "static", "video"];
 
 const VAULT_KEY = "addoctor.vault.v1";
 const FAVS_KEY = "addoctor.favs.v1";
@@ -174,7 +175,7 @@ const FROM_SHELL = typeof document !== "undefined" && !!document.querySelector("
 const OWNERS = String(import.meta.env.VITE_OWNER_EMAILS || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 /* The view lives in the URL hash, so reload and the back button keep your place. */
-const isView = (id) => Object.prototype.hasOwnProperty.call(VIEWS, id) && id !== "video"; // not #constructor and the like
+const isView = (id) => Object.prototype.hasOwnProperty.call(VIEWS, id); // not #constructor and the like
 function viewFromHash() {
   const id = typeof location !== "undefined" ? location.hash.slice(1) : "";
   return isView(id) ? id : "home";
@@ -592,7 +593,6 @@ function App() {
 
   // Returns false when the visitor chose to stay with unsaved work in a dialog.
   const goto = (id) => {
-    if (id === "video") { notify("The Video Generator is coming soon."); return false; }
     if (id === "examine") { openExam({}); return true; }
     if (openRef.current.length) {
       if (!confirmDiscard()) return false;
@@ -725,6 +725,7 @@ function App() {
   const screen = (id) => (
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
+    : id === "static" || id === "video" ? <GuidedView kind={id} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
     : id === "rivals" ? <RivalsView onSpy={toSpy} />
     : id === "inspiration" ? <WinnersView notify={notify} onMake={rebuild} onBrowse={browseTemplates} active={view === "inspiration"} />
     : <SpyView notify={notify} onRebuild={rebuild} active={view === "spy"} seed={spySeed} />

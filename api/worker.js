@@ -709,9 +709,43 @@ Return ONLY JSON: {"thinking":"two short sentences","instruction":"one paragraph
   return t ? t + " Keep every other element exactly as it is, in the same size and place." : "";
 }
 
+// Guided builder: the customer's answers (and what we read from their site) become three different ad concepts.
+async function planScratch(env, b) {
+  const a = b.answers || {}, s = b.site || {};
+  const facts = [
+    ["Brand", a.brand || s.name], ["What they sell", a.sells || s.description], ["Offer", a.offer], ["Audience", a.audience],
+    ["Goal of the ad", a.goal], ["Tone", a.tone], ["Wording wanted", a.wording], ["Language", a.language],
+  ].filter(([, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${clip(v, 300)}`).join("\n");
+  const o = await askClaude(env, `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads from scratch for one business. Write exactly 3 concepts. Each uses a clearly different angle (for example the problem it solves, the result you get, social proof or proof of quality, the offer itself, a lifestyle moment) and a different scene.
+THE BUSINESS
+${facts}
+${b.photos ? "Real photos of the product are provided, so every scene must feature that exact product." : "No product photo exists, so design the visual around the idea and do not claim to show the real product."}
+Rules: use only the facts above. ${a.offer ? "The offer may appear in the ad exactly as given." : "There is NO offer: print no discount, price, free shipping or deadline anywhere."} No invented numbers, ratings, awards or testimonials. Headlines are short (max 8 words), believable and in the language given, or the language of the brand.
+Return ONLY JSON: {"concepts":[{"title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here."}]}. Inside strings use single quotes, never double quotes.`, 1400);
+  const list = (Array.isArray(o.concepts) ? o.concepts : []).slice(0, 3);
+  if (list.length < 3) throw new Error("We could not plan the ads. Try again.");
+  return { concepts: list.map((c) => ({ title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700) })) };
+}
+
 async function makeAd(env, b) {
   const ratio = RATIOS.includes(b.ratio) ? b.ratio : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
+  if (b.mode === "scratch") {
+    // A tailor-made ad: no template, only the concept written for this customer and (if any) their product photos.
+    const c = b.concept || {}, a = b.answers || {};
+    // Photos from the customer's website arrive as links; each hop is checked by loadRef/safeUrl.
+    if (refs.length < 3 && Array.isArray(b.refUrls)) refs.push(...await loadRefs(b.refUrls.map((url) => ({ url })), 3 - refs.length));
+    const head = clip(c.headline, 90).trim(), sub = clip(c.sub, 120).trim();
+    const words = head
+      ? `Put this headline in the advert, spelled exactly as written, readable with strong contrast and generous margins: "${head}". ${NATIVE_TEXT}${sub ? ` Under it, smaller, exactly: "${sub}".` : ""} Write nothing else anywhere, apart from what is on the product itself.`
+      : "No headline, caption, watermark or added logo. The only lettering allowed is what is on the product itself.";
+    const brand = clip(a.brand, 80).trim();
+    return geminiImage(env, [...refs.map(inline), { text: `Create a polished ${ratio} advert for Facebook and Instagram, designed from scratch for ${brand || "this business"}. ${a.sells ? "It sells: " + clip(a.sells, 240) + ". " : ""}${a.tone ? "Tone: " + clip(a.tone, 100) + ". " : ""}
+Concept: ${clip(c.angle, 140)}. Scene and layout: ${clip(c.scene, 700)}
+${refs.length ? PRODUCT_TRUTH(refs.length) + " Show the real product clearly and fully in frame." : "There is no product photo, so do not invent a specific branded product, logo or packaging; let the idea and the scene carry the ad."}
+People, if any, look real with natural hands and faces. Natural or cool light, never an orange glow. ${a.offer ? `The offer may be shown exactly as written, spelled exactly: "${clip(a.offer, 80)}".` : "Show no discount, price or offer anywhere."}
+${words}` }], b.quality, ratio);
+  }
   if (!refs.length && !b.resize && !b.base) throw new Error("Add a photo of your product first");   // a saved ad opened from the Vault is edited without product photos
   const headline = clip(b.headline, 90).trim(), sub = clip(b.sub, 120).trim();
   const text = headline
@@ -1288,6 +1322,7 @@ function creditCost(path, b) {
     case "/rivals": return 3;
     case "/make/ad": return premium ? 12 : 5;
     case "/make/review": return 1;
+    case "/make/plan": return 2;
     case "/make/improve": return 2;
     case "/pack/image": return premium ? 12 : 5;
     case "/pack/brief": case "/pack/posts": return 2;
@@ -1552,6 +1587,7 @@ async function handle(req, rawEnv, hooks) {
           else if (hooks.freeLeft !== undefined) out.freeLeft = hooks.freeLeft;
           return json(env, out);
         }
+        if (u.pathname === "/make/plan") return json(env, await planScratch(env, b));
         if (u.pathname === "/make/review") return json(env, await makeReview(env, b));
         if (u.pathname === "/make/improve") {
           const out = await makeImprove(env, b);
