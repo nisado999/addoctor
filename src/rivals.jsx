@@ -10,10 +10,10 @@ import { track } from "./track.js";
 
 const KEY = "addoctor.rivals.v1";
 const STEPS = [
-  "Reading up on your brand",
-  "Working out who buys from you",
-  "Searching the market for look-alikes",
-  "Checking who is advertising",
+  "Confirming who your brand is",
+  "Working out its style and who buys it",
+  "Searching for brands with the same look",
+  "Scoring each one against your brand",
   "Ranking the closest rivals",
 ];
 const PRICE = { cheaper: "Cheaper than you", similar: "Similar price", pricier: "Pricier than you" };
@@ -36,7 +36,7 @@ function Thinking({ step }) {
           </li>
         ))}
       </ol>
-      <p className="mt-4 text-xs text-slate-400">This searches the live web, so it usually takes 20 to 40 seconds.</p>
+      <p className="mt-4 text-xs text-slate-400">This searches the live web and checks each match, so it usually takes about a minute.</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ function RivalCard({ c, rank, onSpy, market }) {
         <span className={`ml-auto shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${c.type === "direct" ? "bg-rose-50 text-rose-700 ring-rose-100" : "bg-slate-50 text-slate-500 ring-slate-200"}`}>{c.type === "direct" ? "Direct rival" : "Adjacent"}</span>
       </div>
       {c.why && <p className="mt-3 text-[13px] leading-relaxed text-slate-600">{c.why}</p>}
-      {c.price && PRICE[c.price] && <p className="mt-2 text-xs font-semibold text-slate-400">{PRICE[c.price]}</p>}
+      {(c.fit || (c.price && PRICE[c.price])) && <p className="mt-2 text-xs font-semibold text-slate-400">{[c.fit ? `Fit ${c.fit}/10` : "", c.price && PRICE[c.price] ? PRICE[c.price] : ""].filter(Boolean).join(" · ")}</p>}
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
         <button onClick={() => onSpy(c.pageName || c.name)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
           <Icon.Eye className="h-3.5 w-3.5" />Spy on their ads
@@ -129,6 +129,7 @@ export function RivalsView({ onSpy }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Your brand · {res.marketName ? `Market: ${res.marketName}` : "Market: Global"}</p>
             <p className="mt-1 text-base font-semibold text-slate-900">{res.brand.name}</p>
             {res.brand.sells && <p className="mt-1 text-sm text-slate-600">{res.brand.sells}</p>}
+            {res.brand.look && <p className="mt-1 text-sm text-slate-500">Style: {res.brand.look}</p>}
             {res.brand.buyer && <p className="mt-1 text-sm text-slate-500">Buyer: {res.brand.buyer}</p>}
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">

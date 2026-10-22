@@ -1171,29 +1171,56 @@ async function findRivals(env, b) {
   const where = country
     ? `Market: ${country} only. Find competitors that sell to and advertise to buyers in ${country}: local brands from ${country} and international brands that actively sell there. Judge price level against that market and search in ${country}'s language as well as English. Ignore brands that do not serve ${country}.`
     : `Market: global. Find the main international competitors that sell across several countries, not brands that only sell in one local market.`;
-  const prompt = `You are a market analyst finding the DIRECT competitors of one brand, so a marketer can study the ads those competitors run. Brand: ${site ? site : input}.
+  // 1. Who the brand really is. A bare name can belong to unrelated businesses, so confirm it, then describe its look and buyer.
+  let siteText = "";
+  if (site) { try { siteText = clip((await readStore(safeUrl(site))).text, 2000); } catch (e) { /* the web search below still works */ } }
+  const profPrompt = `You are a brand strategist. Work out who this brand really is. Brand: ${site || input}.
+${siteText ? "Text from its own website:\n" + siteText + "\n" : ""}Use web search to confirm you have the right brand ("${input}" may be a name shared by unrelated businesses: find its own website and social profiles) and to learn its look and its customers.
+Return ONLY JSON: {"name":"","site":"domain.com","country":"where it is based","sells":"what it sells, one sentence","look":"its brand style in a few words, e.g. dark minimal streetwear, pastel playful gifts, clinical premium skincare","buyer":"who buys it: age, gender, subculture or lifestyle","price":"budget, mid or premium, with a typical price","search":["3 short phrases a buyer of this brand would search to find similar brands"],"not":["2 to 4 kinds of brand that sell a similar product but are NOT competitors because their style or buyer is different"]}
+Inside JSON strings use single quotes when you quote words, never double quotes.`;
+  const prof = (await askClaudeSearch(env, profPrompt, 1500)) || {};
+  const profile = { name: clip(prof.name, 80) || input, site: site || String(prof.site || "").replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#\s]/)[0].slice(0, 80), country: clip(prof.country, 60), sells: clip(prof.sells, 240), look: clip(prof.look, 140), buyer: clip(prof.buyer, 240), price: clip(prof.price, 100) };
+
+  // 2. Candidates that look like that brand, not just ones that sell the same kind of product.
+  const candPrompt = `You are a market analyst finding the competitors of one brand, so a marketer can study the ads those competitors run.
 ${where}
-Use web search to learn what this brand sells, its price level and who buys it. Then find the brands that sell a similar product to the same buyer at a similar price and that advertise online.
-Rules: only real brands that are operating now and that you found evidence for. Never invent a brand or a website. Do not list the brand itself. Do not list marketplaces or giant general retailers (Amazon, Walmart, Target) unless the brand is itself one.
-Return ONLY JSON: {"brand":{"name":"the brand's name","sells":"what it sells, one sentence","buyer":"who buys it, one sentence"},"competitors":[{"name":"","site":"domain.com","why":"one sentence on why they compete head to head","type":"direct or adjacent","price":"cheaper, similar, pricier or unknown"}]}
-Give 8 competitors, direct ones first, at most 2 adjacent. Inside JSON strings use single quotes when you quote words, never double quotes.`;
-  const o = await askClaudeSearch(env, prompt);
-  const seen = new Set([nameKey(o && o.brand && o.brand.name), nameKey(site.split(".")[0])]);
-  const comps = (Array.isArray(o && o.competitors) ? o.competitors : []).filter((c) => c && typeof c === "object" && c.name).map((c) => {
+Brand profile: ${JSON.stringify({ ...profile, not: Array.isArray(prof.not) ? prof.not.map((x) => clip(x, 100)) : [] })}
+Use web search (for example: ${(Array.isArray(prof.search) ? prof.search : []).slice(0, 3).map((x) => '"' + clip(x, 80) + '"').join(", ") || "the brand's product type plus its style"}) to find 12 real brands whose product, STYLE and BUYER are all close to this brand's, so a marketer would put the two brands' ads side by side. A brand that sells the same type of product to a different buyer or in a different style is NOT a competitor.
+Rules: only real brands operating now that you found evidence for. Never invent a brand or a website. Do not list the brand itself. Do not list marketplaces or giant general retailers unless the brand is itself one. For each, describe from its own site or social what it sells, its look and who buys it.
+Return ONLY JSON: {"candidates":[{"name":"","site":"domain.com","sells":"","look":"","buyer":"","price":"cheaper, similar, pricier or unknown"}]}
+Inside JSON strings use single quotes when you quote words, never double quotes.`;
+  const found = await askClaudeSearch(env, candPrompt, 3500);
+  const cand = (Array.isArray(found && found.candidates) ? found.candidates : []).filter((c) => c && typeof c === "object" && c.name);
+  if (!cand.length) throw new Error("No competitors came back for that brand. Check the name and try again.");
+
+  // 3. A separate, strict review: each candidate is scored against the profile and weak matches are dropped.
+  const judgePrompt = `You are a strict reviewer deciding whether each candidate really competes for the same buyer as this brand.
+Brand profile: ${JSON.stringify(profile)}
+Candidates:
+${cand.slice(0, 14).map((c, i) => `${i + 1}. ${clip(c.name, 80)} | sells: ${clip(c.sells, 120)} | look: ${clip(c.look, 100)} | buyer: ${clip(c.buyer, 120)} | price: ${clip(c.price, 20)}`).join("\n")}
+Score every candidate from 0 to 10 on: product (same type of item), style (same look and brand vibe), buyer (same age, gender and lifestyle), price. "fit" is the overall score and can never be higher than the lower of style and buyer. Be strict: a different style or a different buyer is at most 4 even when the product type matches. Kids, baby or gift brands do not compete with an adult streetwear brand, and a pastel playful brand does not compete with a dark one.
+Return ONLY JSON: {"scores":[{"i":1,"product":0,"style":0,"buyer":0,"price":0,"fit":0,"type":"direct or adjacent","why":"one sentence naming what this brand and the candidate share"}]}`;
+  const judged = await askClaude(env, judgePrompt, 2500);
+  const byI = new Map((Array.isArray(judged && judged.scores) ? judged.scores : []).map((s) => [Number(s && s.i), s]));
+  const seen = new Set([nameKey(profile.name), nameKey(site.split(".")[0])]);
+  const all = cand.slice(0, 14).map((c, idx) => {
+    const s = byI.get(idx + 1) || {};
     const host = String(c.site || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#\s]/)[0];
     return {
-      name: clip(c.name, 80), site: /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host) ? host.slice(0, 80) : "", why: clip(c.why, 260),
-      type: /adjacent/i.test(c.type) ? "adjacent" : "direct", price: ["cheaper", "similar", "pricier"].find((p) => new RegExp("^" + p, "i").test(String(c.price || ""))) || "",
+      name: clip(c.name, 80), site: /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host) ? host.slice(0, 80) : "", why: clip(s.why, 260),
+      type: /adjacent/i.test(s.type) ? "adjacent" : "direct", price: ["cheaper", "similar", "pricier"].find((p) => new RegExp("^" + p, "i").test(String(c.price || ""))) || "",
+      fit: Math.max(0, Math.min(10, Math.round(Number(s.fit) || 0))),
     };
-  }).filter((c) => c.name && !seen.has(nameKey(c.name)) && seen.add(nameKey(c.name))).slice(0, 10);
-  if (!comps.length) throw new Error("No competitors came back for that brand. Check the name and try again.");
+  }).filter((c) => c.name && !seen.has(nameKey(c.name)) && seen.add(nameKey(c.name))).sort((a, b) => b.fit - a.fit);
+  const strong = all.filter((c) => c.fit >= 6);
+  const comps = (strong.length >= 3 ? strong : all.filter((c) => c.fit >= 5)).slice(0, 8);
+  if (!comps.length) throw new Error("No close competitors came back for that brand. Add its website address and try again.");
   if (env.SCRAPECREATORS_KEY) {
     await Promise.all(comps.map(async (c) => {
       try { const pg = await findPage(env, c.name); if (pg) Object.assign(c, { pageId: pg.id, pageName: pg.name, avatar: pg.avatar, ig: pg.ig }); } catch (e) { /* shown without an ads link */ }
     }));
   }
-  const br = o && o.brand && typeof o.brand === "object" ? o.brand : {};
-  return { brand: { name: clip(br.name, 80) || input, site, sells: clip(br.sells, 240), buyer: clip(br.buyer, 240) }, competitors: comps, market, marketName: country };
+  return { brand: { name: profile.name, site: profile.site, sells: profile.sells, look: profile.look, buyer: profile.buyer }, competitors: comps, market, marketName: country };
 }
 
 // The score is a fixed rubric. The model only rates each point (full, partial or miss) and names what is wrong; the
