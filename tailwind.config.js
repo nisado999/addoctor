@@ -27,6 +27,7 @@ const white = themed("b-white", "#ffffff", "#151412");
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   // index.html holds the static first screen, so its classes have to be generated too.
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {

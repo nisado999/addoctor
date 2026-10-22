@@ -12,9 +12,24 @@ const ring = "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-60
 
 const TIERS = {
   free: { top: "from-white", border: "border border-slate-200", accent: "text-slate-400", box: "bg-slate-100/80 ring-slate-200/70" },
-  starter: { top: "from-amber-100 via-orange-50", border: "border border-amber-200", accent: "text-amber-600", box: "bg-white/70 ring-amber-200", btn: "bg-[#09090B] hover:bg-zinc-800 shadow-zinc-900/25", cta: "Get Starter", current: "border border-amber-300 bg-amber-50 text-amber-800" },
-  pro: { top: "from-blue-200 via-sky-50", border: "border-2 border-[#2563EB] shadow-xl shadow-blue-600/25 lg:-translate-y-2", accent: "text-blue-600", box: "bg-white/75 ring-blue-200", btn: "bg-gradient-to-r from-[#2563EB] to-[#3B82F6] hover:from-blue-700 hover:to-blue-500 shadow-blue-600/40", cta: "Get Pro", current: "border border-[#2563EB] bg-blue-50 text-blue-700" },
-  agency: { top: "from-violet-200 via-fuchsia-50", border: "border border-violet-300 shadow-lg shadow-violet-500/15", accent: "text-violet-600", box: "bg-white/75 ring-violet-200", btn: "bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] hover:from-indigo-700 hover:to-violet-600 shadow-violet-600/35", cta: "Get For Teams", current: "border border-violet-300 bg-violet-50 text-violet-700" },
+  starter: {
+    top: "from-amber-100 via-orange-50 dark:from-[#2b2b2d] dark:via-[#1d1d1f]", border: "border border-amber-200 dark:border-[#3b3b3e]", accent: "text-amber-600 dark:text-[#d4d0c8]",
+    box: "bg-white/70 ring-amber-200 dark:bg-black/25 dark:ring-[#3b3b3e]",
+    btn: "bg-[#09090B] text-white hover:bg-zinc-800 shadow-zinc-900/25 dark:bg-[#FBFBFA] dark:text-[#09090B] dark:hover:bg-white dark:shadow-white/10", cta: "Get Starter",
+    current: "border border-amber-300 bg-amber-50 text-amber-800 dark:border-[#3b3b3e] dark:bg-[#232325] dark:text-[#d4d0c8]",
+  },
+  pro: {
+    top: "from-lime-200 via-lime-50 dark:from-[#4b5a0c] dark:via-[#1b2108]", border: "border-2 border-[#8DB00E] shadow-xl shadow-lime-600/25 dark:border-[#A6C41C] dark:shadow-[#E3FD2B]/10 lg:-translate-y-2", accent: "text-lime-700 dark:text-[#E3FD2B]",
+    box: "bg-white/75 ring-lime-300 dark:bg-black/30 dark:ring-[#7d9418]/60",
+    btn: "bg-[#E3FD2B] text-[#0b0a09] hover:bg-[#d4ee1c] shadow-lime-500/40 dark:shadow-[#E3FD2B]/20", cta: "Get Pro",
+    current: "border border-[#8DB00E] bg-lime-100 text-lime-900 dark:border-[#A6C41C] dark:bg-[#26300a] dark:text-[#E3FD2B]",
+  },
+  agency: {
+    top: "from-blue-200 via-sky-50 dark:from-[#1f3fa6] dark:via-[#0f1b4a]", border: "border border-blue-300 shadow-lg shadow-blue-500/20 dark:border-[#3566f0] dark:shadow-[#2C5EF4]/20", accent: "text-blue-600 dark:text-[#7f9fff]",
+    box: "bg-white/75 ring-blue-200 dark:bg-black/30 dark:ring-[#2c4cc4]/60",
+    btn: "bg-[#2C5EF4] text-white hover:bg-[#2250e0] shadow-blue-600/40", cta: "Get For Teams",
+    current: "border border-blue-300 bg-blue-50 text-blue-700 dark:border-[#3566f0] dark:bg-[#12205a] dark:text-[#9db6ff]",
+  },
 };
 const PILL = { green: "bg-emerald-100 text-emerald-800", blue: "bg-blue-100 text-blue-700", slate: "bg-slate-200/80 text-slate-700" };
 const FeatureRow = ({ label, pill, tone }) => (
@@ -99,7 +114,7 @@ function PlanFinder({ yearly, user, acct, bill, busy, buy }) {
           <p className="text-sm font-semibold text-slate-600">We recommend the <span className="text-slate-950">{rec.name}</span> plan</p>
           <button onClick={() => setWhy(!why)} aria-expanded={why} className={`mt-2 rounded-full bg-white/80 px-3 py-1 text-xs font-bold ${t.accent} ring-1 ring-slate-200 ${ring}`}>See why</button>
           {why && <p className="mt-2 max-w-xs text-center text-xs leading-relaxed text-slate-600">You'd use about {need.toLocaleString("en-US")} credits a month. {rec.name} includes {rec.credits.toLocaleString("en-US")}{over > 0 ? `, and ${topups} top-up${topups === 1 ? "" : "s"} of ${TOPUP.credits} (${money(topups * TOPUP.price)}) covers the rest.` : ", so you're covered."}</p>}
-          <div className={`mt-4 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl ${t.border.includes("border-2") ? "border-2 border-[#2563EB] shadow-blue-600/20" : "border border-slate-200"}`}>
+          <div className={`mt-4 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl ${t.border.includes("border-2") ? "border-2 border-[#8DB00E] dark:border-[#A6C41C]" : "border border-slate-200"}`}>
             <h3 className="text-lg font-extrabold uppercase tracking-tight text-slate-950">{rec.name}{paid && yearly && <span className="ml-2 align-middle rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">17% off</span>}</h3>
             <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-slate-900"><Icon.Sparkle className={`h-4 w-4 ${t.accent}`} />{rec.credits.toLocaleString("en-US")} credits / mo</p>
             <div className="mt-3 flex items-baseline justify-between text-xs"><span className="text-slate-500">Expected monthly usage</span><span className={`font-bold tabular-nums ${over > 0 ? "text-rose-600" : "text-emerald-600"}`}>{need.toLocaleString("en-US")}/{rec.credits.toLocaleString("en-US")} credits</span></div>
@@ -109,7 +124,7 @@ function PlanFinder({ yearly, user, acct, bill, busy, buy }) {
             </p>
             {rec.id === "free" ? <button disabled className="mt-3 h-11 w-full rounded-xl bg-slate-100 text-sm font-bold text-slate-400">Included with an account</button>
               : current ? <button disabled className={`mt-3 h-11 w-full rounded-xl text-sm font-bold ${t.current}`}>Your plan</button>
-              : <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`mt-3 h-11 w-full rounded-xl text-sm font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${t.btn}`}>{busy === key ? "Opening…" : user ? t.cta : "Sign in to choose"}</button>}
+              : <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`mt-3 h-11 w-full rounded-xl text-sm font-bold shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${t.btn}`}>{busy === key ? "Opening…" : user ? t.cta : "Sign in to choose"}</button>}
             {paid && <p className="mt-2 text-center text-[11px] text-slate-500">{yearly ? `Save ${money(rec.month * 12 - rec.year)}/year compared to monthly` : "Flexible monthly billing"}</p>}
           </div>
         </div>
@@ -201,8 +216,8 @@ export default function PlansView({ user, onSignIn, notify }) {
                     <h3 className="text-lg font-extrabold uppercase tracking-tight text-slate-950">{p.name}</h3>
                     {paid && yearly && <span className="rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">17% off</span>}
                   </div>
-                  {p.popular ? <span className="shrink-0 rounded-full bg-[#2563EB] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm shadow-blue-600/40">Most popular</span>
-                    : p.id === "agency" ? <span className="shrink-0 rounded-full bg-violet-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Best value</span> : null}
+                  {p.popular ? <span className="shrink-0 rounded-full bg-[#E3FD2B] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0b0a09] shadow-sm">Most popular</span>
+                    : p.id === "agency" ? <span className="shrink-0 rounded-full bg-[#2C5EF4] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Best value</span> : null}
                 </div>
                 <p className="mt-1 min-h-[2.5rem] text-xs leading-snug text-slate-500">{p.who}</p>
 
@@ -226,7 +241,7 @@ export default function PlansView({ user, onSignIn, notify }) {
                   ) : current ? (
                     <button disabled className={`h-11 w-full rounded-xl text-sm font-bold ${t.current}`}>Your plan</button>
                   ) : (
-                    <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`h-11 w-full rounded-xl text-sm font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${t.btn}`}>{busy === key ? "Opening…" : user ? t.cta : "Sign in to choose"}</button>
+                    <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`h-11 w-full rounded-xl text-sm font-bold shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${t.btn}`}>{busy === key ? "Opening…" : user ? t.cta : "Sign in to choose"}</button>
                   )}
                   <p className="mt-2 text-center text-[11px] text-slate-500">{!paid ? "No card needed" : yearly ? `Save ${money(saved)}/year compared to monthly` : "Flexible monthly billing"}</p>
                 </div>
