@@ -905,6 +905,13 @@ ${spyCompact(ads)}`;
     const ok = await copyText(txt);
     notify(ok === false ? "Couldn't copy. Select the text manually." : msg);
   };
+  const downloadDeck = async () => {
+    try {
+      const { downloadSpyDeck } = await import("./spyDeck.js");
+      await downloadSpyDeck({ brand: state.brand, reports: state.reports, title: spyPlatformTitle(state.brand, Object.keys(state.reports)) });
+      track("spy_pptx", { ads_count: res ? res.ads.length : 0 });
+    } catch (e) { notify("Couldn't make the PowerPoint. Try again."); }
+  };
   const reportText = () => {
     const out = [spyPlatformTitle(state.brand, ["Meta"]), "", "Meta"];
     state.reports.Meta.slide.forEach((b) => out.push("• " + b));
@@ -1021,9 +1028,14 @@ ${spyCompact(ads)}`;
       <div id="spy-results" className="scroll-mt-24">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700 ring-1 ring-blue-100">{srcLabel} · {spyPlural(res.n, "ad")}</p>
-          <button id="spy-copy" onClick={() => copy(reportText(), "Slide text copied")} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
+          <div className="flex flex-wrap items-center gap-2">
+            <button id="spy-pptx" onClick={downloadDeck} className="inline-flex items-center gap-1.5 rounded-full bg-[#2563EB] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+              <Icon.Download className="h-3.5 w-3.5" /> Download PowerPoint
+            </button>
+                      <button id="spy-copy" onClick={() => copy(reportText(), "Slide text copied")} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
             <Icon.Copy className="h-3.5 w-3.5" /> Copy slide text
           </button>
+          </div>
         </div>
 
         <SpySlide brand={state.brand} reports={state.reports} onRebuild={onRebuild} />
