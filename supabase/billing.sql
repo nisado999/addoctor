@@ -46,7 +46,7 @@ create policy "read own ledger" on public.credit_ledger for select using (auth.u
 -- Monthly credits per plan. Keep in step with PLAN_CREDITS in api/worker.js and src/plans.js.
 create or replace function public.plan_allowance(p text) returns integer
 language sql immutable as $$
-  select case p when 'starter' then 300 when 'pro' then 900 when 'agency' then 2500 else 25 end
+  select case p when 'starter' then 200 when 'pro' then 900 when 'agency' then 2500 else 25 end
 $$;
 
 -- Creates the account on first use, ends a lapsed paid plan, refills the month, expires old top-ups.

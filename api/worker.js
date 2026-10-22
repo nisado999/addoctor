@@ -1273,7 +1273,7 @@ function allowedOrigin(req, env) {
 //                           {"starter_month":"pri_..","starter_year":"pri_..","pro_month":"pri_..","pro_year":"pri_..",
 //                            "agency_month":"pri_..","agency_year":"pri_..","topup":"pri_.."}
 const billingOn = (env) => String(env.BILLING || "").toLowerCase() === "on";
-const TOPUP_CREDITS = 250;   // per top-up unit; keep in step with src/plans.js
+const TOPUP_CREDITS = 200;   // per top-up unit; keep in step with src/plans.js
 
 // What one action costs, in credits. Keep in step with src/plans.js. /start is free but needs a balance of
 // START_NEEDS, because the paid read (ScrapeCreators) happens before the analysis that is charged.

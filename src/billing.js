@@ -8,12 +8,12 @@ import { apiFetch } from "./api.js";
 
 export const PLANS = [
   { id: "free", name: "Free", month: 0, year: 0, credits: 25, seats: 1, who: "Try it with your own account" },
-  { id: "starter", name: "Starter", month: 19, year: 190, credits: 300, seats: 1, who: "Shop owners making their own ads" },
+  { id: "starter", name: "Starter", month: 19, year: 190, credits: 200, seats: 1, who: "Shop owners making their own ads" },
   { id: "pro", name: "Pro", month: 49, year: 490, credits: 900, seats: 2, who: "Marketers and freelancers", popular: true },
   { id: "agency", name: "For Teams", month: 129, year: 1290, credits: 2500, seats: 5, who: "Agencies and small teams" },
 ];
 export const PLAN_NAME = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
-export const TOPUP = { price: 15, credits: 250 };
+export const TOPUP = { price: 15, credits: 200 };
 
 // What one action costs, in credits.
 export const COSTS = { breakdown: 1, ask: 3, organic: 3, rivals: 3, analyze: 15, review: 1, packText: 2, image: 5, imagePremium: 12 };

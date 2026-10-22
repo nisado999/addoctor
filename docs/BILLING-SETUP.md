@@ -23,7 +23,7 @@ Catalogue > Products. Create one product "AdDoctor plans" with six recurring pri
 | pro_year | $490 | yearly |
 | agency_month | $129 | monthly |
 | agency_year | $1,290 | yearly |
-| topup | $15 | one-time (250 credits per unit) |
+| topup | $15 | one-time (200 credits per unit) |
 
 Copy each price id (looks like `pri_01...`).
 
@@ -49,8 +49,8 @@ Then paste the current `api/worker.js` (Edit code > Deploy). With `BILLING` unse
 ## 5. Test the pieces
 1. Open `https://addoctor-api.nisado9999.workers.dev/billing/config`. It should show your token and price ids (never a secret).
 2. Set `BILLING` = `on`. Open the site, sign in: the sidebar shows "25 credits · Free plan" and a "Plans & credits" entry.
-3. Plans & credits > Choose Starter. In the sandbox use card **4242 4242 4242 4242**, any future date, CVC 100. After paying, the balance should become 300 within a few seconds.
-4. Buy the top-up: +250 credits. Spend a few credits (Ask, an image) and watch the number drop. Try to use more than you have: you get a "top up or upgrade" message.
+3. Plans & credits > Choose Starter. In the sandbox use card **4242 4242 4242 4242**, any future date, CVC 100. After paying, the balance should become 200 within a few seconds.
+4. Buy the top-up: +200 credits. Spend a few credits (Ask, an image) and watch the number drop. Try to use more than you have: you get a "top up or upgrade" message.
 5. In Paddle, cancel the subscription: the Plans page shows "ends <date>" and keeps working until then.
 
 If checkout does not open: check the browser console for a blocked script or frame (the site's security policy in `index.html` allows cdn.paddle.com, *.paddle.com frames and connections), and that the domain is approved in Paddle.

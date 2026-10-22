@@ -15,11 +15,11 @@ const TIERS = {
   starter: {
     top: "from-lime-200 via-lime-50 dark:from-[#4b5a0c] dark:via-[#1b2108]", border: "border border-[#8DB00E] shadow-lg shadow-lime-600/20 dark:border-[#A6C41C] dark:shadow-[#E3FD2B]/10", accent: "text-lime-700 dark:text-[#E3FD2B]",
     box: "bg-white/75 ring-lime-300 dark:bg-black/30 dark:ring-[#7d9418]/60",
-    btn: "bg-[#E3FD2B] text-[#0b0a09] hover:bg-[#d4ee1c] shadow-lime-500/40 dark:shadow-[#E3FD2B]/20", cta: "Get Starter",
+    btn: "border-2 border-[#8DB00E] bg-transparent text-lime-900 hover:bg-lime-100 dark:border-[#A6C41C] dark:text-[#E3FD2B] dark:hover:bg-[#E3FD2B]/10 shadow-none", cta: "Get Starter",
     current: "border border-[#8DB00E] bg-lime-100 text-lime-900 dark:border-[#A6C41C] dark:bg-[#26300a] dark:text-[#E3FD2B]",
   },
   pro: {
-    top: "from-pink-200 via-rose-50 dark:from-[#6a1243] dark:via-[#250a19]", border: "border-2 border-[#E0207F] shadow-xl shadow-pink-600/25 dark:border-[#F02D8E] dark:shadow-[#FF2F97]/15 lg:-translate-y-2", accent: "text-pink-600 dark:text-[#FF63B5]",
+    top: "from-pink-200 via-rose-50 dark:from-[#6a1243] dark:via-[#250a19]", border: "border-2 border-[#E0207F] shadow-xl shadow-pink-600/25 dark:border-[#F02D8E] dark:shadow-[#FF2F97]/15 lg:-translate-y-2 lg:scale-[1.02]", accent: "text-pink-600 dark:text-[#FF63B5]",
     box: "bg-white/75 ring-pink-200 dark:bg-black/30 dark:ring-[#a3205f]/60",
     btn: "bg-[#FF2F97] text-[#0b0a09] hover:bg-[#f0208a] shadow-pink-500/40 dark:shadow-[#FF2F97]/25", cta: "Get Pro",
     current: "border border-[#E0207F] bg-pink-100 text-pink-800 dark:border-[#F02D8E] dark:bg-[#3a0f27] dark:text-[#FF63B5]",
@@ -227,6 +227,7 @@ export default function PlansView({ user, onSignIn, notify }) {
                     <li>≈ {ads} static ads</li>
                     <li>≈ {runs} competitor {runs === 1 ? "analysis" : "analyses"}</li>
                   </ul>
+                  {paid && p.id !== "starter" && <p className={`mt-2 text-[11px] font-bold ${t.accent}`}>{+(p.credits / PLANS[1].credits).toFixed(1)}× Starter's credits</p>}
                 </div>
 
                 <div className="mt-4 min-h-[3.25rem]">
