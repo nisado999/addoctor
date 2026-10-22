@@ -396,3 +396,69 @@ button.bg-slate-950:disabled { background-color: #e7e4de; background-image: none
 .dlg-icon { background: #f3f1ed; color: #151412; box-shadow: 0 0 0 1px rgba(21, 20, 18, .08); }
 .dlg-close, .sx-close { background: transparent; box-shadow: none; transition: background-color .3s var(--ease), color .3s var(--ease); }
 .dlg-close:hover, .sx-close:hover { background: #f3f1ed; transform: none; }
+
+/* ---------- Dark theme ----------
+   Tailwind colours switch through CSS variables (tailwind.config.js). This block covers the hand-written classes above. */
+:root.dark {
+  color-scheme: dark;
+  --ink: #f3f1ed; --paper: #151412; --stone: #0b0a09;
+  --edge: rgba(255, 255, 255, .09);
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 1px 2px rgba(0, 0, 0, .4), 0 2px 8px -2px rgba(0, 0, 0, .4);
+  --shadow-2: 0 1px 0 rgba(255, 255, 255, .05) inset, 0 1px 2px rgba(0, 0, 0, .4), 0 8px 18px -8px rgba(0, 0, 0, .5), 0 28px 60px -24px rgba(0, 0, 0, .6);
+  --shadow-3: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 24px -10px rgba(0, 0, 0, .55), 0 40px 80px -28px rgba(0, 0, 0, .7);
+  --shadow-soft: 0 1px 1px rgba(0, 0, 0, .3), 0 10px 24px -14px rgba(0, 0, 0, .6), 0 30px 60px -36px rgba(0, 0, 0, .7);
+}
+.dark ::selection { background: rgba(122, 155, 255, .35); }
+.dark .glass { background: rgba(21, 20, 18, .72); }
+.dark .side-glass { background: rgba(14, 13, 12, .82); box-shadow: 1px 0 0 var(--edge), 12px 0 40px -28px rgba(0, 0, 0, .6); }
+.dark .top-glass { background: rgba(11, 10, 9, .82); }
+.dark .surface, .dark .surface-lift { background: #151412; }
+.dark .btn-ink { background: linear-gradient(180deg, #3d3a35, #24221f); box-shadow: 0 1px 0 rgba(255, 255, 255, .12) inset, 0 0 0 1px rgba(255, 255, 255, .1), 0 6px 16px -6px rgba(0, 0, 0, .6); }
+.dark .btn-soft { background: rgba(38, 36, 33, .85); }
+.dark .nav-on { background: #262421; box-shadow: 0 0 0 1px var(--edge), 0 4px 12px -6px rgba(0, 0, 0, .5); }
+.dark .hero { background: radial-gradient(55% 80% at 100% 0%, rgba(77, 119, 255, .16), transparent 70%), radial-gradient(45% 70% at 80% 100%, rgba(124, 92, 255, .14), transparent 70%), linear-gradient(180deg, #151412, #0f0e0d); }
+.dark .hero-card, .dark .cr-photo { background: #262421; }
+.dark .hero-chip { background: rgba(32, 30, 28, .82); border-color: rgba(255, 255, 255, .1); color: #b5b0a6; }
+.dark .hero-chip b { color: #f3f1ed; }
+.dark .shiny { background-image: linear-gradient(110deg, #b5b0a6 40%, #fff 50%, #b5b0a6 60%); }
+.dark .bento-soft { background: radial-gradient(70% 60% at 100% 0%, rgba(var(--hue), .14), transparent 70%), linear-gradient(180deg, rgba(32, 30, 28, .9), rgba(21, 20, 18, .7)); }
+.dark .bento-field { opacity: .7; }
+.dark .bento-lines { background-image: linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px); }
+.dark .bento-stage { background: radial-gradient(rgba(255, 255, 255, .07) 1px, transparent 1.3px) 0 0 / 16px 16px, radial-gradient(90% 80% at 80% 0%, rgba(77, 119, 255, .14), transparent 70%), linear-gradient(180deg, #1c1a18, #141311); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+.dark .kbd-3d { background: linear-gradient(180deg, #3d3a35, #2a2825); border-color: rgba(255, 255, 255, .12); color: #f3f1ed; }
+.dark .bento-tile:hover .bento-go { background: #f3f1ed; color: #0b0a09; }
+.dark .dlg-veil { background: rgba(0, 0, 0, .6); }
+.dark .dlg-panel { background: #151412; box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 24px 48px -12px rgba(0, 0, 0, .7); }
+.dark .dlg-head { background: linear-gradient(180deg, #1c1a18, #151412); box-shadow: 0 1px 0 rgba(255, 255, 255, .07); }
+.dark .dlg-icon { background: #262421; color: #f3f1ed; box-shadow: 0 0 0 1px rgba(255, 255, 255, .1); }
+.dark .dlg-close { background: rgba(255, 255, 255, .08); box-shadow: 0 0 0 1px rgba(255, 255, 255, .1); color: #d4d0c8; }
+.dark .dlg-close:hover, .dark .sx-close:hover { background: #262421; }
+.dark [role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, select) { background-color: #1c1a18; }
+.dark [role="dialog"] :is(input, textarea, select):focus { background-color: #151412; }
+.dark [role="dialog"] button.bg-slate-950:not(:disabled) { background-image: linear-gradient(180deg, #4a4640, #2c2a26); box-shadow: 0 1px 0 rgba(255, 255, 255, .14) inset, 0 0 0 1px rgba(255, 255, 255, .1); }
+.dark button.bg-slate-950:disabled { background-color: #262421; color: #6f6a62; }
+.dark .sx-stage { background: #151412; }
+.dark .sx-stage::before { background: linear-gradient(180deg, rgba(21, 20, 18, 0), #151412); }
+.dark .sx-stage::after { background: linear-gradient(90deg, rgba(21, 20, 18, 0), #151412); }
+.dark .sx-blob-c { background: #4a2f1f; }
+.dark .sx-beam { background: linear-gradient(180deg, transparent 90%, rgba(21, 20, 18, .55) 98%, #151412 100%); }
+.dark .sx-bar span, .dark .sx-dot, .dark .sx-num.is-done, .dark .sx-switch.is-on { background: #f3f1ed; }
+.dark .sx-num.is-done { color: #0b0a09; }
+.dark .sx-drop:hover, .dark .sx-card, .dark .sx-ghost { background: #1c1a18; }
+.dark .sx-drop:hover { border-color: #f3f1ed; }
+.dark .sx-chip:hover { color: #f3f1ed; background: #262421; box-shadow: 0 0 0 1px rgba(255, 255, 255, .3); }
+.dark .sx-compose { background: #1c1a18; box-shadow: 0 0 0 1px rgba(255, 255, 255, .12); }
+.dark .sx-compose:focus-within { background: #151412; box-shadow: 0 0 0 1.5px #f3f1ed, 0 0 0 6px rgba(255, 255, 255, .08); }
+.dark .sx-action b, .dark .sx-action i, .dark .sx-val { color: #f3f1ed; }
+.dark .rng::-webkit-slider-runnable-track { background: linear-gradient(90deg, #f3f1ed var(--p), #3d3a35 var(--p)); }
+.dark .rng::-moz-range-progress { background: #f3f1ed; }
+.dark .composer { color-scheme: dark; }
+/* Hard-coded hex utilities and the logo. */
+.dark .text-\[\#111\], .dark .hover\:text-\[\#111\]:hover { color: #f3f1ed; }
+.dark .text-\[\#666\] { color: #b5b0a6; }
+.dark .text-\[\#888\], .dark .text-\[\#999\] { color: #9a958c; }
+.dark .border-\[\#E4E4E7\], .dark .border-\[\#EEEEEE\], .dark .ring-\[\#E4E4E7\] { border-color: #2f2d29; --tw-ring-color: #2f2d29; }
+.dark .bg-\[\#111\] { background-color: #3d3a35; }
+.dark .hover\:border-\[\#111\]:hover { border-color: #f3f1ed; }
+.dark .bg-\[\#F4F4F4\], .dark .bg-\[\#F6F6F6\], .dark .bg-\[\#F6F6F7\], .dark .bg-\[\#F8F8F8\], .dark .hover\:bg-\[\#F4F4F4\]:hover, .dark .hover\:bg-\[\#EFEFEF\]:hover, .dark .hover\:bg-\[\#E5E5E5\]:hover { background-color: #262421; }
+.dark img[src$="logo.png"] { filter: invert(1) hue-rotate(180deg); }
