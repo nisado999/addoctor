@@ -3,6 +3,7 @@ import { Icon } from "./ui";
 import { copyText, SPY_API, SPY_KEY } from "./shared.js";
 import { imageCost } from "./billing.js";
 import { apiFetch } from "./api.js";
+import { saveMyAd } from "./myads.jsx";
 
 /* ------------------------------ Social Pack ------------------------------ */
 
@@ -68,7 +69,8 @@ const PACK_TYPE_LABEL = {
   "flat-lay": "Flat lay", "benefit-callout": "Benefit", checklist: "Checklist", "brand-quote": "Brand voice", "behind-the-scenes": "Behind the scenes",
 };
 
-function PackCard({ post, onCopy, onDownload, onCheck, onFix, busy }) {
+function PackCard({ post, onCopy, onDownload, onCheck, onFix, onSave, busy }) {
+  const [saved, setSaved] = useState(false);
   const full = [post.caption, (post.hashtags || []).join(" ")].filter(Boolean).join("\n\n");
   const rv = post.review;
   const tone = rv ? (rv.score >= 80 ? "emerald" : rv.score >= 60 ? "amber" : "rose") : "slate";
@@ -133,6 +135,7 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, busy }) {
         <div className="mt-auto flex flex-wrap gap-2 pt-4">
           <button onClick={() => onCopy(full)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"><Icon.Copy className="h-3.5 w-3.5" />Copy caption</button>
           <button disabled={!post.src} onClick={() => onDownload(post)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-40"><Icon.Download className="h-3.5 w-3.5" />Download</button>
+          <button disabled={!post.src || saved} onClick={async () => { if (await onSave(post)) setSaved(true); }} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-40"><Icon.Bookmark className="h-3.5 w-3.5" />{saved ? "Saved to Vault" : "Save to Vault"}</button>
           <button disabled={!post.src || busy} onClick={() => onCheck(post)} className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100 disabled:opacity-40"><Icon.Stethoscope className="h-3.5 w-3.5" />{rv ? "Re-check" : "Check this post"}</button>
         </div>
       </div>
@@ -289,6 +292,14 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
   };
 
   const dl = (p) => packSave(new Blob([packB64(p.b64)], { type: p.mime }), `${String(p.index + 1).padStart(2, "0")}-${packSlug(p.title)}.${packExt(p.mime)}`);
+  // Keeps the post's picture in the Vault under My ads. Resolves true when it was saved.
+  const saveToVault = async (p) => {
+    try {
+      await saveMyAd({ dataUrl: p.src, title: p.title, category: "30-Day Drop", templateId: "" });
+      notify("Saved to your Vault, under My ads");
+      return true;
+    } catch (e) { notify(e.message || "The post could not be saved."); return false; }
+  };
   const dlAll = () => {
     const ready = posts.filter((p) => p.b64);
     if (!ready.length) return;
@@ -476,7 +487,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
       </div>
       {err && <p className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">{err}</p>}
       <div id="pack-grid" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {posts.map((p) => <PackCard key={p.index} post={p} busy={!!busy[p.index]} onCopy={(t) => { copyText(t); notify("Caption copied."); }} onDownload={dl} onCheck={check} onFix={fix} />)}
+        {posts.map((p) => <PackCard key={p.index} post={p} busy={!!busy[p.index]} onCopy={(t) => { copyText(t); notify("Caption copied."); }} onDownload={dl} onCheck={check} onFix={fix} onSave={saveToVault} />)}
       </div>
     </div>
   );
