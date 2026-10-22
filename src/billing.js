@@ -16,7 +16,7 @@ export const PLAN_NAME = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
 export const TOPUP = { price: 15, credits: 200 };
 
 // What one action costs, in credits.
-export const COSTS = { breakdown: 1, ask: 3, organic: 3, rivals: 3, analyze: 15, review: 1, packText: 2, image: 5, imagePremium: 12 };
+export const COSTS = { breakdown: 1, ask: 3, organic: 3, rivals: 3, analyze: 15, moreSpy: 10, review: 1, packText: 2, image: 5, imagePremium: 12 };
 
 const EMPTY = { config: null, account: null };
 let state = EMPTY;
@@ -69,6 +69,14 @@ export function useBillingOn() {
     return () => { subs.delete(f); };
   }, []);
   return on;
+}
+
+// Pro features: true when billing is off (everything is free to try) or the account is on Pro or For Teams.
+export function usePro() {
+  const [s, setS] = useState(state);
+  useEffect(() => { subs.add(setS); setS(state); return () => { subs.delete(setS); }; }, []);
+  const on = !!(s.config && s.config.enabled);
+  return { on, pro: !on || !!(s.account && ["pro", "agency"].includes(s.account.plan)), signedIn: !!s.account };
 }
 
 export async function saveSegment(segment) {
