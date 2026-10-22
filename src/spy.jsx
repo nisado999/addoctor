@@ -556,7 +556,15 @@ function spyHalves(a, b) {
 const spyDone = (out) => track("spy_complete", { ads_count: out.count || 0, creatives_read: (out.vision && out.vision.images) || 0, ai_written: !!(out.slide && out.slide.length) });
 const spySeen = (out) => (out.vision && out.vision.images ? ` and looked at ${spyPlural(out.vision.images, "creative")}` : "");
 
-function SpyView({ onRebuild, notify, seed = "" }) {
+// A competitor ad's picture as a file, so Examine can open it like an upload. The Worker fetches it: Meta's image links can't be read from the page.
+async function adFile(img) {
+  const r = await apiFetch("/thumb", { body: { img }, timeout: 30000, retries: 1 });
+  const bin = atob(r.data), bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new File([bytes], "competitor-ad." + (r.mime.split("/")[1] || "jpg").replace("jpeg", "jpg"), { type: r.mime });
+}
+
+function SpyView({ onRebuild, onExamine, notify, seed = "" }) {
   const now = new Date();
   const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);   // local date, not UTC
   const [brand, setBrand] = useState("");
@@ -644,6 +652,12 @@ function SpyView({ onRebuild, notify, seed = "" }) {
     setSort("days");
     notify(`${P} analysis ready`);
     setTimeout(() => { const el = document.getElementById("spy-results"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+  };
+
+  const examineAd = async (img) => {
+    if (!img || !onExamine) return;
+    notify("Opening the ad in Examine…");
+    try { onExamine(await adFile(img)); } catch (e) { notify((e && e.message) || "Couldn't load that ad's picture. Try again."); }
   };
 
   const runApi = async () => {
@@ -1033,7 +1047,7 @@ ${spyCompact(ads)}`;
                   <a ref={helperLink} id="spy-bookmark" draggable onClick={(e) => { e.preventDefault(); notify("Drag the button to your bookmarks bar (Ctrl+Shift+B shows the bar)."); }} className="inline-flex cursor-grab items-center gap-1.5 rounded-full bg-slate-950 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-slate-900/20"><Icon.Sparkle className="h-3.5 w-3.5" />AdDoctor</a>
                 </li>
                 <li><span className="font-semibold text-slate-900">2.</span> Open the advertiser in the <a href={libOk ? spyUrl(lib.id, country || lib.country, from, to) : "https://www.facebook.com/ads/library/"} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:text-blue-700">Meta Ad Library</a>{libOk ? " (this link opens the one you pasted)" : ""}.</li>
-                <li><span className="font-semibold text-slate-900">3.</span> Click the AdDoctor bookmark on that page. It scrolls through the ads, then opens your analysis here.</li>
+                <li><span className="font-semibold text-slate-900">3.</span> Click the AdDoctor bookmark as soon as the page opens, before you scroll or load more ads. It scrolls through the ads itself, then opens your analysis here.</li>
               </ol>
             </div>
           )}
@@ -1112,6 +1126,7 @@ ${spyCompact(ads)}`;
                   <figcaption className="p-3">
                     <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">{c.format} · {spyPlural(c.n, "ad")}</span>
                     <p className="mt-1 text-[12.5px] leading-relaxed text-slate-600">{c.sees}</p>
+                    {c.img && onExamine && <button onClick={() => examineAd(c.img)} className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Stethoscope className="h-3.5 w-3.5" />Examine this ad</button>}
                   </figcaption>
                 </figure>
               ))}
@@ -1130,7 +1145,7 @@ ${spyCompact(ads)}`;
           )}
         </div>
 
-        <CreativeGallery key={state.active + "|" + state.brand + "|" + res.ads.length} ads={res.ads} brand={state.brand} organicHint={libOk && lib.id === pickedIg.id ? pickedIg.ig : ""} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
+        <CreativeGallery onExamine={onExamine ? (a) => examineAd(a.img) : null} key={state.active + "|" + state.brand + "|" + res.ads.length} ads={res.ads} brand={state.brand} organicHint={libOk && lib.id === pickedIg.id ? pickedIg.ig : ""} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>

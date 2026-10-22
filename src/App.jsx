@@ -729,7 +729,7 @@ function App() {
     : id === "static" || id === "video" ? <GuidedView kind={id} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
     : id === "rivals" ? <RivalsView onSpy={toSpy} />
     : id === "inspiration" ? <WinnersView notify={notify} onMake={rebuild} onBrowse={browseTemplates} active={view === "inspiration"} />
-    : <SpyView notify={notify} onRebuild={rebuild} active={view === "spy"} seed={spySeed} />
+    : <SpyView notify={notify} onRebuild={rebuild} onExamine={(file) => openExam({ file })} active={view === "spy"} seed={spySeed} />
   );
 
   return (

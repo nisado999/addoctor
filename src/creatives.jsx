@@ -74,7 +74,7 @@ function breakdownText(ad, b, brand) {
   return out.join("\n");
 }
 
-function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify }) {
+function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, onExamine, notify }) {
   const { data, err, busy } = useBreakdown(ad, brand);
   const billingOn = useBillingOn();
   const closeRef = useRef(null);
@@ -165,6 +165,7 @@ function CreativePanel({ ad, brand, saved, onSave, onClose, onRebuild, notify })
 
           <div className="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
             {ad.kind !== "organic" && <button onClick={() => onRebuild()} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Wand className="h-3.5 w-3.5" /> Make mine in this style</button>}
+            {ad.img && onExamine && <button onClick={onExamine} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Stethoscope className="h-3.5 w-3.5" />Examine this ad</button>}
             <button onClick={onSave} aria-pressed={saved} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Bookmark className="h-3.5 w-3.5" /> {saved ? "Saved" : "Save"}</button>
             {data && <button onClick={async () => { const ok = await copyText(breakdownText(ad, data, brand)); notify(ok === false ? "Couldn't copy. Select the text manually." : "Breakdown copied"); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><Icon.Copy className="h-3.5 w-3.5" /> Copy breakdown</button>}
             {landing(ad.link) && <a href={landing(ad.link)} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"><span className="truncate">{ad.kind === "organic" ? "Open the original post · " : "Landing page · "}{String(ad.link).replace(/^https?:\/\//i, "").split("/")[0]}</span><span className="sr-only"> (opens in a new tab)</span></a>}
@@ -359,7 +360,7 @@ function OrganicPosts({ brand, hint, onOpen }) {
   );
 }
 
-function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
+function CreativeGallery({ ads, brand, organicHint, onRebuild, onExamine, notify }) {
   const [format, setFormat] = useState("All");
   const [sort, setSort] = useState("days");
   const [onlySaved, setOnlySaved] = useState(false);
@@ -464,7 +465,7 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, notify }) {
       {open && (
         <CreativePanel
           ad={open} brand={brand} saved={saved.includes(open.libId)} onSave={() => toggleSave(open)}
-          onClose={() => setOpen(null)} onRebuild={() => { const a = open; setOpen(null); onRebuild(a); }} notify={notify}
+          onClose={() => setOpen(null)} onRebuild={() => { const a = open; setOpen(null); onRebuild(a); }} onExamine={onExamine ? () => { const a = open; setOpen(null); onExamine(a); } : null} notify={notify}
         />
       )}
     </div>
