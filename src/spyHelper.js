@@ -44,6 +44,10 @@ function spyCollector(cfg) {
   };
   // the first ads are in the page itself; the rest arrive as the page scrolls
   document.querySelectorAll("script").forEach(function (s) { eat(s.textContent); });
+  // a search opened by clicking inside the Ad Library has no ads in the page source: load the same address again to get them
+  if (!ads.size) fetch(location.href, { credentials: "include" }).then(function (r) { return r.text(); }).then(function (h) {
+    new DOMParser().parseFromString(h, "text/html").querySelectorAll("script").forEach(function (s) { eat(s.textContent); });
+  }).catch(function () { /* the scroll below still collects what loads next */ });
   var send = XMLHttpRequest.prototype.send;
   XMLHttpRequest.prototype.send = function () {
     this.addEventListener("load", function () { try { if (!this.responseType || this.responseType === "text") eat(this.responseText); } catch (e) { /* unreadable */ } });
@@ -99,9 +103,9 @@ function spyCollector(cfg) {
   tick();
 }
 
-// The text of the bookmark. app is where AdDoctor's Competitor Spy lives.
+// The text of the bookmark. app is where AdDoctor's Competitor Analysis lives.
 function spyBookmarklet(app) {
-  const cfg = { app, origin: new URL(app).origin, max: 400 };
+  const cfg = { app, origin: new URL(app).origin, max: 1200 };
   return "javascript:(" + encodeURIComponent(spyCollector.toString()) + ")(" + encodeURIComponent(JSON.stringify(cfg)) + ")";
 }
 

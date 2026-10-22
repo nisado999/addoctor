@@ -18,14 +18,14 @@ const isCreative = (f) => !!f && /^(image|video)\//.test(f.type);
 // What each mode asks for (typed out as the placeholder) and what its button says.
 const MODES = [
   { id: "examine", label: "Examine Ad", go: "Run Diagnosis", hints: ["Paste a store/competitor URL (e.g. gymshark.com) or drop an ad creative to examine...", "Paste a screenshot of your ad...", "Upload an image or a video thumbnail..."] },
-  { id: "spy", label: "Competitor Spy", go: "Spy on Brand", hints: ["Enter a competitor domain, e.g. gymshark.com", "glossier.com", "Or just a brand name..."] },
+  { id: "spy", label: "Competitor Analysis", go: "Spy on Brand", hints: ["Enter a competitor domain, e.g. gymshark.com", "glossier.com", "Or just a brand name..."] },
   { id: "url", label: "Generate from URL", go: "Generate Ads", hints: ["Paste your store link, e.g. https://yourstore.com/collections/hoodies", "A shop, a collection or a product page..."] },
   { id: "drop", label: "30-Day Drop", go: "Build My Drop", hints: ["Paste a store URL to plan 30 days of posts...", "https://yourstore.com"] },
 ];
 
 const TILES = [
   { id: "examine", title: "Examine an Ad", text: "10-pillar creative audit (Hook, Offer, CTA) with prescription fixes." },
-  { id: "spy", title: "Competitor Spy", text: "Enter any domain to see active ads, top products & promos." },
+  { id: "spy", title: "Competitor Analysis", text: "Enter any domain to see active ads, top products & promos." },
   { id: "drop", title: "30-Day Drop", text: "Paste a store URL to generate 30 ready-to-post monthly creatives." },
   { id: "gallery", title: `${COUNT} Ad Presets`, text: `Browse proven static & video formats across ${NICHES} niches.` },
 ];
@@ -202,7 +202,7 @@ export function Bento({ onExamine, onSpy, onPack, onBrowse, onPick }) {
   return (
     <section aria-label="Home" className="flex flex-col gap-[72px] pt-10 sm:pt-14">
       <div className="text-center">
-        <div><p className="hero-up inline-flex rounded-full border border-[#E4E4E7] bg-white px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#666]">{COUNT} Presets · Instant Ad X-Ray · Competitor Spy</p></div>
+        <div><p className="hero-up inline-flex rounded-full border border-[#E4E4E7] bg-white px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#666]">{COUNT} Presets · Instant Ad X-Ray · Competitor Analysis</p></div>
         {/* React Bits SplitText: the words rise out of a mask as the page opens. */}
         <SplitText
           tag="h1" text="Pick a look, examine an ad, or spy on any brand." splitType="words" effect="rise" mask delay={45} duration={0.9} textAlign="center"

@@ -8,7 +8,7 @@ import { CreativeGallery } from "./creatives.jsx";
 import { useBillingOn, COSTS } from "./billing.js";
 import { SPY_ANGLES, SPY_ANGLE } from "./angles.js";
 
-/* ============================ Competitor Spy ============================ */
+/* ============================ Competitor Analysis ============================ */
 
 
 const SPY_PROMOS = [

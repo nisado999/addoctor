@@ -135,7 +135,7 @@ const VIEWS = {
   static: { title: "Create Static Ads", sub: "Answer a few questions and we design ads from scratch, made for you. No templates." },
   pack: { title: "30-Day Drop", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
-  spy: { title: "Competitor Spy", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
+  spy: { title: "Competitor Analysis", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
   rivals: { title: "Find Competitors", sub: "Enter your brand and we research who you are really up against." },
   inspiration: { title: "Inspiration", sub: "Ads that kept running for a month or more. Brands only pay for ads that work, so these are proven. Find a style you like, then make it with your product." },
   vault: { title: "Saved Vault", sub: "Prescriptions you saved, and competitor ads you kept from Spy." },
@@ -253,7 +253,7 @@ function App() {
   const [cat, setCat] = useState("All");
   const [q, setQ] = useState("");
   const [packSeed, setPackSeed] = useState(""); // a store link typed into the Home composer, handed to the 30-Day Drop
-  const [spySeed, setSpySeed] = useState(""); // a domain typed into the Home composer, handed to Competitor Spy
+  const [spySeed, setSpySeed] = useState(""); // a domain typed into the Home composer, handed to Competitor Analysis
   const [credits, spend] = useCredits();
   const [vault, setVault] = useState(() => loadVault(VAULT_KEY));
   const vaultRef = useRef(vault); // the list as last stored, for writes that must know the result straight away

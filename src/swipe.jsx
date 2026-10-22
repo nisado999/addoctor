@@ -97,9 +97,9 @@ export function SwipeView({ query, onSpy }) {
       <div className="mx-auto mt-16 flex max-w-sm flex-col items-center text-center">
         <span className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon.Bookmark className="h-6 w-6" /></span>
         <p className="mt-4 text-base font-semibold text-slate-900">No saved competitor ads yet</p>
-        <p className="mt-1 text-sm leading-relaxed text-slate-500">In Competitor Spy, open a creative and choose Save. It stays here, even after the original link expires.</p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-500">In Competitor Analysis, open a creative and choose Save. It stays here, even after the original link expires.</p>
         <button onClick={onSpy} className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
-          <Icon.Search className="h-4 w-4" /> Open Competitor Spy
+          <Icon.Search className="h-4 w-4" /> Open Competitor Analysis
         </button>
       </div>
     );

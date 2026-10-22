@@ -291,7 +291,7 @@ const NAV = [
   { head: "Analyse", items: [
     { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope },
     { id: "rivals", label: "Find Competitors", icon: Icon.Target, note: "New" },
-    { id: "spy", label: "Competitor Spy", icon: Icon.Eye },
+    { id: "spy", label: "Competitor Analysis", icon: Icon.Eye },
   ] },
   { head: "Library", items: [
     { id: "inspiration", label: "Inspiration", icon: Icon.Trophy, note: "New" },

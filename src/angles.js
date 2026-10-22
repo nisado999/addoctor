@@ -1,5 +1,5 @@
 /* The ways an ad makes its case, found from its wording. Each angle also names the template that is closest in style,
-   so a competitor's ad can start a template of your own. Shared by Competitor Spy, the Winning Ads library and the
+   so a competitor's ad can start a template of your own. Shared by Competitor Analysis, the Winning Ads library and the
    script that builds the library. */
 
 export const SPY_ANGLES = [
