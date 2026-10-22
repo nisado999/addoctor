@@ -17,7 +17,12 @@ const STEPS = [
   "Ranking the closest rivals",
 ];
 const PRICE = { cheaper: "Cheaper than you", similar: "Similar price", pricier: "Pricier than you" };
-const adsLink = (id) => `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=ALL&is_targeted_country=false&media_type=all&search_type=page&view_all_page_id=${encodeURIComponent(id)}`;
+const adsLink = (id, market) => `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${market || "ALL"}&is_targeted_country=false&media_type=all&search_type=page&view_all_page_id=${encodeURIComponent(id)}`;
+
+// Where the brand sells. Rivals in one country are not the same as rivals worldwide.
+const MARKETS = ["GR", "CY", "GB", "US", "CA", "AU", "DE", "FR", "IT", "ES", "PT", "NL", "BE", "AT", "CH", "SE", "DK", "NO", "FI", "IE", "PL", "RO", "BG", "TR", "AE", "SA", "IL", "IN", "BR", "MX", "JP", "KR", "SG", "ZA"];
+const regionName = (c) => { try { return new Intl.DisplayNames(["en"], { type: "region" }).of(c) || c; } catch (e) { return c; } };
+const MARKET_LIST = MARKETS.map((c) => ({ c, n: regionName(c) })).sort((a, b) => a.n.localeCompare(b.n));
 
 function Thinking({ step }) {
   return (
@@ -36,7 +41,7 @@ function Thinking({ step }) {
   );
 }
 
-function RivalCard({ c, rank, onSpy }) {
+function RivalCard({ c, rank, onSpy, market }) {
   return (
     <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-3">
@@ -55,7 +60,7 @@ function RivalCard({ c, rank, onSpy }) {
         <button onClick={() => onSpy(c.pageName || c.name)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
           <Icon.Eye className="h-3.5 w-3.5" />Spy on their ads
         </button>
-        {c.pageId && <a href={adsLink(c.pageId)} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-slate-400 hover:text-slate-700">Meta Ad Library ↗</a>}
+        {c.pageId && <a href={adsLink(c.pageId, market)} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-slate-400 hover:text-slate-700">Meta Ad Library ↗</a>}
       </div>
     </article>
   );
@@ -64,6 +69,7 @@ function RivalCard({ c, rank, onSpy }) {
 export function RivalsView({ onSpy }) {
   const [saved] = useState(() => readJSON(KEY, null));
   const [q, setQ] = useState(saved && typeof saved.q === "string" ? saved.q : "");
+  const [market, setMarket] = useState(saved && typeof saved.market === "string" ? saved.market : "");   // "" is global
   const [res, setRes] = useState(saved && saved.res && saved.res.brand && Array.isArray(saved.res.competitors) ? saved.res : null);
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
@@ -87,10 +93,10 @@ export function RivalsView({ onSpy }) {
     ctl.current = ctrl;
     setBusy(true); setErr("");
     try {
-      const j = await apiFetch("/rivals", { body: { brand }, signal: ctrl.signal, timeout: 150000 });
+      const j = await apiFetch("/rivals", { body: { brand, market }, signal: ctrl.signal, timeout: 150000 });
       if (!j || !Array.isArray(j.competitors) || !j.brand) throw new Error("The server sent an answer this page can't read. Try again.");
       setRes(j);
-      writeJSON(KEY, { q: brand, res: j });
+      writeJSON(KEY, { q: brand, market, res: j });
       track("rivals_found", { count: j.competitors.length });
     } catch (er) {
       if (!isCancel(er)) setErr(er.message || "Could not find competitors. Try again.");
@@ -104,6 +110,10 @@ export function RivalsView({ onSpy }) {
           <Icon.Target className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Your brand or website, e.g. glossier.com" aria-label="Your brand or website" className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-500 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10" />
         </div>
+        <select value={market} onChange={(e) => setMarket(e.target.value)} disabled={busy} aria-label="Market" className="h-12 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10 sm:w-48">
+          <option value="">Global</option>
+          {MARKET_LIST.map((m) => <option key={m.c} value={m.c}>{m.n}</option>)}
+        </select>
         <button type="submit" disabled={q.trim().length < 2 || busy} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-7 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:opacity-50">
           <Icon.Sparkle className="h-4 w-4" />{busy ? "Finding…" : `Find my competitors${billingOn ? ` · ${COSTS.rivals} credits` : ""}`}
         </button>
@@ -116,13 +126,13 @@ export function RivalsView({ onSpy }) {
       {res && !busy && (
         <section className="mt-8" aria-label="Competitors">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Your brand</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Your brand · {res.marketName ? `Market: ${res.marketName}` : "Market: Global"}</p>
             <p className="mt-1 text-base font-semibold text-slate-900">{res.brand.name}</p>
             {res.brand.sells && <p className="mt-1 text-sm text-slate-600">{res.brand.sells}</p>}
             {res.brand.buyer && <p className="mt-1 text-sm text-slate-500">Buyer: {res.brand.buyer}</p>}
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {res.competitors.map((c, i) => <RivalCard key={c.name} c={c} rank={i + 1} onSpy={onSpy} />)}
+            {res.competitors.map((c, i) => <RivalCard key={c.name} c={c} rank={i + 1} onSpy={onSpy} market={res.market} />)}
           </div>
           <p className="mt-5 text-xs text-slate-400">Found by searching the web, so check each one fits before you rely on it.</p>
         </section>

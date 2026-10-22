@@ -5,6 +5,7 @@ import { apiFetch, isCancel } from "./api.js";
 import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
 import { CreativeGallery } from "./creatives.jsx";
+import OtherPlatform from "./spyMore.jsx";
 import { useBillingOn, COSTS } from "./billing.js";
 import { SPY_ANGLES, SPY_ANGLE } from "./angles.js";
 
@@ -575,6 +576,9 @@ function SpyView({ onRebuild, notify, seed = "" }) {
   const [pickedIg, setPickedIg] = useState({ id: "", ig: "" });   // the brand picked from the search and its Instagram handle
   const [canFind, setCanFind] = useState(false);   // brand search shows only once the server says it has it
   useEffect(() => { let dead = false; hasFeature("brands").then((ok) => { if (!dead) setCanFind(ok); }); return () => { dead = true; }; }, []);
+  const [platform, setPlatform] = useState("Meta");   // Google and TikTok show only once the server says it can read them
+  const [spyMoreOk, setSpyMoreOk] = useState(false);
+  useEffect(() => { let dead = false; hasFeature("spymore").then((ok) => { if (!dead) setSpyMoreOk(!!ok); }); return () => { dead = true; }; }, []);
   const helperLink = useRef(null);
   const crawlCtl = useRef(null);
 
@@ -628,6 +632,17 @@ function SpyView({ onRebuild, notify, seed = "" }) {
     const sum = spySummarize(tagged, b);
     setState({ brand: b || "", source, active: "Meta", reports: { Meta: { ads: tagged, slide: slide && slide.length ? slide : spySlide(tagged, b, "Meta"), insights: insights || [], report: (more && more.report) || [], creatives: (more && more.creatives) || [], ...sum } } });
     setSort("days");
+    setTimeout(() => { const el = document.getElementById("spy-results"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+  };
+
+  // A Google or TikTok analysis. When it is for the brand already on screen it joins that report, so the slide and the PowerPoint can cover several platforms.
+  const addOther = (out) => {
+    const P = out.platform === "google" ? "Google" : "TikTok";
+    const tagged = (out.ads || []).map(spyTag);
+    const rep = { ads: tagged, slide: out.slide && out.slide.length ? out.slide : spySlide(tagged, out.brand, P), insights: out.insights || [], report: out.report || [], creatives: out.creatives || [], ...spySummarize(tagged, out.brand) };
+    setState((s) => ({ brand: out.brand, source: "crawl-ai", active: P, reports: { ...(s && s.brand && s.brand.toLowerCase() === String(out.brand).toLowerCase() ? s.reports : {}), [P]: rep } }));
+    setSort("days");
+    notify(`${P} analysis ready`);
     setTimeout(() => { const el = document.getElementById("spy-results"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
   };
 
@@ -912,14 +927,19 @@ ${spyCompact(ads)}`;
       track("spy_pptx", { ads_count: res ? res.ads.length : 0 });
     } catch (e) { notify("Couldn't make the PowerPoint. Try again."); }
   };
+  const SRC = { Meta: "Meta Ad Library", Google: "Google Ads Transparency Center", TikTok: "TikTok ad library" };
   const reportText = () => {
-    const out = [spyPlatformTitle(state.brand, ["Meta"]), "", "Meta"];
-    state.reports.Meta.slide.forEach((b) => out.push("• " + b));
-    state.reports.Meta.report.forEach((s) => { out.push("", s.title); s.bullets.forEach((b) => out.push("• " + b)); });
-    out.push("", `Sources: Meta Ad Library, ${new Date().toLocaleString("en", { month: "long", year: "numeric" })}`);
+    const names = ["Google", "Meta", "TikTok"].filter((p) => state.reports[p]);
+    const out = [spyPlatformTitle(state.brand, names)];
+    names.forEach((p) => {
+      out.push("", p);
+      state.reports[p].slide.forEach((b) => out.push("• " + b));
+      (state.reports[p].report || []).forEach((s) => { out.push("", s.title); s.bullets.forEach((b) => out.push("• " + b)); });
+    });
+    out.push("", `Sources: ${names.map((p) => SRC[p]).join(", ")}, ${new Date().toLocaleString("en", { month: "long", year: "numeric" })}`);
     return out.join("\n");
   };
-  const srcLabel = state && state.source === "crawl-ai" ? "Read from the Meta Ad Library" : "Read from the Meta Ad Library · keyword wording";
+  const srcLabel = state && state.active !== "Meta" ? `Read from the ${SRC[state.active]}` : state && state.source === "crawl-ai" ? "Read from the Meta Ad Library" : "Read from the Meta Ad Library · keyword wording";
   const inp = "mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10";
   const running = crawl.phase === "running";
   const noDesktop = browser.ready && !browser.mcp && !SPY_API;
@@ -928,6 +948,14 @@ ${spyCompact(ads)}`;
     <div className="mt-6 space-y-6">
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <h2 className="text-lg font-semibold tracking-tight text-slate-900">Find a competitor</h2>
+        {spyMoreOk && (
+          <div className="mt-3 inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Ad platform">
+            {["Meta", "Google", "TikTok"].map((p) => (
+              <button key={p} type="button" onClick={() => setPlatform(p)} aria-pressed={platform === p} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${platform === p ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>{p}</button>
+            ))}
+          </div>
+        )}
+        {platform !== "Meta" ? <OtherPlatform key={platform} platform={platform.toLowerCase()} onDone={addOther} notify={notify} /> : (<>
         <p className="mt-1 text-sm text-slate-500">{canFind ? "Search a brand by name, or paste its " : "Paste a competitor's "}<a href="https://www.facebook.com/ads/library/" target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-600 hover:text-blue-700">Meta Ad Library</a> link{canFind ? "" : " (pick the advertiser from the dropdown and copy the address bar)"}. AdDoctor reads every ad from that page, pulls out the creatives and writes the analysis.</p>
         {canFind && <>
         <form className="mt-4 flex gap-2" onSubmit={(e) => { e.preventDefault(); searchBrands(); }} role="search">
@@ -1022,6 +1050,7 @@ ${spyCompact(ads)}`;
             </div>
           )}
         </div>
+        </>)}
       </section>
 
       {res && (
@@ -1037,6 +1066,14 @@ ${spyCompact(ads)}`;
           </button>
           </div>
         </div>
+
+        {Object.keys(state.reports).length > 1 && (
+          <div className="mb-3 inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Platform report">
+            {["Meta", "Google", "TikTok"].filter((p) => state.reports[p]).map((p) => (
+              <button key={p} onClick={() => setState((s) => ({ ...s, active: p }))} aria-pressed={state.active === p} className={`rounded-full px-3 py-1 text-xs font-semibold transition ${state.active === p ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>{p} · {state.reports[p].ads.length}</button>
+            ))}
+          </div>
+        )}
 
         <SpySlide brand={state.brand} reports={state.reports} onRebuild={onRebuild} />
 

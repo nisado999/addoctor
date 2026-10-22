@@ -813,7 +813,7 @@ ${finalText}` }], b.quality, ratio);
 /* ------------------------ One competitor creative, broken down ------------------------ */
 // Claude reads one ad image (plus its text) and returns the pieces a creative strategist would note.
 // Only Meta's own image hosts are fetched, so this route can't be used to reach anything else.
-const AD_IMG_HOST = /(^|\.)(fbcdn\.net|facebook\.com|fbsbx\.com|cdninstagram\.com|tiktokcdn(-[a-z]{2,3})?\.com|tiktokv\.(com|us|eu))$/i;
+const AD_IMG_HOST = /(^|\.)(fbcdn\.net|facebook\.com|fbsbx\.com|cdninstagram\.com|tiktokcdn(-[a-z]{2,3})?\.com|tiktokv\.(com|us|eu)|googlesyndication\.com)$/i;
 const AWARENESS = ["unaware", "problem", "solution", "product", "most"];
 
 async function creativeBreakdown(env, b) {
@@ -877,6 +877,129 @@ async function scGet(env, path, params) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok || j.success === false) throw new Error(String(j.message || j.error || "ScrapeCreators " + r.status).slice(0, 140));
   return j;
+}
+
+/* ---------------------- Google and TikTok ads (read through ScrapeCreators) ----------------------
+   The Google Ads Transparency Center and TikTok's ad library list each creative with its dates and a picture but almost
+   no ad copy, so these reports lean on the pictures, the formats and how long each ad has run. Field names follow
+   ScrapeCreators' documented samples; each read is defensive in case a field is missing. */
+const listOf = (j, ...keys) => { for (const k of keys) if (j && Array.isArray(j[k])) return j[k]; return []; };
+const httpsUrl = (v) => (/^https:\/\//i.test(String(v || "")) ? String(v) : "");
+const shown = (startMs, endMs) => {
+  const active = !endMs || Date.now() - endMs < 4 * 86400000;   // the libraries only record when an ad was last seen
+  return { startMs, endMs: active ? null : endMs, active, days: startMs ? Math.max(0, Math.round(((active ? Date.now() : endMs) - startMs) / 86400000)) : null };
+};
+
+function googleAd(it, name) {
+  const fmt = String(it.format || "").toLowerCase();
+  return {
+    libId: String(it.creativeId || ""), advertiser: String(it.advertiserName || name || ""),
+    headline: fmt === "text" ? "Text ad" : fmt === "video" ? "Video ad" : "Image ad", body: "", cta: "",
+    format: fmt === "video" ? "Video" : "Static", ...shown(toMs(it.firstShown), toMs(it.lastShown)),
+    creator: "", img: httpsUrl(it.imageUrl), imgs: [], versions: 1, link: "", kind: "",
+  };
+}
+
+function tiktokAd(it, name) {
+  const v = Array.isArray(it.videos) && it.videos[0] || {};
+  const img = httpsUrl(v.cover_img) || httpsUrl(Array.isArray(it.image_urls) && it.image_urls[0]);
+  const video = !!(v.video_url || v.cover_img);
+  return {
+    libId: String(it.id || ""), advertiser: String(it.name || name || ""),
+    headline: video ? "Video ad" : "Image ad", body: "", cta: "", format: video ? "Video" : "Static",
+    ...shown(toMs(it.first_shown_date), toMs(it.last_shown_date)),
+    creator: "", img, imgs: [], versions: 1, link: "", kind: it.estimated_audience ? "estimated audience " + clip(it.estimated_audience, 20) : "",
+  };
+}
+
+async function pagedAds(env, path, params, map, cap) {
+  const seen = new Set(), out = [];
+  let cursor = "";
+  for (let page = 0; page < 8 && out.length < cap; page++) {
+    const j = await scGet(env, path, cursor ? { ...params, cursor } : params);
+    const items = listOf(j, "ads");
+    items.map(map).forEach((a) => { if (a.libId && !seen.has(a.libId)) { seen.add(a.libId); out.push(a); } });
+    cursor = String(j.cursor || "");
+    if (!cursor || !items.length || j.has_more === false) break;
+  }
+  return out.slice(0, cap);
+}
+
+// Search by name: the advertiser behind a name, so the page can offer a pick list like the Meta brand search.
+async function platformFind(env, b) {
+  const q = clip(b.q, 80).trim();
+  if (q.length < 2) throw bad("Type at least 2 letters");
+  if (!env.SCRAPECREATORS_KEY) throw bad("Search is not set up on the server. Paste a library link instead.");
+  if (b.platform === "google") {
+    const j = await scGet(env, "/v1/google/adLibrary/advertisers/search", { query: q });
+    const rows = [j.advertisers, j.results, j.items, j.data].find(Array.isArray) || [];
+    const list = rows.map((x) => ({ id: String(pick(x.advertiserId, x.advertiser_id, x.id, "")), name: clip(pick(x.advertiserName, x.advertiser_name, x.name, ""), 120), sub: clip(pick(x.region, x.country, x.location, ""), 40) })).filter((x) => x.id && x.name);
+    const dom = q.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#]/)[0];
+    if (/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(dom)) list.unshift({ id: "domain:" + dom, name: dom, sub: "Search by website" });   // a typed website also works without an advertiser id
+    return { brands: list.slice(0, 12) };
+  }
+  const j = await scGet(env, "/v1/tiktok/ad-library/search", { advertiser_name: q });
+  const list = listOf(j, "advertiser_matches").map((x) => ({ id: String(x.ids || ""), name: clip(x.name, 120), sub: "" })).filter((x) => x.id && x.name);
+  const first = listOf(j, "ads")[0];
+  if (!list.length && first && first.adv_biz_ids) list.push({ id: String(first.adv_biz_ids), name: clip(first.name || q, 120), sub: "" });
+  return { brands: list.slice(0, 12) };
+}
+
+async function writePlatformSlide(env, ads, brand, platform, images) {
+  const day = (ms) => new Date(ms).toISOString().slice(0, 10);
+  const count = (f) => ads.filter(f).length;
+  const months = {};
+  ads.forEach((a) => { if (a.startMs) { const k = day(a.startMs).slice(0, 7); months[k] = (months[k] || 0) + 1; } });
+  const longest = [...ads].filter((a) => a.days != null).sort((x, y) => y.days - x.days).slice(0, 12)
+    .map((a) => `${a.format}${a.kind ? " (" + a.kind + ")" : ""} | ${a.days} days | ${day(a.startMs)} to ${a.active ? "still running" : day(a.endMs)}`).join("\n");
+  const lib = platform === "google" ? "Google Ads Transparency Center (search, display and YouTube ads)" : "TikTok ad library";
+  const prompt = `You are a direct-response paid media analyst studying a competitor's ads from the ${lib}. Today is ${day(Date.now())}. Advertiser: ${brand || "unknown"}.
+This library gives each ad's format, dates and a picture, but almost no ad copy, spend or results. Read the facts below and the creatives shown after them. Never invent copy, spend, audiences, results or numbers that are not shown.
+Ads read: ${ads.length}. Still running: ${count((a) => a.active)}. Video: ${count((a) => a.format === "Video")}. Image or text: ${count((a) => a.format !== "Video")}.
+Ads started per month: ${Object.entries(months).sort().slice(-14).map(([m, n]) => m + " x" + n).join(", ") || "unknown"}.
+Longest-running ads:
+${longest || "(no dates)"}
+Return ONLY JSON:
+{"slide":[5 to 7 short bullets in the style of an agency competitor slide],
+"report":[{"title":"section name","bullets":["one finding per bullet"]}],
+"creatives":[{"i":1,"sees":"one sentence on what creative 1 shows"}],
+"insights":[3 to 5 short bullets a media buyer can act on]}
+Use hedged wording ("seems to", "appears to"). For "report" use these sections and skip any the facts and pictures do not support, up to 5 bullets each: "Formats and creative style", "What has run longest", "Offers and text printed on the creatives", "Cadence and timing".
+Inside JSON strings use single quotes when you quote words, never double quotes.`;
+  const content = [{ type: "text", text: wf(prompt) }];
+  images.forEach((im, i) => {
+    content.push({ type: "text", text: wf(`Creative ${i + 1}: ${im.format}${im.days != null ? ", live " + im.days + " days" : ""}`) });
+    content.push({ type: "image", source: { type: "base64", media_type: im.type, data: im.data } });
+  });
+  const out = await askClaude(env, content, 4000);
+  const list = (v, n, len) => (Array.isArray(v) ? v : []).map((x) => clip(x, len)).filter(Boolean).slice(0, n);
+  return {
+    slide: list(out.slide, 8, 400), insights: list(out.insights, 6, 400),
+    report: (Array.isArray(out.report) ? out.report : []).map((s) => ({ title: clip(s && s.title, 60), bullets: list(s && s.bullets, 8, 400) })).filter((s) => s.title && s.bullets.length).slice(0, 6),
+    creatives: (Array.isArray(out.creatives) ? out.creatives : []).map((c) => { const im = images[Number(c && c.i) - 1]; return im ? { libId: im.libId || "", img: im.url || "", n: im.n, format: im.format, sees: clip(c.sees, 300) } : null; }).filter(Boolean).slice(0, 12),
+  };
+}
+
+async function platformRead(env, b) {
+  const platform = b.platform === "google" ? "google" : b.platform === "tiktok" ? "tiktok" : "";
+  if (!platform) throw bad("Pick Google or TikTok");
+  if (!env.SCRAPECREATORS_KEY) throw bad("Google and TikTok are not set up on the server.");
+  const id = String(b.id || "").replace(/[^A-Za-z0-9:._-]/g, "").slice(0, 80), name = clip(b.name, 120).trim();
+  if (!id) throw bad("Pick the advertiser from the search, or paste its library link.");
+  const cap = Math.min(Number(env.MAX_ADS) || 200, 400);
+  let ads;
+  if (platform === "google") {
+    ads = await pagedAds(env, "/v1/google/company/ads", id.startsWith("domain:") ? { domain: id.slice(7) } : { advertiser_id: id }, (it) => googleAd(it, name), cap);
+  } else {
+    if (!name) throw bad("TikTok needs the advertiser's name as well. Pick it from the search or paste its library link.");
+    ads = await pagedAds(env, "/v1/tiktok/ad-library/search", { advertiser_name: name, adv_biz_ids: id }, (it) => tiktokAd(it, name), cap);
+  }
+  if (!ads.length) throw bad(`No ${platform === "google" ? "Google" : "TikTok"} ads found for that advertiser.`);
+  const brand = name || ads[0].advertiser;
+  let slide = [], insights = [], report = [], creatives = [], aiError = "";
+  const { images, vision } = await readAdImages(env, ads);
+  try { ({ slide, insights, report, creatives } = await writePlatformSlide(env, ads, brand, platform, images)); } catch (e) { aiError = String(e.message || e).slice(0, 200); }
+  return { platform, count: ads.length, brand, ads, slide, insights, report, creatives, aiError, vision };
 }
 
 function igPost(it, handle) {
@@ -1040,7 +1163,16 @@ async function findRivals(env, b) {
   if (input.length < 2) throw bad("Type your brand name or paste your website");
   const looksUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(input);
   const site = looksUrl ? safeUrl(input).hostname.replace(/^www\./, "") : "";
+  // The market changes who competes: a brand's rivals in one country are not the same as its rivals worldwide.
+  const code = /^[A-Za-z]{2}$/.test(String(b.market || "")) ? String(b.market).toUpperCase() : "";
+  let country = "";
+  try { country = code ? new Intl.DisplayNames(["en"], { type: "region" }).of(code) || "" : ""; } catch (e) { /* unknown code: treated as global */ }
+  const market = country ? code : "";
+  const where = country
+    ? `Market: ${country} only. Find competitors that sell to and advertise to buyers in ${country}: local brands from ${country} and international brands that actively sell there. Judge price level against that market and search in ${country}'s language as well as English. Ignore brands that do not serve ${country}.`
+    : `Market: global. Find the main international competitors that sell across several countries, not brands that only sell in one local market.`;
   const prompt = `You are a market analyst finding the DIRECT competitors of one brand, so a marketer can study the ads those competitors run. Brand: ${site ? site : input}.
+${where}
 Use web search to learn what this brand sells, its price level and who buys it. Then find the brands that sell a similar product to the same buyer at a similar price and that advertise online.
 Rules: only real brands that are operating now and that you found evidence for. Never invent a brand or a website. Do not list the brand itself. Do not list marketplaces or giant general retailers (Amazon, Walmart, Target) unless the brand is itself one.
 Return ONLY JSON: {"brand":{"name":"the brand's name","sells":"what it sells, one sentence","buyer":"who buys it, one sentence"},"competitors":[{"name":"","site":"domain.com","why":"one sentence on why they compete head to head","type":"direct or adjacent","price":"cheaper, similar, pricier or unknown"}]}
@@ -1061,7 +1193,7 @@ Give 8 competitors, direct ones first, at most 2 adjacent. Inside JSON strings u
     }));
   }
   const br = o && o.brand && typeof o.brand === "object" ? o.brand : {};
-  return { brand: { name: clip(br.name, 80) || input, site, sells: clip(br.sells, 240), buyer: clip(br.buyer, 240) }, competitors: comps };
+  return { brand: { name: clip(br.name, 80) || input, site, sells: clip(br.sells, 240), buyer: clip(br.buyer, 240) }, competitors: comps, market, marketName: country };
 }
 
 // The score is a fixed rubric. The model only rates each point (full, partial or miss) and names what is wrong; the
@@ -1251,7 +1383,7 @@ async function deleteAccount(env, req) {
   return json(env, { ok: true });
 }
 
-const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|pack\/|make\/)/;
+const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|spy\/|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -1316,6 +1448,7 @@ function creditCost(path, b) {
   const premium = !!b && b.quality === "premium";
   switch (path) {
     case "/analyze": return 15;
+    case "/spy/read": return 15;
     case "/creative": return 1;
     case "/ask": return 3;
     case "/organic": return 3;
@@ -1563,12 +1696,14 @@ async function handle(req, rawEnv, hooks) {
       }
       // 5. find an advertiser by name, and 6. ask a question about the ads already read
       if (u.pathname === "/brands" && req.method === "POST") return json(env, await brandSearch(env, await req.json()));
+      if (u.pathname === "/spy/find" && req.method === "POST") return json(env, await platformFind(env, await req.json()));
+      if (u.pathname === "/spy/read" && req.method === "POST") return json(env, await platformRead(env, await req.json()));
       if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await req.json()));
       if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await req.json()));
       if (u.pathname === "/rivals" && req.method === "POST") return json(env, await findRivals(env, await req.json()));
       if (u.pathname === "/library" && req.method === "POST") return json(env, await winningAds(env, await req.json()));
       // what this server can do, so the page can offer the right way to read the Ad Library
-      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library"] : [])] });
+      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library", "spymore"] : [])] });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
         const b = await req.json();
