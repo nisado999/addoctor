@@ -813,7 +813,7 @@ function App() {
 
         <main id="main" ref={mainRef} tabIndex={-1} className="px-4 pb-28 pt-6 focus:outline-none sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
           <ErrorBoundary variant="view" label={view} resetKeys={[view]}>
-          <div key={view} className={moved ? "view-in" : undefined}>
+          <div key={view} className={`mx-auto max-w-[1760px]${moved ? " view-in" : ""}`}>
           {view === "home" ? (
             <Bento
               onExamine={(file) => openExam(file ? { file } : {})} onSpy={(domain) => { setSpySeed(domain || ""); goto("spy"); }} onPack={(url) => { setPackSeed(url || ""); goto("pack"); }}
