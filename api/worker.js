@@ -344,14 +344,14 @@ ${compact(ads, ads.length > 300 ? 60000 : 26000)}`;
 const MIX = ["product-hero", "lifestyle", "quick-tip", "detail", "myth-truth", "flat-lay", "benefit-callout", "checklist", "brand-quote", "behind-the-scenes"];
 const MIX_HELP = {
   "product-hero": "A clean, scroll-stopping hero shot of the product. No text on the image.",
-  "lifestyle": "The product being used or worn in a real, natural setting. No text on the image.",
-  "quick-tip": "A photo with ONE short usage or styling tip written large on the image.",
+  "lifestyle": "The product being used or worn in a real, natural setting. No text on the image. If a person appears, do it carefully: a calm, natural pose, a relaxed realistic face, hands relaxed or out of frame, natural light, the whole garment and its print clearly visible, no gestures and no posing at the camera.",
+  "quick-tip": "A photo that shows ONE usage or styling idea through the scene itself (how it is worn, layered or arranged). No text on the image.",
   "detail": "A close-up detail shot that shows quality, texture or craft. No text on the image.",
-  "myth-truth": "A 'Myth:' line on the image that the product disproves. Short and punchy.",
+  "myth-truth": "A calm, editorial photo that quietly carries one idea about the brand (for example a still portrait by a window). The idea goes in the caption. No text on the image. A person must be done carefully: natural, still, relaxed hands, the print clearly visible.",
   "flat-lay": "A styled flat lay or arrangement of the product from above. No text on the image.",
-  "benefit-callout": "A photo with ONE short benefit headline written on the image.",
-  "checklist": "A photo with a title and 3 very short checklist items written on the image.",
-  "brand-quote": "A calm, branded statement about the brand's values written on the image.",
+  "benefit-callout": "A photo that shows ONE benefit visually (fabric weight, print quality, stitching, fit). No text on the image.",
+  "checklist": "A styled arrangement or scene that shows what comes with the product. No text on the image.",
+  "brand-quote": "A quiet, atmospheric photo that carries the brand's mood and values through props and setting. No text on the image.",
   "behind-the-scenes": "A behind-the-scenes or making-of moment that builds trust. No text on the image.",
 };
 
@@ -601,14 +601,14 @@ Avoid: ${br.avoid}
 ${b.photos ? "Real photos of the product will be given to the image model as references. Every imagePrompt must feature that exact product in a new scene. Never describe the product's design, prints, graphics, logos or text in the imagePrompt: just call it 'the product from the reference photos'. Prefer compositions that show the side of the product that the photos show, usually the front.\n" : ""}Write exactly ${idx.length} posts, in this order, one per line below (post ${idx.map((i) => i + 1).join(", ")} of ${Number(b.total) || idx.length} in the full pack):
 ${lines}
 
-Return ONLY JSON: {"posts":[{"title":"2-5 words","imagePrompt":"a detailed photography prompt: subject, setting, camera angle, light, props, composition. Real photography. Do NOT describe any text here.","overlayText":"the exact words to print on the image, or empty string if none. Use \\n for line breaks.","caption":"the caption without hashtags","hashtags":["#a","#b","#c"]}]}
+Return ONLY JSON: {"posts":[{"title":"2-5 words","imagePrompt":"a detailed photography prompt: subject, setting, camera angle, light, props, composition. Real photography. Do NOT describe any text here.","overlayText":"always an empty string: no words are printed on these images","caption":"the caption without hashtags","hashtags":["#a","#b","#c"]}]}
 ${PACK_RULES}`;
   const o = await askClaude(env, prompt, 4000);
   const list = Array.isArray(o.posts) ? o.posts : [];
   return idx.map((i, n) => {
     const p = list[n] || {};
     const type = MIX[i % MIX.length];
-    const hasText = !/^(product-hero|lifestyle|detail|flat-lay|behind-the-scenes)$/.test(type);
+    const hasText = false;   // 30-Day Drop images carry no added words; the customer adds their own later
     return {
       index: i, type,
       title: clip(p.title, 60) || type.replace(/-/g, " "),
@@ -625,7 +625,7 @@ function imagePromptText(b, br) {
   const style = br && br.visualStyle ? `Overall style: ${clip(br.visualStyle, 500)} ` : "";
   const text = b.overlayText
     ? `Print exactly this text on the image, spelled exactly as written, in clean modern typography with strong contrast and generous margins, nothing else written anywhere: "${clip(b.overlayText, 120)}".`
-    : "No text, letters, logos or watermarks anywhere in the image.";
+    : "Do not add any text, letters, captions, logos or watermarks anywhere in the image. Wording already printed on the product itself stays exactly as in the reference photos.";
   const fix = b.fix ? ` Important change to apply: ${clip(b.fix, 500)}` : "";
   return `Create a photorealistic 4:5 portrait Instagram feed photo. ${style}${clip(b.prompt, 900)} ${text}${fix}`;
 }
