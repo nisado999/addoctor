@@ -5,7 +5,7 @@ import { apiFetch, isCancel } from "./api.js";
 import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
 import { CreativeGallery } from "./creatives.jsx";
-import { useBillingOn, usePro, COSTS } from "./billing.js";
+import { useBillingOn, COSTS } from "./billing.js";
 import { SPY_ANGLES, SPY_ANGLE } from "./angles.js";
 
 /* ============================ Competitor Spy ============================ */
@@ -603,10 +603,6 @@ function SpyView({ onRebuild, notify, seed = "" }) {
   const libOk = lib && !lib.error;
   const [dateMsg, setDateMsg] = useState("");
   const billingOn = useBillingOn();
-  const { pro, signedIn } = usePro();
-  const [more, setMore] = useState({ busy: false, msg: "" });
-  const [spyMoreOk, setSpyMoreOk] = useState(false);
-  useEffect(() => { let off = false; hasFeature("spymore").then((ok) => { if (!off) setSpyMoreOk(!!ok); }).catch(() => {}); return () => { off = true; }; }, []);
   const datesMatch = !!libOk && lib.from === from && lib.to === to;
   // Puts the chosen dates into the pasted link, so the link and the date range never disagree. Only the two date
   // values change; the advertiser, country and everything else in the link stay as pasted.
@@ -633,32 +629,6 @@ function SpyView({ onRebuild, notify, seed = "" }) {
     setState({ brand: b || "", source, active: "Meta", reports: { Meta: { ads: tagged, slide: slide && slide.length ? slide : spySlide(tagged, b, "Meta"), insights: insights || [], report: (more && more.report) || [], creatives: (more && more.creatives) || [], ...sum } } });
     setSort("days");
     setTimeout(() => { const el = document.getElementById("spy-results"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
-  };
-
-  // Google and TikTok ads for the same brand, added to the report (Pro). Charged once on the server.
-  const addMore = async () => {
-    if (!state || more.busy) return;
-    if (billingOn && !pro) { location.hash = "#plans"; return; }
-    setMore({ busy: true, msg: "" });
-    track("spy_more", { brand: state.brand });
-    try {
-      const out = await apiFetch("/spy/more", { body: { brand: state.brand }, timeout: 120000 });
-      const added = {};
-      for (const p of ["Google", "TikTok"]) {
-        const r = out.platforms && out.platforms[p];
-        if (!r || !r.ads || !r.ads.length) continue;
-        const tagged = r.ads.map(spyTag);
-        added[p] = { ads: tagged, slide: r.slide && r.slide.length ? r.slide : spySlide(tagged, state.brand, p), insights: r.insights || [], report: [], creatives: [], ...spySummarize(tagged, state.brand) };
-      }
-      setState((s) => (s ? { ...s, reports: { ...s.reports, ...added } } : s));
-      const names = Object.keys(added);
-      setMore({ busy: false, msg: names.length ? `Added ${names.join(" and ")}.${out.missing && out.missing.length ? ` No ads found on ${out.missing.join(" or ")}.` : ""}` : "" });
-      if (names.length) notify(`Added ${names.join(" and ")} to the report`);
-    } catch (e) {
-      if (isCancel(e)) { setMore({ busy: false, msg: "" }); return; }
-      if (e && e.code === "pro_only") { setMore({ busy: false, msg: "Google and TikTok are on the Pro plan and up." }); return; }
-      setMore({ busy: false, msg: (e && e.message) || "Couldn't reach the AdDoctor server. Try again." });
-    }
   };
 
   const runApi = async () => {
@@ -943,18 +913,13 @@ ${spyCompact(ads)}`;
     } catch (e) { notify("Couldn't make the PowerPoint. Try again."); }
   };
   const reportText = () => {
-    const names = ["Google", "Meta", "TikTok"].filter((p) => state.reports[p]);
-    const out = [spyPlatformTitle(state.brand, names)];
-    names.forEach((p) => {
-      out.push("", p);
-      state.reports[p].slide.forEach((b) => out.push("• " + b));
-      (state.reports[p].report || []).forEach((s) => { out.push("", s.title); s.bullets.forEach((b) => out.push("• " + b)); });
-    });
-    const src = { Meta: "Meta Ad Library", Google: "Google Ads Transparency Center", TikTok: "TikTok ad library" };
-    out.push("", `Sources: ${names.map((p) => src[p]).join(", ")}, ${new Date().toLocaleString("en", { month: "long", year: "numeric" })}`);
+    const out = [spyPlatformTitle(state.brand, ["Meta"]), "", "Meta"];
+    state.reports.Meta.slide.forEach((b) => out.push("• " + b));
+    state.reports.Meta.report.forEach((s) => { out.push("", s.title); s.bullets.forEach((b) => out.push("• " + b)); });
+    out.push("", `Sources: Meta Ad Library, ${new Date().toLocaleString("en", { month: "long", year: "numeric" })}`);
     return out.join("\n");
   };
-  const srcLabel = state && state.active === "Google" ? "Read from the Google Ads Transparency Center" : state && state.active === "TikTok" ? "Read from the TikTok ad library" : state && state.source === "crawl-ai" ? "Read from the Meta Ad Library" : "Read from the Meta Ad Library · keyword wording";
+  const srcLabel = state && state.source === "crawl-ai" ? "Read from the Meta Ad Library" : "Read from the Meta Ad Library · keyword wording";
   const inp = "mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10";
   const running = crawl.phase === "running";
   const noDesktop = browser.ready && !browser.mcp && !SPY_API;
@@ -1073,28 +1038,7 @@ ${spyCompact(ads)}`;
           </div>
         </div>
 
-        {Object.keys(state.reports).length > 1 && (
-          <div className="mb-3 inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Platform">
-            {["Meta", "Google", "TikTok"].filter((p) => state.reports[p]).map((p) => (
-              <button key={p} onClick={() => setState((s) => ({ ...s, active: p }))} aria-pressed={state.active === p} className={`rounded-full px-3 py-1 text-xs font-semibold transition ${state.active === p ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>{p} · {state.reports[p].ads.length}</button>
-            ))}
-          </div>
-        )}
-
         <SpySlide brand={state.brand} reports={state.reports} onRebuild={onRebuild} />
-
-        {spyMoreOk && !(state.reports.Google || state.reports.TikTok) && state.brand && (
-          <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 p-4" aria-label="More platforms">
-            <div className="min-w-0">
-              <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">Also check Google and TikTok <span className="rounded-full bg-[#2563EB] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Pro</span></p>
-              <p className="mt-0.5 text-xs text-slate-600">Adds their Google Ads Transparency Center and TikTok ad library ads to this slide and the PowerPoint.</p>
-              {more.msg && <p className="mt-1 text-xs font-semibold text-amber-700" role="status">{more.msg}</p>}
-            </div>
-            <button onClick={addMore} disabled={more.busy} className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
-              {more.busy ? "Reading Google and TikTok…" : billingOn && !pro ? (signedIn ? "Upgrade to Pro" : "See plans") : `Add Google & TikTok${billingOn ? ` · ${COSTS.moreSpy} credits` : ""}`}
-            </button>
-          </section>
-        )}
 
         {res.insights.length > 0 && (
           <section className="mt-5 rounded-2xl border border-blue-200 bg-white p-5 shadow-sm" aria-label="What to do about it">
@@ -1149,7 +1093,7 @@ ${spyCompact(ads)}`;
           )}
         </div>
 
-        {state.active === "Meta" && <CreativeGallery key={state.active + "|" + state.brand + "|" + res.ads.length} ads={res.ads} brand={state.brand} organicHint={libOk && lib.id === pickedIg.id ? pickedIg.ig : ""} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />}
+        <CreativeGallery key={state.active + "|" + state.brand + "|" + res.ads.length} ads={res.ads} brand={state.brand} organicHint={libOk && lib.id === pickedIg.id ? pickedIg.ig : ""} onRebuild={(a) => onRebuild(SPY_ANGLE[a.angle].tpl)} notify={notify} />
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>

@@ -845,117 +845,6 @@ async function scGet(env, path, params) {
   return j;
 }
 
-/* ------------------------- Google and TikTok ads (Pro) -------------------------
-   Read through ScrapeCreators like the Meta ads, then shaped like normalize() so the page tags and summarizes them the
-   same way. The response field names were written from the provider's docs and have not been run against real
-   data, so every field is read defensively and the owner can see the raw first item with {"debug": true}. */
-const listOf = (j, ...keys) => {
-  for (const k of keys) if (j && Array.isArray(j[k])) return j[k];
-  const d = j && j.data;
-  return Array.isArray(d) ? d : d && typeof d === "object" ? listOf(d, ...keys) : [];
-};
-const nextCursor = (j) => String(pick(j && j.cursor, j && j.next_cursor, j && j.nextCursor, j && j.data && j.data.cursor, "") || "");
-const shownDays = (startMs, endMs) => (startMs ? Math.max(0, Math.round(((endMs && Date.now() - endMs > 3 * 86400000 ? endMs : Date.now()) - startMs) / 86400000)) : null);
-
-function googleAd(it, fallbackName) {
-  const fmt = String(pick(it.format, it.ad_format, it.adFormat, it.type, "") || "").toLowerCase();
-  const format = /video/.test(fmt) ? "Video" : "Static";
-  const startMs = toMs(pick(it.firstShown, it.first_shown, it.first_shown_date, it.firstShownDate, it.first_seen, it.start_date));
-  const endMs = toMs(pick(it.lastShown, it.last_shown, it.last_shown_date, it.lastShownDate, it.last_seen, it.end_date));
-  const text = clean(pick(it.headline, it.title, it.text, it.ad_text, it.adText, it.description, ""));
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  const advertiser = String(pick(it.advertiserName, it.advertiser_name, it.advertiser, fallbackName, "") || "");
-  return {
-    id: "g" + String(pick(it.creativeId, it.creative_id, it.adId, it.ad_id, it.id, "")), libId: String(pick(it.creativeId, it.creative_id, it.adId, it.ad_id, it.id, "")),
-    advertiser, headline: wf((lines[0] || `${format === "Video" ? "Video" : "Image or text"} ad (the Transparency Center shows no copy for it)`).slice(0, 110)), body: wf(lines.slice(1).join(" ").slice(0, 400)),
-    cta: "", format, startMs, endMs: endMs && Date.now() - endMs > 3 * 86400000 ? endMs : null, days: shownDays(startMs, endMs), creator: "",
-    active: !endMs || Date.now() - endMs <= 3 * 86400000, img: "", imgs: [], versions: 1, link: linkOf(pick(it.adUrl, it.ad_url, it.url, "")), kind: "",
-  };
-}
-
-function tiktokAd(it, fallbackName) {
-  const startMs = toMs(pick(it.first_shown_date, it.firstShownDate, it.first_shown, it.first_shown_ts, it.start_date, it.firstShown));
-  const endMs = toMs(pick(it.last_shown_date, it.lastShownDate, it.last_shown, it.last_shown_ts, it.end_date, it.lastShown));
-  const text = clean(pick(it.ad_title, it.adTitle, it.title, it.caption, it.text, it.ad_name, it.name, ""));
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  const advertiser = String(pick(it.advertiser_name, it.advertiserName, it.business_name, it.sponsor, it.advertiser, fallbackName, "") || "");
-  return {
-    id: "t" + String(pick(it.ad_id, it.adId, it.id, "")), libId: String(pick(it.ad_id, it.adId, it.id, "")),
-    advertiser, headline: wf((lines[0] || "TikTok ad (no copy shown)").slice(0, 110)), body: wf(lines.slice(1).join(" ").slice(0, 400)),
-    cta: "", format: "Video", startMs, endMs: endMs && Date.now() - endMs > 3 * 86400000 ? endMs : null, days: shownDays(startMs, endMs), creator: "",
-    active: !endMs || Date.now() - endMs <= 3 * 86400000, img: "", imgs: [], versions: 1, link: "", kind: "",
-  };
-}
-
-const dedupeBy = (ads) => { const seen = new Set(); return ads.filter((a) => a.libId && !seen.has(a.libId) && seen.add(a.libId)); };
-
-async function googleAds(env, brand, domain, debug) {
-  let who = null;
-  const found = listOf(await scGet(env, "/v1/google/adLibrary/advertisers/search", { query: brand }), "advertisers", "results", "items");
-  const want = brand.toLowerCase();
-  who = found.find((x) => String(pick(x.name, x.advertiserName, x.advertiser_name, "")).toLowerCase() === want)
-    || found.find((x) => String(pick(x.name, x.advertiserName, x.advertiser_name, "")).toLowerCase().includes(want)) || found[0] || null;
-  const advId = who && String(pick(who.advertiser_id, who.advertiserId, who.id, ""));
-  const params = advId ? { advertiser_id: advId } : domain ? { domain } : null;
-  if (!params) return { ads: [], raw: debug ? { found } : undefined };
-  const name = who ? String(pick(who.name, who.advertiserName, who.advertiser_name, brand)) : brand;
-  let items = [], cursor = "", first = null;
-  for (let i = 0; i < 2; i++) {
-    const j = await scGet(env, "/v1/google/company/ads", { ...params, ...(cursor ? { cursor } : {}) });
-    if (!first) first = j;
-    items = items.concat(listOf(j, "ads", "results", "items"));
-    cursor = nextCursor(j);
-    if (!cursor || items.length >= 60) break;
-  }
-  return { ads: dedupeBy(items.map((it) => googleAd(it, name))).slice(0, 60), name, raw: debug ? { advertiser: who, firstItem: items[0] || null, shape: first && Object.keys(first) } : undefined };
-}
-
-async function tiktokAds(env, brand, debug) {
-  let items = [], cursor = "", first = null;
-  for (let i = 0; i < 2; i++) {
-    const j = await scGet(env, "/v1/tiktok/ad-library/search", { advertiser_name: brand, ...(cursor ? { cursor } : {}) });
-    if (!first) first = j;
-    items = items.concat(listOf(j, "ads", "results", "items", "search_item_list"));
-    cursor = nextCursor(j);
-    if (!cursor || items.length >= 60) break;
-  }
-  return { ads: dedupeBy(items.map((it) => tiktokAd(it, brand))).slice(0, 60), name: brand, raw: debug ? { firstItem: items[0] || null, shape: first && Object.keys(first) } : undefined };
-}
-
-// A short read of one platform's ads: no images, so it stays cheap. Same hedged tone as the Meta slide.
-async function writePlatformSlide(env, ads, brand, platform) {
-  const rows = ads.slice(0, 40).map((a, i) => `${i + 1}. [${a.format}${a.days != null ? `, live ${a.days}d` : ""}] ${a.headline}${a.body ? " | " + a.body.slice(0, 160) : ""}`).join("\n");
-  const what = platform === "Google" ? "Google Ads Transparency Center (search, display and YouTube ads; it shows what is running, not spend or results)" : "TikTok ad library (ads shown in TikTok's ad transparency data; it shows what is running, not spend or results)";
-  const out = await askClaude(env, `You are a direct-response paid media analyst. Below are ${ads.length} ads that ${brand} ran, read from the ${what}. Today is ${new Date().toISOString().slice(0, 10)}.
-
-${rows}
-
-Return ONLY JSON: {"slide":[4 to 6 short bullets in the style of an agency competitor slide],"insights":[2 to 4 short bullets a media buyer can act on]}
-Rules: use hedged wording ("seems to", "appears to"). Only say what the list shows. Never invent spend, results, audiences, performance or numbers that are not in the list. If the list shows little text, say that the library shows few details instead of guessing. No hype.`, 1500);
-  const arr = (v) => (Array.isArray(v) ? v : []).map((x) => clip(x, 300)).filter(Boolean);
-  return { slide: arr(out && out.slide).slice(0, 6), insights: arr(out && out.insights).slice(0, 4) };
-}
-
-async function moreSpy(env, b) {
-  const brand = clip(b.brand, 80).trim();
-  if (!brand) throw bad("Which brand should we look up?");
-  if (!env.SCRAPECREATORS_KEY) throw bad("Google and TikTok are not set up on the server.");
-  const domain = String(b.domain || "").replace(/^https?:\/\//i, "").replace(/\/.*$/, "").slice(0, 80);
-  const debug = !!b.debug;
-  const [g, t] = await Promise.allSettled([googleAds(env, brand, domain, debug), tiktokAds(env, brand, debug)]);
-  const out = { brand, platforms: {}, missing: [], errors: {} };
-  for (const [key, label, r] of [["Google", "Google", g], ["TikTok", "TikTok", t]]) {
-    if (r.status !== "fulfilled") { out.errors[key] = String((r.reason && r.reason.message) || r.reason).slice(0, 140); out.missing.push(label); continue; }
-    if (debug) out.platforms[key + "_raw"] = r.value.raw;
-    if (!r.value.ads.length) { out.missing.push(label); continue; }
-    let slide = [], insights = [];
-    try { ({ slide, insights } = await writePlatformSlide(env, r.value.ads, r.value.name || brand, key)); } catch (e) { out.errors[key + "_ai"] = String(e.message || e).slice(0, 120); }
-    out.platforms[key] = { ads: r.value.ads, slide, insights };
-  }
-  if (!out.platforms.Google && !out.platforms.TikTok) throw bad(`No Google or TikTok ads found for ${brand}. Try the exact brand name${Object.keys(out.errors).length ? " (the lookup also reported: " + Object.values(out.errors)[0] + ")" : ""}.`);
-  return out;
-}
-
 function igPost(it, handle) {
   const cap = it.caption && typeof it.caption === "object" ? it.caption.text : it.caption;
   const cand = (m) => (m && m.image_versions2 && Array.isArray(m.image_versions2.candidates) && m.image_versions2.candidates[0] && m.image_versions2.candidates[0].url) || "";
@@ -1328,7 +1217,7 @@ async function deleteAccount(env, req) {
   return json(env, { ok: true });
 }
 
-const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|spy\/|pack\/|make\/)/;
+const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -1393,7 +1282,6 @@ function creditCost(path, b) {
   const premium = !!b && b.quality === "premium";
   switch (path) {
     case "/analyze": return 15;
-    case "/spy/more": return 10;
     case "/creative": return 1;
     case "/ask": return 3;
     case "/organic": return 3;
@@ -1531,11 +1419,6 @@ async function handle(req, rawEnv, hooks) {
         try {
           let peek = {};
           if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/make/improve" || u.pathname === "/pack/image")) peek = await req.clone().json().catch(() => ({}));
-          // Google and TikTok are a Pro feature: Starter and Free accounts are asked to upgrade, and are not charged.
-          if (u.pathname === "/spy/more") {
-            const acct = await dbRpc(env, "billing_refresh", { uid: who.id });
-            if (!["pro", "agency"].includes(acct.plan)) return json(env, { error: "Google and TikTok ads are on the Pro and For Teams plans. Upgrade to add them to your report.", code: "pro_only" }, 403);
-          }
           let cost = creditCost(u.pathname, peek);
           if (cost > 0 && peek.grant && ((u.pathname === "/make/ad" && peek.base) || u.pathname === "/make/improve")) {
             const left = await useGrant(env, who.id, peek.grant);
@@ -1648,10 +1531,9 @@ async function handle(req, rawEnv, hooks) {
       if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await req.json()));
       if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await req.json()));
       if (u.pathname === "/rivals" && req.method === "POST") return json(env, await findRivals(env, await req.json()));
-      if (u.pathname === "/spy/more" && req.method === "POST") { const b = await req.json(); return json(env, await moreSpy(env, { ...b, debug: !!b.debug && isOwner(env, who) })); }
       if (u.pathname === "/library" && req.method === "POST") return json(env, await winningAds(env, await req.json()));
       // what this server can do, so the page can offer the right way to read the Ad Library
-      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library", "spymore"] : [])] });
+      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library"] : [])] });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
         const b = await req.json();
