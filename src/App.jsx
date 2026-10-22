@@ -14,6 +14,7 @@ import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
 import { SwipeView, useSwipe } from "./swipe.jsx";
 import { MyAdsView, useMyAds } from "./myads.jsx";
 import { CommandPalette } from "./palette.jsx";
+import { ThemeToggle } from "./theme.jsx";
 
 import { loadVault, sanitizeVault, loadFavs, loadCredits, saveCredits, writeJSON } from "./storage.js";
 import { ApiError } from "./api.js";
@@ -779,6 +780,7 @@ function App() {
               )}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
+              <ThemeToggle />
               {user ? (
                 <div className="relative">
                   <button
