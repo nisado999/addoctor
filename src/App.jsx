@@ -131,8 +131,8 @@ const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(naviga
 const VIEWS = {
   home: { title: "Home" },
   explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one, add your logo, or make a new one in its style." },
-  video: { title: "Video Generator", sub: "Answer a few questions and we build a brief made for your brand. Video creation is coming soon." },
-  static: { title: "Static Ads", sub: "Answer a few questions and we design ads from scratch, made for you. No templates." },
+  video: { title: "Create Video Ads", sub: "Answer a few questions and we build a brief made for your brand. Video creation is coming soon." },
+  static: { title: "Create Static Ads", sub: "Answer a few questions and we design ads from scratch, made for you. No templates." },
   pack: { title: "30-Day Drop", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Spy", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },

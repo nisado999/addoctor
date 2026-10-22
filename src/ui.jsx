@@ -284,9 +284,9 @@ function TemplateGrid({ className = "", label = "Templates", children }) {
 const NAV = [
   { head: "Create", items: [
     { id: "explore", label: "Explore Templates", icon: Icon.Grid },
-    { id: "static", label: "Static Ads", icon: Icon.Layout },
+    { id: "static", label: "Create Static Ads", icon: Icon.Layout },
+    { id: "video", label: "Create Video Ads", icon: Icon.Video, note: "Soon", quiet: true },
     { id: "pack", label: "30-Day Drop", icon: Icon.Image, note: "New" },
-    { id: "video", label: "Video Generator", icon: Icon.Video, note: "Soon", quiet: true },
   ] },
   { head: "Analyse", items: [
     { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope },

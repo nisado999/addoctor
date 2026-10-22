@@ -213,7 +213,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
   const pct = phase === "questions" ? Math.round(((step + 1) / Math.max(1, pending.length)) * 100) : 0;
 
   return (
-    <section className="mx-auto mt-6 max-w-3xl" aria-label={video ? "Video Generator" : "Static Ads"}>
+    <section className="mx-auto mt-6 max-w-3xl" aria-label={video ? "Create Video Ads" : "Create Static Ads"}>
       {phase === "source" && (
         <div>
           <h2 className="font-display text-[26px] font-extrabold tracking-[-0.03em] text-slate-950">Let's make an ad just for you</h2>
