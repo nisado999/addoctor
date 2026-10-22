@@ -11,10 +11,10 @@ const date = (iso) => { try { return new Date(iso).toLocaleDateString("en-GB", {
 const ring = "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
 
 const TIERS = {
-  free: { top: "from-white", border: "border border-slate-200", accent: "text-slate-400" },
-  starter: { top: "from-slate-100", border: "border border-slate-200", accent: "text-slate-600", btn: "bg-[#09090B] hover:bg-zinc-800", cta: "Get Starter", current: "border border-slate-300 bg-slate-100 text-slate-600" },
-  pro: { top: "from-blue-100", border: "border-2 border-[#2563EB] shadow-blue-600/10", accent: "text-blue-600", btn: "bg-[#2563EB] hover:bg-blue-700", cta: "Get Pro", current: "border border-[#2563EB] bg-blue-50 text-blue-700" },
-  agency: { top: "from-indigo-50", border: "border border-indigo-100", accent: "text-indigo-600", btn: "bg-[#4F46E5] hover:bg-indigo-700", cta: "Choose Agency", current: "border border-indigo-300 bg-indigo-50 text-indigo-700" },
+  free: { top: "from-white", border: "border border-slate-200", accent: "text-slate-400", box: "bg-slate-100/80 ring-slate-200/70" },
+  starter: { top: "from-amber-100 via-orange-50", border: "border border-amber-200", accent: "text-amber-600", box: "bg-white/70 ring-amber-200", btn: "bg-[#09090B] hover:bg-zinc-800 shadow-zinc-900/25", cta: "Get Starter", current: "border border-amber-300 bg-amber-50 text-amber-800" },
+  pro: { top: "from-blue-200 via-sky-50", border: "border-2 border-[#2563EB] shadow-xl shadow-blue-600/25 lg:-translate-y-2", accent: "text-blue-600", box: "bg-white/75 ring-blue-200", btn: "bg-gradient-to-r from-[#2563EB] to-[#3B82F6] hover:from-blue-700 hover:to-blue-500 shadow-blue-600/40", cta: "Get Pro", current: "border border-[#2563EB] bg-blue-50 text-blue-700" },
+  agency: { top: "from-violet-200 via-fuchsia-50", border: "border border-violet-300 shadow-lg shadow-violet-500/15", accent: "text-violet-600", box: "bg-white/75 ring-violet-200", btn: "bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] hover:from-indigo-700 hover:to-violet-600 shadow-violet-600/35", cta: "Get For Teams", current: "border border-violet-300 bg-violet-50 text-violet-700" },
 };
 const PILL = { green: "bg-emerald-100 text-emerald-800", blue: "bg-blue-100 text-blue-700", slate: "bg-slate-200/80 text-slate-700" };
 const FeatureRow = ({ label, pill, tone }) => (
@@ -31,9 +31,96 @@ const BUYS = [
   ["Analyze a competitor's ads (up to 1,000)", COSTS.analyze],
 ];
 
+const GOALS = [["ads", "Static ads & 30-Day Drop posts"], ["spy", "Competitor analyses"], ["breakdown", "Creative breakdowns"], ["ask", "Questions about brands' ads"]];
+const Slider = ({ label, hint, value, max, step = 1, onChange, tone = "#2563EB" }) => (
+  <div>
+    <div className="flex items-baseline justify-between gap-2"><label className="text-[13px] font-semibold text-slate-900">{label}</label><span className="text-xs tabular-nums text-slate-500">{hint}</span></div>
+    <input type="range" min="0" max={max} step={step} value={value} onChange={(e) => onChange(+e.target.value)} aria-label={label}
+      className={`mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full ${ring}`}
+      style={{ accentColor: tone, background: `linear-gradient(to right, ${tone} ${(value / max) * 100}%, #e2e8f0 ${(value / max) * 100}%)` }} />
+    <p className="mt-1 text-right text-sm font-bold tabular-nums text-slate-900">{value}<span className="ml-1 text-xs font-medium text-slate-500">/ mo</span></p>
+  </div>
+);
+
+function PlanFinder({ yearly, user, acct, bill, busy, buy }) {
+  const [goals, setGoals] = useState(["ads"]);
+  const [n, setN] = useState({ ads: 60, spy: 2, breakdown: 30, ask: 10 });
+  const [premium, setPremium] = useState(false);
+  const [why, setWhy] = useState(false);
+  const toggle = (g) => setGoals((c) => (c.includes(g) ? c.filter((x) => x !== g) : [...c, g]));
+  const unit = { ads: premium ? COSTS.imagePremium : COSTS.image, spy: COSTS.analyze, breakdown: COSTS.breakdown, ask: COSTS.ask };
+  const need = goals.reduce((t, g) => t + n[g] * unit[g], 0);
+  const top = PLANS[PLANS.length - 1];
+  const rec = need <= PLANS[0].credits ? PLANS[0] : PLANS.slice(1).find((p) => p.credits >= need) || top;
+  const over = Math.max(0, need - rec.credits);
+  const topups = Math.ceil(over / TOPUP.credits);
+  const t = TIERS[rec.id];
+  const paid = rec.id !== "free";
+  const perMonth = yearly ? Math.round(rec.year / 12) : rec.month;
+  const key = `${rec.id}_${yearly ? "year" : "month"}`;
+  const current = acct && acct.plan === rec.id;
+  const pct = Math.min(100, (need / rec.credits) * 100);
+  return (
+    <section aria-label="Find the best plan for you">
+      <h2 className="text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">Find the best plan for you</h2>
+      <p className="mt-1 text-sm text-slate-500">Tell us what you make, and we'll pick the plan that fits.</p>
+      <div className="mt-5 grid overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[1.35fr_1fr]">
+        <div className="space-y-7 p-5 sm:p-7">
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900"><span className="grid h-6 w-6 place-items-center rounded-full bg-slate-950 text-xs text-white">1</span>What do you want to do?</h3>
+            <p className="mt-1 text-xs text-slate-500">Multiple options can be selected</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {GOALS.map(([id, label]) => { const on = goals.includes(id); return (
+                <button key={id} onClick={() => toggle(id)} aria-pressed={on} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${ring} ${on ? "border-[#2563EB] bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"}`}>
+                  {label}<span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md ${on ? "bg-[#2563EB] text-white" : "border border-slate-300"}`}>{on && <Icon.Check className="h-3 w-3" />}</span>
+                </button>); })}
+            </div>
+          </div>
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900"><span className="grid h-6 w-6 place-items-center rounded-full bg-slate-950 text-xs text-white">2</span>How much per month?</h3>
+            <div className="mt-4 space-y-5 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/70">
+              {goals.length === 0 && <p className="text-xs text-slate-500">Pick at least one thing above.</p>}
+              {goals.includes("ads") && <Slider label="Static ads & posts" hint={`${unit.ads} credits each`} value={n.ads} max={500} step={5} onChange={(v) => setN({ ...n, ads: v })} />}
+              {goals.includes("spy") && <Slider label="Competitor analyses" hint={`${COSTS.analyze} credits each`} value={n.spy} max={40} onChange={(v) => setN({ ...n, spy: v })} tone="#7C3AED" />}
+              {goals.includes("breakdown") && <Slider label="Creative breakdowns" hint={`${COSTS.breakdown} credit each`} value={n.breakdown} max={300} step={5} onChange={(v) => setN({ ...n, breakdown: v })} tone="#F59E0B" />}
+              {goals.includes("ask") && <Slider label="Questions about brands' ads" hint={`${COSTS.ask} credits each`} value={n.ask} max={100} onChange={(v) => setN({ ...n, ask: v })} tone="#10B981" />}
+            </div>
+          </div>
+          <div>
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900"><span className="grid h-6 w-6 place-items-center rounded-full bg-slate-950 text-xs text-white">3</span>Quality</h3>
+            <label className="mt-3 flex cursor-pointer items-center gap-3 text-xs font-semibold text-slate-700">
+              <button role="switch" aria-checked={premium} onClick={() => setPremium(!premium)} className={`relative h-6 w-11 shrink-0 rounded-full transition ${ring} ${premium ? "bg-[#2563EB]" : "bg-slate-300"}`}><span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${premium ? "translate-x-5" : ""}`} /></button>
+              Best-quality images <span className="font-normal text-slate-500">({COSTS.imagePremium} credits instead of {COSTS.image})</span>
+            </label>
+          </div>
+        </div>
+
+        <div className={`flex flex-col items-center justify-center bg-gradient-to-b ${t.top} to-white p-5 sm:p-7`}>
+          <p className="text-sm font-semibold text-slate-600">We recommend the <span className="text-slate-950">{rec.name}</span> plan</p>
+          <button onClick={() => setWhy(!why)} aria-expanded={why} className={`mt-2 rounded-full bg-white/80 px-3 py-1 text-xs font-bold ${t.accent} ring-1 ring-slate-200 ${ring}`}>See why</button>
+          {why && <p className="mt-2 max-w-xs text-center text-xs leading-relaxed text-slate-600">You'd use about {need.toLocaleString("en-US")} credits a month. {rec.name} includes {rec.credits.toLocaleString("en-US")}{over > 0 ? `, and ${topups} top-up${topups === 1 ? "" : "s"} of ${TOPUP.credits} (${money(topups * TOPUP.price)}) covers the rest.` : ", so you're covered."}</p>}
+          <div className={`mt-4 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl ${t.border.includes("border-2") ? "border-2 border-[#2563EB] shadow-blue-600/20" : "border border-slate-200"}`}>
+            <h3 className="text-lg font-extrabold uppercase tracking-tight text-slate-950">{rec.name}{paid && yearly && <span className="ml-2 align-middle rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">17% off</span>}</h3>
+            <p className="mt-2 flex items-center gap-1.5 text-sm font-bold text-slate-900"><Icon.Sparkle className={`h-4 w-4 ${t.accent}`} />{rec.credits.toLocaleString("en-US")} credits / mo</p>
+            <div className="mt-3 flex items-baseline justify-between text-xs"><span className="text-slate-500">Expected monthly usage</span><span className={`font-bold tabular-nums ${over > 0 ? "text-rose-600" : "text-emerald-600"}`}>{need.toLocaleString("en-US")}/{rec.credits.toLocaleString("en-US")} credits</span></div>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${over > 0 ? "bg-rose-500" : "bg-emerald-500"} transition-all`} style={{ width: `${pct}%` }} /></div>
+            <p className="mt-4 flex items-baseline gap-2 text-3xl font-extrabold tracking-tight text-slate-950">
+              {yearly && paid && <span className="text-base font-semibold text-red-500 line-through">{money(rec.month)}</span>}{money(perMonth)}<span className="text-sm font-medium text-slate-500">/month{yearly && paid ? ", billed annually" : ""}</span>
+            </p>
+            {rec.id === "free" ? <button disabled className="mt-3 h-11 w-full rounded-xl bg-slate-100 text-sm font-bold text-slate-400">Included with an account</button>
+              : current ? <button disabled className={`mt-3 h-11 w-full rounded-xl text-sm font-bold ${t.current}`}>Your plan</button>
+              : <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`mt-3 h-11 w-full rounded-xl text-sm font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${t.btn}`}>{busy === key ? "Opening…" : user ? t.cta : "Sign in to choose"}</button>}
+            {paid && <p className="mt-2 text-center text-[11px] text-slate-500">{yearly ? `Save ${money(rec.month * 12 - rec.year)}/year compared to monthly` : "Flexible monthly billing"}</p>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function PlansView({ user, onSignIn, notify }) {
   const bill = useBilling(user);
-  const [yearly, setYearly] = useState(false);
+  const [yearly, setYearly] = useState(true);
   const [busy, setBusy] = useState("");
   const acct = bill.account;
 
@@ -90,10 +177,11 @@ export default function PlansView({ user, onSignIn, notify }) {
       <section aria-label="Plans">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-900">Choose a plan</h2>
-          <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Billing period">
-            {[[false, "Monthly"], [true, "Yearly · 2 months free"]].map(([y, l]) => (
-              <button key={String(y)} onClick={() => setYearly(y)} aria-pressed={yearly === y} className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${ring} ${yearly === y ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>{l}{y && <span className="rounded-full bg-emerald-500 px-1.5 py-px text-[10px] font-bold uppercase text-white">Save 17%</span>}</button>
-            ))}
+          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm" role="group" aria-label="Billing period">
+            <span className={`text-xs font-semibold ${yearly ? "text-slate-500" : "text-slate-900"}`}>Monthly</span>
+            <button role="switch" aria-checked={yearly} aria-label="Annual billing" onClick={() => setYearly(!yearly)} className={`relative h-6 w-11 rounded-full transition ${ring} ${yearly ? "bg-[#2563EB]" : "bg-slate-300"}`}><span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${yearly ? "translate-x-5" : ""}`} /></button>
+            <span className={`text-xs font-semibold ${yearly ? "text-slate-900" : "text-slate-500"}`}>Annual</span>
+            <span className="rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">17% off</span>
           </div>
         </div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -109,14 +197,16 @@ export default function PlansView({ user, onSignIn, notify }) {
             return (
               <article key={p.id} className={`flex flex-col overflow-hidden rounded-2xl bg-gradient-to-b ${t.top} to-white to-45% p-5 shadow-sm ${t.border}`}>
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-base font-extrabold uppercase tracking-tight text-slate-950">{p.name}</h3>
-                  {p.popular ? <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Most popular</span>
-                    : paid && yearly ? <span className="rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Save 17%</span> : null}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h3 className="text-lg font-extrabold uppercase tracking-tight text-slate-950">{p.name}</h3>
+                    {paid && yearly && <span className="rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">17% off</span>}
+                  </div>
+                  {p.popular ? <span className="shrink-0 rounded-full bg-[#2563EB] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm shadow-blue-600/40">Most popular</span>
+                    : p.id === "agency" ? <span className="shrink-0 rounded-full bg-violet-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Best value</span> : null}
                 </div>
-                {p.popular && paid && yearly && <span className="mt-1 self-start rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Save 17% · 2 months free</span>}
                 <p className="mt-1 min-h-[2.5rem] text-xs leading-snug text-slate-500">{p.who}</p>
 
-                <div className="mt-3 rounded-xl bg-slate-100/80 p-3 ring-1 ring-slate-200/70">
+                <div className={`mt-3 rounded-xl ${t.box} p-3 ring-1`}>
                   <p className="flex items-center gap-1.5 text-sm font-bold text-slate-900"><Icon.Sparkle className={`h-4 w-4 ${t.accent}`} />{p.credits.toLocaleString("en-US")} credits / mo</p>
                   <ul className="mt-2 space-y-1 text-xs text-slate-600">
                     <li>≈ {ads} static ads</li>
@@ -127,7 +217,7 @@ export default function PlansView({ user, onSignIn, notify }) {
                 <div className="mt-4 min-h-[3.25rem]">
                   {yearly && paid && <p className="text-sm font-semibold text-red-500 line-through decoration-red-500/70">{money(p.month)}</p>}
                   <p className="flex items-baseline gap-1 text-4xl font-extrabold tracking-tight text-slate-950">{money(perMonth)}<span className="text-sm font-medium text-slate-500">/month</span></p>
-                  {yearly && paid && <p className="text-[11px] text-slate-500">billed annually</p>}
+                  {yearly && paid && <p className="text-[11px] text-slate-500">per month, billed annually</p>}
                 </div>
 
                 <div className="mt-3">
@@ -136,7 +226,7 @@ export default function PlansView({ user, onSignIn, notify }) {
                   ) : current ? (
                     <button disabled className={`h-11 w-full rounded-xl text-sm font-bold ${t.current}`}>Your plan</button>
                   ) : (
-                    <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`h-11 w-full rounded-xl text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${t.btn}`}>{busy === key ? "Opening…" : user ? t.cta : "Sign in to choose"}</button>
+                    <button onClick={() => buy(key)} disabled={busy === key || !bill.on} className={`h-11 w-full rounded-xl text-sm font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${ring} ${t.btn}`}>{busy === key ? "Opening…" : user ? t.cta : "Sign in to choose"}</button>
                   )}
                   <p className="mt-2 text-center text-[11px] text-slate-500">{!paid ? "No card needed" : yearly ? `Save ${money(saved)}/year compared to monthly` : "Flexible monthly billing"}</p>
                 </div>
@@ -155,6 +245,8 @@ export default function PlansView({ user, onSignIn, notify }) {
         </div>
         <p className="mt-3 text-xs text-slate-500">Prices are in US dollars. Taxes such as VAT are added at checkout where they apply. Paddle is the seller of record and handles the payment. You can cancel any time from the link in your receipt, and your plan keeps working until the period you paid for ends.</p>
       </section>
+
+      <PlanFinder yearly={yearly} user={user} acct={acct} bill={bill} busy={busy} buy={buy} />
 
       {/* Top-up + what credits buy */}
       <section className="grid gap-4 lg:grid-cols-2" aria-label="Credits">
