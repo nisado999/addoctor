@@ -954,7 +954,7 @@ function App() {
           </ErrorBoundary>
 
           {kept.map((id) => (
-            <div key={id} hidden={view !== id}>
+            <div key={id} hidden={view !== id} className="mx-auto max-w-[1760px]">
               <ErrorBoundary variant="view" label={id} resetKeys={[view]}>
                 <Suspense fallback={viewWait}>{screen(id)}</Suspense>
               </ErrorBoundary>
