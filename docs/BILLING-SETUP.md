@@ -67,7 +67,7 @@ Repeat steps 2 to 4 in your **live** Paddle account (live products and prices, l
 - Decide what you will tell customers who write in (support address): the pages currently point to GitHub issues, which are public.
 
 ## What each action costs (credits)
-Free: Examine your own ad, brand search. 1: open a creative breakdown, score an ad. 2: Social Pack brief, post ideas. 3: Ask about ads, organic posts. 5: a standard image. 12: a best-quality image. 15: a competitor analysis. Change these in `creditCost()` (api/worker.js) and `COSTS` (src/billing.js) together. Monthly credits per plan are in `plan_allowance()` (supabase/billing.sql), `PLANS` (src/billing.js).
+Free: Examine your own ad, brand search. 1: open a creative breakdown, score an ad. 2: Social Pack brief, post ideas. 3: Ask about ads, organic posts. 5: a standard image. 12: a best-quality image. 15: a competitor analysis. 10: adding Google and TikTok ads to a report (Pro and For Teams only; Starter and Free get an upgrade message and are not charged). Change these in `creditCost()` (api/worker.js) and `COSTS` (src/billing.js) together. Monthly credits per plan are in `plan_allowance()` (supabase/billing.sql), `PLANS` (src/billing.js).
 
 ## Known limits
 - The rate-limit counters are read-then-write and per data centre, so a fast burst can slightly undercount (this does not affect credits, which are exact).
