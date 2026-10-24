@@ -152,15 +152,17 @@ function IdeaCard({ id, n, seed, values, ev, kept, onKeep, onMake, onCopy }) {
       </dl>
 
       {ad && (
-        <a href={`https://www.facebook.com/ads/library/?id=${encodeURIComponent(ad.id)}`} target="_blank" rel="noopener noreferrer" className={`mt-4 flex items-center gap-3 rounded-2xl bg-white/70 p-2 ring-1 ring-slate-200/80 transition hover:bg-white ${ring}`}>
-          <img src={lib(ad.img)} alt="" width="40" height="50" loading="lazy" decoding="async" className="h-[50px] w-10 shrink-0 rounded-lg object-cover" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Proven pattern</span>
-            <span className="block truncate text-[12.5px] font-semibold text-slate-900">{ad.brand} ran this for {ad.days} days</span>
-            <span className="block text-[11px] text-slate-500">Median {ev.median} days across {ev.n} {ev.n === 1 ? "ad" : "ads"} like it</span>
-          </span>
-          <Icon.Arrow className="h-3.5 w-3.5 shrink-0 -rotate-45 text-slate-400" />
-        </a>
+        <figure className="mt-4">
+          <img src={lib(ad.img)} alt={`Ad from ${ad.brand}`} width={ad.w} height={ad.h} loading="lazy" decoding="async" className="block h-auto w-full rounded-2xl" />
+          <figcaption className="flex items-center gap-3 pt-3">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Proven pattern</span>
+              <span className="block truncate text-[12.5px] font-semibold text-slate-900">{ad.brand} ran this for {ad.days} days</span>
+              <span className="block text-[11px] text-slate-500">Median {ev.median} days across {ev.n} {ev.n === 1 ? "ad" : "ads"} like it</span>
+            </span>
+            <a href={`https://www.facebook.com/ads/library/?id=${encodeURIComponent(ad.id)}`} target="_blank" rel="noopener noreferrer" aria-label={`Open ${ad.brand}'s ad in the Meta Ad Library`} className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-white hover:text-slate-800 ${ring}`}><Icon.Arrow className="h-3.5 w-3.5 -rotate-45" /></a>
+          </figcaption>
+        </figure>
       )}
 
       <div className="mt-auto flex items-center gap-2 pt-4">
