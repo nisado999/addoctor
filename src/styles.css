@@ -484,6 +484,8 @@ button.bg-slate-950:disabled { background-color: #e7e4de; background-image: none
 .xr-label { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; color: #cfe0ff; font-size: 11px; line-height: 1.5; }
 .xr-label b { display: block; color: #fff; font-size: 12px; font-weight: 700; }
 .xr-label span { color: #c6ff4d; letter-spacing: .04em; }
+.xr-pulse polyline { stroke-dasharray: 1; stroke-dashoffset: 1; animation: xrecg 1.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .xr-pulse polyline { animation: none; stroke-dashoffset: 0; } }
 @keyframes xrdraw { to { stroke-dashoffset: 0; } }
 @keyframes xrscan { 0% { top: -48px; } 50% { top: 100%; } 100% { top: -48px; } }
 @keyframes xrpulse { 50% { transform: scale(1.9); opacity: .5; } }

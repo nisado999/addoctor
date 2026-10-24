@@ -3,7 +3,7 @@ import { Icon } from "./ui";
 import { SPY_API } from "./shared.js";
 import { apiFetch } from "./api.js";
 import { imageCost, billingOn, COSTS } from "./billing.js";
-import { packShrink, packB64, packExt, packSave } from "./pack";
+import { packShrink, packB64, packExt, packSave, XRayLoader } from "./pack";
 
 /* ---------------------- Guided builder: an interview, then an ad made for this customer ---------------------- */
 
@@ -42,30 +42,6 @@ const btnLight = "rounded-full border border-slate-200 bg-white px-5 py-2.5 text
 const read = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
 
 function Spinner() { return <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />; }
-
-// Shown while an ad is made and checked: a scan of the ad, drawn like an x-ray.
-const XRAY_STEPS = ["Reading your product", "Composing the scene", "Painting the ad", "Running the full check"];
-function XRayLoader({ title, over }) {
-  const [s, setS] = useState(0);
-  useEffect(() => { const t = setInterval(() => setS((x) => (x + 1) % XRAY_STEPS.length), 2600); return () => clearInterval(t); }, []);
-  return (
-    <div className={`xr${over ? " xr-over" : ""}`} role="status" aria-label={`${title || "Your ad"}: ${XRAY_STEPS[s]}`}>
-      <svg viewBox="0 0 200 250" className="xr-svg" aria-hidden="true">
-        <g fill="none" stroke="#7fb0ff" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
-          <path className="xr-draw" d="M70 62 L50 72 L22 150 L42 160 L56 118 L56 215 L144 215 L144 118 L158 160 L178 150 L150 72 L130 62 Q100 92 70 62 Z" />
-          <path className="xr-draw xr-d2" d="M70 62 Q100 18 130 62" />
-          <path className="xr-draw xr-d2" d="M78 168 L122 168 L130 198 L70 198 Z" />
-          <path className="xr-draw xr-d3" d="M100 92 L100 150" opacity=".6" />
-        </g>
-        <g fill="#c6ff4d"><circle className="xr-dot" cx="70" cy="62" r="2.4" /><circle className="xr-dot xr-s2" cx="130" cy="62" r="2.4" /><circle className="xr-dot xr-s3" cx="100" cy="168" r="2.4" /></g>
-      </svg>
-      <span className="xr-beam" />
-      <i className="xr-c xr-tl" /><i className="xr-c xr-tr" /><i className="xr-c xr-bl" /><i className="xr-c xr-br" />
-      <svg viewBox="0 0 120 20" className="xr-ecg" aria-hidden="true"><polyline pathLength="1" points="0,10 26,10 32,10 36,3 41,17 46,10 70,10 76,10 80,5 84,15 88,10 120,10" fill="none" stroke="#ff7aa8" strokeWidth="1.4" /></svg>
-      <p className="xr-label"><b>{title || "Your ad"}</b><span>{XRAY_STEPS[s]}…</span></p>
-    </div>
-  );
-}
 
 function CopyRow({ label, text, onCopy }) {
   if (!text) return null;

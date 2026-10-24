@@ -7,6 +7,31 @@ import { saveMyAd } from "./myads.jsx";
 
 /* ------------------------------ Social Pack ------------------------------ */
 
+// Shown while an image is made: a scan of the ad, drawn like an x-ray. Used by Social Pack and Static ads.
+const XRAY_STEPS = ["Reading your product", "Composing the scene", "Painting the ad", "Running the full check"];
+const PACK_STEPS = ["Reading your product", "Composing the shot", "Developing the photo", "Checking every detail"];
+export function XRayLoader({ title, over, steps = XRAY_STEPS }) {
+  const [s, setS] = useState(0);
+  useEffect(() => { const t = setInterval(() => setS((x) => (x + 1) % steps.length), 2600); return () => clearInterval(t); }, [steps.length]);
+  return (
+    <div className={`xr${over ? " xr-over" : ""}`} role="status" aria-label={`${title || "Your ad"}: ${steps[s % steps.length]}`}>
+      <svg viewBox="0 0 200 250" className="xr-svg" aria-hidden="true">
+        <g fill="none" stroke="#7fb0ff" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
+          <path className="xr-draw" d="M70 62 L50 72 L22 150 L42 160 L56 118 L56 215 L144 215 L144 118 L158 160 L178 150 L150 72 L130 62 Q100 92 70 62 Z" />
+          <path className="xr-draw xr-d2" d="M70 62 Q100 18 130 62" />
+          <path className="xr-draw xr-d2" d="M78 168 L122 168 L130 198 L70 198 Z" />
+          <path className="xr-draw xr-d3" d="M100 92 L100 150" opacity=".6" />
+        </g>
+        <g fill="#c6ff4d"><circle className="xr-dot" cx="70" cy="62" r="2.4" /><circle className="xr-dot xr-s2" cx="130" cy="62" r="2.4" /><circle className="xr-dot xr-s3" cx="100" cy="168" r="2.4" /></g>
+      </svg>
+      <span className="xr-beam" />
+      <i className="xr-c xr-tl" /><i className="xr-c xr-tr" /><i className="xr-c xr-bl" /><i className="xr-c xr-br" />
+      <svg viewBox="0 0 120 20" className="xr-ecg" aria-hidden="true"><polyline pathLength="1" points="0,10 26,10 32,10 36,3 41,17 46,10 70,10 76,10 80,5 84,15 88,10 120,10" fill="none" stroke="#ff7aa8" strokeWidth="1.4" /></svg>
+      <p className="xr-label"><b>{title || "Your ad"}</b><span>{steps[s % steps.length]}…</span></p>
+    </div>
+  );
+}
+
 const PACK_SIZES = [
   { n: 6, label: "Starter", note: "A quick test" },
   { n: 12, label: "Two weeks", note: "Posting every other day" },
@@ -85,7 +110,7 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, onChange, onSave, 
         ) : (
           <div className="grid h-full w-full place-items-center p-6 text-center">
             {busy ? (
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+              <XRayLoader title={post.title} steps={PACK_STEPS} />
             ) : post.error ? (
               <div>
                 <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-rose-50 text-rose-600"><Icon.Alert className="h-5 w-5" /></div>
@@ -94,10 +119,7 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, onChange, onSave, 
                 <button onClick={() => onFix(post, "")} className="mt-3 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800">Retry</button>
               </div>
             ) : post.queued ? (
-              <div>
-                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
-                <p className="mt-3 text-xs font-medium text-slate-500">{post.title || "Preparing"}…</p>
-              </div>
+              <XRayLoader title={post.title || "Preparing"} steps={["In the queue", "Next up"]} />
             ) : (
               <div>
                 <p className="text-sm font-semibold text-slate-900">Not generated</p>
@@ -107,7 +129,7 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, onChange, onSave, 
           </div>
         )}
         {post.src && busy && (
-          <div className="absolute inset-0 grid place-items-center bg-white/70 backdrop-blur-[1px]"><div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" /></div>
+          <XRayLoader title={post.title} steps={PACK_STEPS} over />
         )}
         <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">{PACK_TYPE_LABEL[post.type] || post.type}</span>
         {rv && <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${badge}`}>{rv.score}/100</span>}
@@ -199,8 +221,11 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
   // Posts that never got an image stop spinning: they show "Not generated" and a Retry button.
   const settle = () => { postsRef.current = postsRef.current.map((p) => (p.src ? p : { ...p, queued: false })); setPosts(postsRef.current); };
 
+  // Each post features ONE of the customer's products, taken in turn, so a pack of four garments shows all four.
+  const refsFor = (post) => { const all = refsRef.current; return all.length ? [all[post.index % all.length]] : []; };
+
   const renderImage = async (post, fix, signal) => {
-    const refs = refsRef.current.slice(0, 4);
+    const refs = refsFor(post);
     const r = await packCall("/pack/image", { refs, prompt: post.imagePrompt, overlayText: post.overlayText, brief: briefRef.current, quality: qualityRef.current, fix: fix || "" }, signal);
     return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, grant: r.grant || "" };
   };
@@ -243,7 +268,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
     life.current.signal.addEventListener("abort", onLife, { once: true });
     try {
       setStatus("Reading your product and setting the visual style…");
-      const b = (await packCall("/pack/brief", { description: desc, audience, tone, language: "", images: mode === "upload" ? files.slice(0, 3).map((f) => f.src) : [], imageUrls: mode === "store" ? picked.slice(0, 3) : [] }, c.signal)).brief;
+      const b = (await packCall("/pack/brief", { description: desc, audience, tone, language: "", images: mode === "upload" ? files.slice(0, 4).map((f) => f.src) : [], imageUrls: mode === "store" ? picked.slice(0, 4) : [] }, c.signal)).brief;
       briefRef.current = b; setBrief(b);
       const all = Array.from({ length: size }, (_, i) => i);
       for (let i = 0; i < all.length; i += 6) {
@@ -287,7 +312,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
     setBusy((b) => ({ ...b, [p.index]: true }));
     try {
       const small = await packShrink(p.src);
-      const rv = await packCall("/pack/review", { image: small, caption: [p.caption, (p.hashtags || []).join(" ")].join("\n"), overlayText: p.overlayText, brief: briefRef.current, refs: refsRef.current.slice(0, 3) }, life.current.signal);
+      const rv = await packCall("/pack/review", { image: small, caption: [p.caption, (p.hashtags || []).join(" ")].join("\n"), overlayText: p.overlayText, brief: briefRef.current, refs: refsFor(p) }, life.current.signal);
       setP(p.index, { review: rv });
     } catch (e) { if (life.current.signal.aborted) return; notify(e.message || "The check failed", 3000); }
     setBusy((b) => ({ ...b, [p.index]: false }));
@@ -315,7 +340,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
     setBusy((b) => ({ ...b, [p.index]: true }));
     let ok = false;
     try {
-      const r = await packCall("/make/ad", { base: await packShrink(p.src, 1600), fix: t, grant: p.grant, ratio: "4:5", quality: qualityRef.current, refs: refsRef.current.slice(0, 3) }, life.current.signal);
+      const r = await packCall("/make/ad", { base: await packShrink(p.src, 1600), fix: t, grant: p.grant, ratio: "4:5", quality: qualityRef.current, refs: refsFor(p) }, life.current.signal);
       if (!free && r.freeLeft === undefined) onSpend(unitOf());
       setP(p.index, { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, edits: p.edits ? p.edits + 1 : 1, review: null });
       ok = true;
@@ -377,7 +402,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input id="pack-url" value={storeUrl} onChange={(e) => setStoreUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchStore()} placeholder="https://yourstore.com/collections/hoodies"
                   className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-blue-100" />
-                <button id="pack-fetch" onClick={fetchStore} disabled={fetching} className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{fetching ? "Reading…" : store ? "Read again" : "Fetch details"}</button>
+                <button id="pack-fetch" onClick={fetchStore} disabled={fetching} className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">{fetching ? "Reading…" : store ? "Read again" : "Read my store"}</button>
               </div>
               <p className="mt-1.5 text-xs text-slate-500">Works best with shop homepages, collections and product pages. We read the product names, text and photos.</p>
               {store && (
@@ -505,7 +530,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 ring-1 ring-slate-200 shadow-sm">
         <div className="min-w-0">
           {phase === "working" ? (
-            <p id="pack-status" className="flex items-center gap-2 text-sm font-semibold text-slate-900"><span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />{status}</p>
+            <p id="pack-status" className="flex items-center gap-2 text-sm font-semibold text-slate-900"><svg viewBox="0 0 120 20" className="xr-pulse h-4 w-10 shrink-0" aria-hidden="true"><polyline pathLength="1" points="0,10 26,10 32,10 36,3 41,17 46,10 70,10 76,10 80,5 84,15 88,10 120,10" fill="none" stroke="#e11d6a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>{status}</p>
           ) : (
             <p className="text-sm font-semibold text-slate-900">{readyCount} of {posts.length} posts ready</p>
           )}
