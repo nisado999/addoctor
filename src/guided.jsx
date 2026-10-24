@@ -43,6 +43,30 @@ const read = (f) => new Promise((res, rej) => { const r = new FileReader(); r.on
 
 function Spinner() { return <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />; }
 
+// Shown while an ad is made and checked: a scan of the ad, drawn like an x-ray.
+const XRAY_STEPS = ["Reading your product", "Composing the scene", "Painting the ad", "Running the full check"];
+function XRayLoader({ title, over }) {
+  const [s, setS] = useState(0);
+  useEffect(() => { const t = setInterval(() => setS((x) => (x + 1) % XRAY_STEPS.length), 2600); return () => clearInterval(t); }, []);
+  return (
+    <div className={`xr${over ? " xr-over" : ""}`} role="status" aria-label={`${title || "Your ad"}: ${XRAY_STEPS[s]}`}>
+      <svg viewBox="0 0 200 250" className="xr-svg" aria-hidden="true">
+        <g fill="none" stroke="#7fb0ff" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
+          <path className="xr-draw" d="M70 62 L50 72 L22 150 L42 160 L56 118 L56 215 L144 215 L144 118 L158 160 L178 150 L150 72 L130 62 Q100 92 70 62 Z" />
+          <path className="xr-draw xr-d2" d="M70 62 Q100 18 130 62" />
+          <path className="xr-draw xr-d2" d="M78 168 L122 168 L130 198 L70 198 Z" />
+          <path className="xr-draw xr-d3" d="M100 92 L100 150" opacity=".6" />
+        </g>
+        <g fill="#c6ff4d"><circle className="xr-dot" cx="70" cy="62" r="2.4" /><circle className="xr-dot xr-s2" cx="130" cy="62" r="2.4" /><circle className="xr-dot xr-s3" cx="100" cy="168" r="2.4" /></g>
+      </svg>
+      <span className="xr-beam" />
+      <i className="xr-c xr-tl" /><i className="xr-c xr-tr" /><i className="xr-c xr-bl" /><i className="xr-c xr-br" />
+      <svg viewBox="0 0 120 20" className="xr-ecg" aria-hidden="true"><polyline pathLength="1" points="0,10 26,10 32,10 36,3 41,17 46,10 70,10 76,10 80,5 84,15 88,10 120,10" fill="none" stroke="#ff7aa8" strokeWidth="1.4" /></svg>
+      <p className="xr-label"><b>{title || "Your ad"}</b><span>{XRAY_STEPS[s]}…</span></p>
+    </div>
+  );
+}
+
 function CopyRow({ label, text, onCopy }) {
   if (!text) return null;
   return (
@@ -71,16 +95,16 @@ function AdCard({ v, onDownload, onChange, onRetry, onCopy, unit, busy }) {
                 <p className="mt-1 text-xs text-slate-500">{v.error}</p>
                 <button onClick={() => onRetry(v)} className="mt-3 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800">Retry</button>
               </div>
-            ) : <div><Spinner /><p className="mt-3 text-xs font-medium text-slate-500">{v.title}…</p></div>}
+            ) : <XRayLoader title={v.title} />}
           </div>
         )}
-        {v.src && busy && <div className="absolute inset-0 grid place-items-center bg-white/70"><Spinner /></div>}
+        {v.src && busy && <XRayLoader title={v.title} over />}
         {rv && <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${tone}`}>{rv.score}/100</span>}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="text-sm font-semibold text-slate-900">{v.title}</p>
         <p className="text-xs text-slate-500">{v.angle}</p>
-        {cp && (cp.primary || cp.headline) && (
+        {v.src && cp && (cp.primary || cp.headline) && (
           <div className="space-y-1.5 rounded-lg bg-slate-50 p-2.5">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ad copy</p>
             <CopyRow label="Text" text={cp.primary} onCopy={onCopy} />
@@ -178,7 +202,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
     return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, grant: r.grant || "" };
   };
   // The full analysis: the same rubric as Check score, run on every ad before the customer sees it.
-  const review = async (src, v, signal) => call("/make/review", { image: await packShrink(src, 900), headline: v.concept.headline || "", refs: refsNow().refs.slice(0, 2), note: [val("sells"), val("offer") && `Offer: ${val("offer")}`].filter(Boolean).join(". ") }, signal);
+  const review = async (src, v, signal) => call("/make/review", { image: await packShrink(src, 900), headline: v.concept.headline || "", refs: refsNow().refs.slice(0, 2), refUrls: refsNow().refUrls.slice(0, 2), note: [val("sells"), val("offer") && `Offer: ${val("offer")}`].filter(Boolean).join(". ") }, signal);
 
   const finish = async () => {
     if (video) {
@@ -198,7 +222,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
     const c = new AbortController(); const onLife = () => c.abort(); life.current.signal.addEventListener("abort", onLife, { once: true });
     try {
       setStatus("Designing three different ads for you…");
-      const plan = await call("/make/plan", { answers: sent, site: site ? { name: site.name, description: site.description } : null, photos: source !== "none" }, c.signal);
+      const plan = await call("/make/plan", { answers: sent, site: site ? { name: site.name, description: site.description } : null, photos: source !== "none", ...refsNow() }, c.signal);
       adsRef.current = plan.concepts.map((cn, i) => ({
         i, title: cn.title, angle: cn.angle, ratio,
         concept: noText ? { ...cn, headline: "", sub: "" } : typed ? { ...cn, headline: typed, sub: "" } : cn,
@@ -217,7 +241,8 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
               setStatus(`Creating and checking your ads… ${done + held} of ${VERSIONS} done`);
               const im = await render(v, c.signal); onSpend(unit);
               const rv = await review(im.src, v, c.signal);
-              if (rv.score >= PASS_SCORE) { setAd(v.i, { ...im, review: rv }); ok = true; }
+              // A wrong product fails the ad whatever its score: the review's product point must be clean.
+              if (rv.score >= PASS_SCORE && !(rv.pillars || []).some((p) => p.id === "product" && !p.na && p.score < 80)) { setAd(v.i, { ...im, review: rv }); ok = true; }
             } catch (e) { if (c.signal.aborted) return; }
           }
           if (ok) done++; else { setAd(v.i, { held: true }); held++; }

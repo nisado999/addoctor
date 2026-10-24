@@ -755,18 +755,20 @@ async function planScratch(env, b) {
     ["Brand", a.brand || s.name], ["What they sell", a.sells || s.description], ["Offer", a.offer], ["Audience", a.audience],
     ["Goal of the ad", a.goal], ["Tone", a.tone], ["Wording wanted", a.wording], ["Language", a.language],
   ].filter(([, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${clip(v, 300)}`).join("\n");
-  const o = await askClaude(env, `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads from scratch for one business. Write exactly 3 concepts. Each uses a clearly different angle (for example the problem it solves, the result you get, social proof or proof of quality, the offer itself, a lifestyle moment) and a different scene.
+  // The planner must see the real product, or it designs around whatever the business text mentions.
+  const shots = await loadRefs([...(Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), ...(Array.isArray(b.refUrls) ? b.refUrls : []).map((url) => ({ url }))], 3).catch(() => []);
+  const o = await askClaude(env, [...shots.map((x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } })), { type: "text", text: `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads from scratch for one business. Write exactly 3 concepts. Each uses a clearly different angle (for example the problem it solves, the result you get, social proof or proof of quality, the offer itself, a lifestyle moment) and a different scene.
 THE BUSINESS
 ${facts}
-${b.photos ? "Real photos of the product are provided, so every scene must feature that exact product." : "No product photo exists, so design the visual around the idea and do not claim to show the real product."}
+${shots.length ? "The attached photos show the REAL product to advertise. Study them first. Advertise ONLY what is visible in them and ignore any other product the business text mentions. Every scene must feature that exact product, and \"product\" must describe it exactly as seen: type, colour, print or logo, and any text on it." : "No product photo exists, so design the visual around the idea and do not claim to show the real product."}
 Rules: use only the facts above. ${a.offer ? "The offer may appear in the ad exactly as given." : "There is NO offer: print no discount, price, free shipping or deadline anywhere."} No invented numbers, ratings, awards or testimonials. Headlines are short (max 8 words), believable and in the language given, or the language of the brand.
-Return ONLY JSON: {"concepts":[{"title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.`, 2400);
+Return ONLY JSON: {"concepts":[{"product":"the product exactly as it looks in the photos, or empty string when there are none","title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.` }], 2400);
   const list = (Array.isArray(o.concepts) ? o.concepts : []).slice(0, 3);
   if (list.length < 3) throw new Error("We could not plan the ads. Try again.");
   return { concepts: list.map((c) => {
     const k = c.copy && typeof c.copy === "object" ? c.copy : {};
     return {
-      title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700),
+      product: clip(c.product, 300), title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700),
       copy: { primary: clip(k.primary, 320), headline: clip(k.headline, 60), description: clip(k.description, 50), cta: AD_CTAS.find((x) => x.toLowerCase() === String(k.cta || "").trim().toLowerCase()) || "Learn More" },
     };
   }) };
@@ -786,7 +788,7 @@ async function makeAd(env, b) {
       : "No headline, caption, watermark or added logo. The only lettering allowed is what is on the product itself.";
     const brand = clip(a.brand, 80).trim();
     return geminiImage(env, [...refs.map(inline), { text: `Create a polished ${ratio} advert for Facebook and Instagram, designed from scratch for ${brand || "this business"}. ${a.sells ? "It sells: " + clip(a.sells, 240) + ". " : ""}${a.tone ? "Tone: " + clip(a.tone, 100) + ". " : ""}
-Concept: ${clip(c.angle, 140)}. Scene and layout: ${clip(c.scene, 700)}
+${c.product ? `The product, as in the photos: ${clip(c.product, 300)}. ` : ""}Concept: ${clip(c.angle, 140)}. Scene and layout: ${clip(c.scene, 700)}
 ${refs.length ? PRODUCT_TRUTH(refs.length) + " Show the real product clearly and fully in frame." : "There is no product photo, so do not invent a specific branded product, logo or packaging; let the idea and the scene carry the ad."}
 People, if any, look real with natural hands and faces. Natural or cool light, never an orange glow. ${a.offer ? `The offer may be shown exactly as written, spelled exactly: "${clip(a.offer, 80)}".` : "Show no discount, price or offer anywhere."}
 ${words}` }], b.quality, ratio);
@@ -1297,9 +1299,9 @@ async function makeReview(env, b) {
   if (!data || data.length > 3000000) throw new Error("image missing or too large");
   const headline = clip(b.headline, 90).trim(), format = clip(b.format, 200).trim(), note = clip(b.note, 300).trim();
   // The same ad, wording and context always returns the same review.
-  const cacheUrl = typeof caches !== "undefined" ? "https://review.addoctor.internal/" + (await reviewKey([data, headline, format, note, String((b.refs || []).length), "v7"])) : "";
+  const cacheUrl = typeof caches !== "undefined" ? "https://review.addoctor.internal/" + (await reviewKey([data, headline, format, note, String((b.refs || []).length + (b.refUrls || []).length), "v7"])) : "";
   if (cacheUrl) { const hit = await caches.default.match(cacheUrl).catch(() => null); if (hit) return hit.json(); }
-  const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 2).catch(() => []);
+  const refs = await loadRefs([...(Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), ...(Array.isArray(b.refUrls) ? b.refUrls : []).map((url) => ({ url }))], 2).catch(() => []);
   const tpl = b.template ? await loadRef({ data: b.template }).catch(() => null) : null;
   const prompt = `You are a strict, fair creative reviewer rating one static Meta ad (Facebook and Instagram) against a fixed rubric. Rate only what you can see. Be consistent: the same ad must always get the same ratings.
 ${headline ? `Headline the customer asked to have printed on the image: "${headline}"` : "The customer asked for no particular headline. Wording on the image is fine when it belongs to the ad's format."}
