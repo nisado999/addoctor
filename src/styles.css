@@ -191,6 +191,9 @@ button, [role="button"], a, select { touch-action: manipulation; }
     radial-gradient(34% 40% at 40% 85%, rgba(255, 180, 120, .10), transparent 70%);
   filter: blur(20px);
 }
+/* Idea Engine: each new hand is dealt in, one card after another. */
+.deal-in { animation: rise .5s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms); }
+@media (prefers-reduced-motion: reduce) { .deal-in { animation: none; } }
 .bento-tile .bento-art { transition: transform .6s var(--ease); }
 .bento-tile:hover .bento-art { transform: scale(1.04) translateY(-2px); }
 .bento-lines { background-image: linear-gradient(rgba(21, 20, 18, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(21, 20, 18, .05) 1px, transparent 1px); background-size: 22px 22px; -webkit-mask-image: radial-gradient(80% 80% at 70% 30%, #000, transparent 75%); mask-image: radial-gradient(80% 80% at 70% 30%, #000, transparent 75%); }

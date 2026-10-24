@@ -30,14 +30,15 @@ const toUser = (session) => {
   return { id: u.id, email: u.email || "", name: m.full_name || m.name || "", avatar: m.avatar_url || m.picture || "" };
 };
 
-/* Calls cb(user or null, how) now and on every change. "how" is the sign-in method the first time a sign-in
-   completes, otherwise "". Resolves to a function that stops watching. */
+/* Calls cb(user or null, how, event) now and on every change. "how" is the sign-in method the first time a sign-in
+   completes, otherwise "". event is Supabase's ("PASSWORD_RECOVERY" after a reset link). Resolves to a function
+   that stops watching. */
 async function watchAuth(cb) {
   const c = await supa();
   const { data } = c.auth.onAuthStateChange((event, session) => {
     let how = "";
     if (event === "SIGNED_IN") { try { how = sessionStorage.getItem(PENDING) || ""; sessionStorage.removeItem(PENDING); } catch (e) { /* private window */ } }
-    cb(toUser(session), how);
+    cb(toUser(session), how, event);
   });
   return () => data.subscription.unsubscribe();
 }
@@ -64,6 +65,16 @@ async function signUpEmail(email, password) {
   const { data, error } = await c.auth.signUp({ email, password, options: { emailRedirectTo: here() } });
   fail(error);
   return !!data.session;
+}
+
+/* Forgot password: Supabase emails a link back to this page, which signs the visitor in and fires PASSWORD_RECOVERY. */
+async function sendReset(email) {
+  const c = await supa();
+  fail((await c.auth.resetPasswordForEmail(email, { redirectTo: here() })).error);
+}
+async function setNewPassword(password) {
+  const c = await supa();
+  fail((await c.auth.updateUser({ password })).error);
 }
 
 async function signOut() {
@@ -99,4 +110,4 @@ async function deleteAccount() {
 // Paid server calls send the visitor's token when they are signed in (see api.js).
 import("./api.js").then((m) => m.setTokenProvider(accessToken)).catch(() => {});
 
-export { authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, signOut, accessToken, authOptions, deleteAccount };
+export { authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, sendReset, setNewPassword, signOut, accessToken, authOptions, deleteAccount };

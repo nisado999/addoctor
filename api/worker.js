@@ -118,7 +118,8 @@ async function scAds(env, q, from = "", pages = 30, room = adCap(env)) {
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.success === false) {
       if (out.length) break;   // keep what was read
-      throw new Error("ScrapeCreators: " + String(j.message || j.error || r.status).slice(0, 120));
+      console.log("scrapecreators error", r.status, String(j.message || j.error || "").slice(0, 200));
+      throw new Error("The ad reader could not load this page of ads. Try again in a minute.");
     }
     const items = Array.isArray(j.results) ? j.results : Array.isArray(j.ads) ? j.ads : [];
     out.push(...items);
@@ -152,6 +153,21 @@ const spySource = (env) => (env.META_TOKEN ? "meta" : env.SCRAPECREATORS_KEY ? "
 // A "run" for this path is just the request packed into a hex string, so /status and /analyze need no storage.
 const hexEnc = (o) => "meta" + [...new TextEncoder().encode(JSON.stringify(o))].map((b) => b.toString(16).padStart(2, "0")).join("");
 const hexDec = (r) => JSON.parse(new TextDecoder().decode(new Uint8Array((r.slice(4).match(/../g) || []).map((h) => parseInt(h, 16)))));
+// A run is signed for the caller and lasts an hour, so /page and /analyze can't be handed a made-up run that reads
+// the paid ad source for free. Format: "meta<hex>x<signature>"; hex never contains an "x".
+const runSig = async (env, s) => (await grantMac(env, "run:" + s)).replace(/[^A-Za-z0-9]/g, "");
+async function runSeal(env, q, uid) {
+  const s = hexEnc({ ...q, uid: uid || "", exp: Date.now() + 3600000 });
+  return s + "x" + (await runSig(env, s));
+}
+async function runOpen(env, run, uid) {
+  const i = String(run || "").indexOf("x");
+  if (i < 5 || !run.startsWith("meta")) return null;
+  const s = run.slice(0, i);
+  if (run.slice(i + 1) !== (await runSig(env, s))) return null;
+  let q; try { q = hexDec(s); } catch (e) { return null; }
+  return q && q.uid === (uid || "") && q.exp > Date.now() ? q : null;
+}
 
 function normalizeMeta(it, format) {
   const titles = (it.ad_creative_link_titles || []).map(clean).filter(Boolean);
@@ -190,7 +206,7 @@ async function metaAds(env, q) {
     for (let page = 0; url && page < 8 && byId.size < cap; page++) {   // 8 pages x 2 passes keeps room for the creative reads below
       const r = await fetch(url);
       const j = await r.json();
-      if (!r.ok || j.error) throw new Error("Meta Ad Library: " + ((j.error && j.error.message) || r.status));
+      if (!r.ok || j.error) { console.log("meta ad library error", r.status, String((j.error && j.error.message) || "").slice(0, 200)); throw new Error("The Meta Ad Library could not be read right now. Try again in a minute."); }
       (j.data || []).forEach((it) => { const a = normalizeMeta(it, format); if (a.libId && !byId.has(a.libId) && (a.headline || a.body)) byId.set(a.libId, a); });
       url = j.paging && j.paging.next;
     }
@@ -393,10 +409,10 @@ function repairJson(s) {
 
 const parseLoose = (text) => { try { return parseJson(text); } catch (e) { return JSON.parse(repairJson(jsonSpan(text))); } };
 
-async function askClaude(env, content, maxTokens = 2000, mode = "tool", temp) {
+// No temperature: since 2026-10-21 the API answers 400 to any request that sends one.
+async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
   const parts = typeof content === "string" ? [{ type: "text", text: content }] : content;
   const body = { model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content: parts }] };
-  if (temp !== undefined) body.temperature = temp;
   if (mode === "tool") { body.tools = [REPLY_TOOL]; body.tool_choice = { type: "auto" }; body.messages[0].content = [...parts, { type: "text", text: "Give your answer by calling the reply tool with that JSON object." }]; }
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -406,9 +422,12 @@ async function askClaude(env, content, maxTokens = 2000, mode = "tool", temp) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
     const msg = (j.error && j.error.message) || "Anthropic error " + r.status;
-    if (temp !== undefined && r.status === 400 && /temperature/i.test(msg)) return askClaude(env, content, maxTokens, mode);   // this model takes no temperature
-    if (mode === "tool" && r.status === 400 && /tool/i.test(msg)) return askClaude(env, content, maxTokens, "text", temp);   // this model takes no tools
-    throw new Error(msg);
+    if (mode === "tool" && r.status === 400 && /tool/i.test(msg)) return askClaude(env, content, maxTokens, "text");   // this model takes no tools
+    // The provider's own message stays in the server log; the visitor only sees a short line.
+    console.log("anthropic error", r.status, msg.slice(0, 300));
+    const e = new Error(r.status === 429 || r.status === 529 ? "The AI is busy right now. Try again in a minute." : "The AI could not answer this time. Try again.");
+    e.status = r.status === 429 ? 429 : 502;
+    throw e;
   }
   const tool = (j.content || []).find((b) => b.type === "tool_use");
   if (tool && tool.input && typeof tool.input === "object" && Object.keys(tool.input).length) return tool.input;
@@ -416,7 +435,7 @@ async function askClaude(env, content, maxTokens = 2000, mode = "tool", temp) {
   try { return parseLoose(text); } catch (e) {
     // Still unreadable: ask once more, in plain text, for valid JSON.
     if (mode === "again") throw new Error("The analysis came back in a form that could not be read. Try again.");
-    return askClaude(env, [...parts, { type: "text", text: "Return valid JSON only. Inside strings use single quotes, never double quotes." }], maxTokens, "again", temp);
+    return askClaude(env, [...parts, { type: "text", text: "Return valid JSON only. Inside strings use single quotes, never double quotes." }], maxTokens, "again");
   }
 }
 
@@ -433,8 +452,16 @@ function safeUrl(s) {
   return u;
 }
 const UA = { "user-agent": "Mozilla/5.0 (compatible; AdDoctorBot/1.0)", "accept-language": "en,el;q=0.8" };
+// Redirects are followed by hand, so every hop is checked again by safeUrl (as in loadRef).
 async function getText(url, max = 1500000) {
-  const r = await fetch(url, { headers: { ...UA, accept: "text/html,application/json" }, redirect: "follow" });
+  let u = safeUrl(url), r = null;
+  for (let hop = 0; hop < 5; hop++) {
+    r = await fetch(u.href, { headers: { ...UA, accept: "text/html,application/json" }, redirect: "manual" });
+    const loc = r.status >= 300 && r.status < 400 && r.headers.get("location");
+    if (!loc) break;
+    if (hop === 4) throw new Error("The site redirected too many times");
+    u = safeUrl(new URL(loc, u).href);
+  }
   if (!r.ok) { const e = new Error("The site answered with an error (" + r.status + ")"); e.status = r.status; throw e; }
   return (await r.text()).slice(0, max);
 }
@@ -556,6 +583,8 @@ async function loadRef(r, hostOk) {
   const buf = await resp.arrayBuffer();
   if (buf.byteLength > 6000000) throw new Error("A product photo is too large");
   let mime = (resp.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  // An ad-image host (hostOk) must really answer with an image, so /thumb can't be used to fetch other content.
+  if (hostOk && !/^image\//.test(mime)) throw new Error("That image can't be read");
   if (!/^image\/(jpeg|png|webp)$/.test(mime)) mime = /\.png/i.test(u.pathname) ? "image/png" : /\.webp/i.test(u.pathname) ? "image/webp" : "image/jpeg";
   return { mime, data: b64(buf) };
 }
@@ -1159,7 +1188,11 @@ async function askClaudeSearch(env, prompt, maxTokens = 3000) {
     if (withSearch) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }];
     const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw Object.assign(new Error((j.error && j.error.message) || "Anthropic error " + r.status), { status: r.status });
+    if (!r.ok) {
+      // The provider's own message stays in the server log; the visitor only sees a short line (as in askClaude).
+      console.log("anthropic search error", r.status, String((j.error && j.error.message) || "").slice(0, 300));
+      throw Object.assign(new Error(r.status === 429 || r.status === 529 ? "The AI is busy right now. Try again in a minute." : "The AI could not answer this time. Try again."), { status: r.status });
+    }
     return (j.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n");
   };
   let text;
@@ -1280,8 +1313,8 @@ Inside the JSON strings use single quotes when you quote words, never double quo
   // The reply sometimes comes wrapped in another object. Read it either way, ask once more, and never return an empty score.
   const unwrap = (x) => (x && typeof x === "object" && !Array.isArray(x.criteria) ? Object.values(x).find((v) => v && typeof v === "object" && Array.isArray(v.criteria)) || x : x);
   const good = (x) => x && Array.isArray(x.criteria) && RUBRIC.every((r) => x.criteria.some((c) => c && c.id === r.id));
-  let o = unwrap(await askClaude(env, content, 1200, "tool", 0));
-  if (!good(o)) o = unwrap(await askClaude(env, content, 1200, "tool", 0));
+  let o = unwrap(await askClaude(env, content, 1200, "tool"));
+  if (!good(o)) o = unwrap(await askClaude(env, content, 1200, "tool"));
   if (!good(o)) throw new Error("The check could not be read. Try again.");
   // Points that do not apply to this ad's format are left out and the rest are scaled to 100, so a good text-only ad can still score 100.
   const LEVEL = { full: 1, minor: 0.8, partial: 0.5, miss: 0.15 };
@@ -1329,7 +1362,7 @@ ${format ? `The ad's format: ${format}.` : ""}${note ? ` About the product: ${no
 First study the ad: its typography, colours, mood (quiet and premium, or loud and promotional), what the eye reads first, and where it is empty. Then, for each layer, decide where it goes, how big, and in what style, so that it is noticed and believed but supports the ad instead of fighting its headline. There is no fixed rule: small and quiet can be right, big and bold can be right, depending on this ad. Every layer must sit in empty space, never over the product, a face or existing text, with at least 5 percent margin from the image edges, and its colours must contrast with what is behind it.
 Numbers: x and y are the CENTRE of the layer as a share of the image width and height (0 to 1). s is the letter size as a share of the image width (0.035 small, 0.05 medium, 0.08 big). theme is one of ${LAYER_THEMES.join(", ")}: ink = dark bold letters, tag = dark letters on a white pill, red = white letters on a red pill, bold = white letters with a shadow, outline = white letters with a dark outline, script = italic serif. font is one of ${LAYER_FONTS.join(", ")} (theme keeps the theme's font). color is a hex colour for the letters or null, box is a hex colour for a pill behind the letters, false for none, or null to keep the theme's.
 Return ONLY JSON: {"thinking":"two short sentences on what you saw and why","layers":[{"kind":"offer|proof|line","text":"...","x":0.5,"y":0.9,"s":0.05,"theme":"tag","font":"theme","color":null,"box":null}]}. Inside strings use single quotes, never double quotes.`;
-  const o = await askClaude(env, [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }], 900, "tool", 0);
+  const o = await askClaude(env, [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: prompt }], 900, "tool");
   const num = (v, lo, hi, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
   const hex = (c) => (/^#[0-9a-f]{6}$/i.test(String(c || "")) ? String(c) : null);
   const got = Array.isArray(o.layers) ? o.layers : [];
@@ -1414,12 +1447,17 @@ async function deleteAccount(env, req) {
   if (!env.SUPABASE_SERVICE_ROLE) return json(env, { error: "Deleting accounts is not set up on this server yet.", code: "not_configured" }, 501);
   const who = await supaUser(env, req.headers.get("Authorization") || "");
   if (!who) return json(env, { error: "Sign in to delete your account.", code: "signin_required" }, 401);
+  // Deleting the account would leave Paddle charging for a plan nobody can use, so a running plan is cancelled first.
+  if (billingOn(env)) {
+    const a = await dbRpc(env, "billing_refresh", { uid: who.id });
+    if (a.plan !== "free" && a.status !== "canceled") return json(env, { error: "Cancel your plan first, from the link in your Paddle receipt. Then you can delete your account.", code: "plan_active" }, 409);
+  }
   const del = await fetch(supaBase(env) + "/auth/v1/admin/users/" + encodeURIComponent(who.id), { method: "DELETE", headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: "Bearer " + env.SUPABASE_SERVICE_ROLE } });
   if (!del.ok) return json(env, { error: "Could not delete the account. Try again." }, 502);
   return json(env, { ok: true });
 }
 
-const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|spy\/|pack\/|make\/)/;
+const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|library|spy\/|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -1436,7 +1474,9 @@ const FREE_EDITS = 2;
 const b64u = (u8) => btoa(String.fromCharCode(...u8)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 async function grantMac(env, body) {
   const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", enc.encode(env.GRANT_SECRET || env.GEMINI_KEY || "x"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const secret = env.GRANT_SECRET || env.GEMINI_KEY;
+  if (!secret) throw Object.assign(new Error("GRANT_SECRET is not set on the server"), { status: 502 });
+  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return b64u(new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(body))));
 }
 async function signGrant(env, uid) {
@@ -1449,8 +1489,10 @@ async function useGrant(env, uid, token) {
   if (p.length !== 4 || p[0] !== uid) return -1;
   if (p[3] !== (await grantMac(env, p.slice(0, 3).join(".")))) return -1;
   if (Date.now() - Number(p[2]) > 6 * 3600000) return -1;
-  const n = await bump(`grant/${p[1]}`, 6 * 3600);
-  return n <= FREE_EDITS ? FREE_EDITS - n : -1;
+  // Counted in the ledger, not the edge cache: each use is a row with its own unique ref, so requests sent at the
+  // same moment cannot all take the same free change.
+  const left = await dbRpc(env, "billing_use_grant", { uid, grant_id: p[1], max_uses: FREE_EDITS });
+  return typeof left === "number" ? left : -1;
 }
 
 // Used when ALLOW_ORIGIN is not set: the live site and local dev servers. Set ALLOW_ORIGIN in Cloudflare to change it.
@@ -1475,7 +1517,13 @@ function allowedOrigin(req, env) {
 //                           {"starter_month":"pri_..","starter_year":"pri_..","pro_month":"pri_..","pro_year":"pri_..",
 //                            "agency_month":"pri_..","agency_year":"pri_..","topup":"pri_.."}
 const billingOn = (env) => String(env.BILLING || "").toLowerCase() === "on";
-const TOPUP_CREDITS = 200;   // per top-up unit; keep in step with src/plans.js
+const TOPUP_CREDITS = 200;   // per top-up unit; keep in step with src/billing.js
+const YEAR_BONUS = { pro: 1500 };   // extra credits on each yearly payment; keep in step with PLANS[].bonus in src/billing.js
+
+// Pro and For Teams only: Google and TikTok ads (every /spy/ route) and best-quality images. Keep in step with
+// PRO_PLANS in src/billing.js. Returns the feature name the page shows, or "" when the action is open to every plan.
+const PRO_PLANS = ["pro", "agency"];
+const proOnly = (path, b) => (path.startsWith("/spy/") ? "platforms" : b && b.quality === "premium" ? "premium" : "");
 
 // What one action costs, in credits. Keep in step with src/plans.js. /start is free but needs a balance of
 // START_NEEDS, because the paid read (ScrapeCreators) happens before the analysis that is charged.
@@ -1527,7 +1575,7 @@ async function billingRoute(env, req, u) {
   }
   const who = await supaUser(env, req.headers.get("Authorization") || "");
   if (!who) throw Object.assign(new Error("Sign in first."), { status: 401, code: "signin_required" });
-  if (p === "/billing/me" && req.method === "GET") return json(env, accountView(await dbRpc(env, "billing_refresh", { uid: who.id })));
+  if (p === "/billing/me" && req.method === "GET") return json(env, { ...accountView(await dbRpc(env, "billing_refresh", { uid: who.id })), owner: isOwner(env, who) });
   if (p === "/billing/segment" && req.method === "POST") {
     const b = await req.json().catch(() => ({}));
     await dbRpc(env, "billing_set_segment", { uid: who.id, seg: String(b.segment || "") });
@@ -1568,12 +1616,14 @@ async function paddleWebhook(env, req) {
   if (t === "transaction.completed") {
     const top = found.find((x) => x.key === "topup");
     if (top) await dbRpc(env, "billing_add_extra", { uid, amount: TOPUP_CREDITS * top.qty, ref_id: "txn:" + String(d.id || evId) });
-    if (planItem) await dbRpc(env, "billing_set_plan", { uid, new_plan: plan, new_status: "active", new_interval: interval, period_end: (d.billing_period && d.billing_period.ends_at) || null, customer, subscription: d.subscription_id || null, reset: true, ref_id: "evt:" + evId });
+    if (planItem) await dbRpc(env, "billing_set_plan", { uid, new_plan: plan, new_status: "active", new_interval: interval, period_end: (d.billing_period && d.billing_period.ends_at) || null, customer, subscription: d.subscription_id || null, reset: true, ref_id: "evt:" + evId, event_at: ev.occurred_at || null });
+    // A yearly payment (first or renewal) adds its bonus as top-up credits, once per transaction.
+    if (planItem && interval === "year" && YEAR_BONUS[plan]) await dbRpc(env, "billing_add_extra", { uid, amount: YEAR_BONUS[plan], ref_id: "bonus:" + String(d.id || evId) });
   } else if (/^subscription\.(created|updated|activated|resumed|past_due|paused|canceled)$/.test(t)) {
     const cancelling = (d.scheduled_change && d.scheduled_change.action === "cancel") || t === "subscription.canceled";
     const status = cancelling ? "canceled" : t === "subscription.paused" ? "paused" : t === "subscription.past_due" ? "past_due" : "active";
     const end = cancelling ? ((d.scheduled_change && d.scheduled_change.effective_at) || (d.current_billing_period && d.current_billing_period.ends_at) || new Date().toISOString()) : ((d.current_billing_period && d.current_billing_period.ends_at) || null);
-    await dbRpc(env, "billing_set_plan", { uid, new_plan: plan, new_status: status, new_interval: interval, period_end: end, customer, subscription: d.id || null, reset: false, ref_id: "evt:" + evId });
+    await dbRpc(env, "billing_set_plan", { uid, new_plan: plan, new_status: status, new_interval: interval, period_end: end, customer, subscription: d.id || null, reset: false, ref_id: "evt:" + evId, event_at: ev.occurred_at || null });
   }
   return json(env, { ok: true });
 }
@@ -1585,6 +1635,13 @@ async function handle(req, rawEnv, hooks) {
     const env = Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
     if (req.method === "OPTIONS") return json(env, {});
     if (!origin) return json(env, { error: "This site is not allowed to use the AdDoctor API." }, 403);
+    // Crash reports from src/report.js (sent as a beacon, so before the X-App-Key check: a beacon has no headers).
+    // Written to the Worker's log only, which Cloudflare keeps for a few days; never stored anywhere else.
+    if (req.method === "POST" && new URL(req.url).pathname === "/log") {
+      const ip = req.headers.get("CF-Connecting-IP") || "unknown";
+      if ((await bump(`log/${ip}/${Math.floor(Date.now() / 3600000)}`, 3600)) <= 30) console.log("client error", (await req.text()).slice(0, 4000));
+      return json(env, { ok: true });
+    }
     if (env.APP_KEY && req.headers.get("X-App-Key") !== env.APP_KEY) return json(env, { error: "unauthorized" }, 401);
     const u = new URL(req.url);
     if (u.pathname === "/account/delete" && req.method === "POST") {
@@ -1601,6 +1658,10 @@ async function handle(req, rawEnv, hooks) {
         try { who = await supaUser(env, req.headers.get("Authorization")); } catch (e) { return json(env, { error: "Could not check your sign-in. Try again in a moment." }, 502); }
         if (!who) return json(env, { error: "Your sign-in has expired. Sign in again.", code: "signin_required" }, 401);
       }
+      // With billing on, a paid action needs a confirmed account. This comes before every counter, so anonymous
+      // calls cannot use up limits that paying customers share.
+      if (billingOn(env) && !who) return json(env, { error: "Sign in to use this. Your free credits are tied to your account.", code: "signin_required" }, 401);
+      if (billingOn(env) && !who.verified && !isOwner(env, who)) return json(env, { error: "Confirm your email first: open the link we sent you, then try again.", code: "email_unconfirmed" }, 403);
       if (who) {
         // A signed-in caller is counted by account, so a shared network does not use up one person's allowance.
         if (!isOwner(env, who)) {
@@ -1613,7 +1674,8 @@ async function handle(req, rawEnv, hooks) {
       const ip = rawIp.includes(":") ? rawIp.split(":").slice(0, 4).join(":") : rawIp;   // an IPv6 caller counts as its whole /64
         if ((await bump(`ip/${ip}/${Math.floor(now / 3600000)}`, 3600)) > (Number(env.RATE_PER_HOUR) || 60)) return json(env, { error: "Too many requests from this connection. Try again in an hour.", code: "rate_limited" }, 429);
       }
-      if ((await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > (Number(env.DAILY_CAP) || 300)) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow.", code: "daily_cap" }, 429);
+      // The shared daily cap guards free use. Signed-in callers with billing on pay in credits, so it does not apply.
+      if (!(billingOn(env) && who) && (await bump(`day/${Math.floor(now / 86400000)}`, 86400)) > (Number(env.DAILY_CAP) || 300)) return json(env, { error: "AdDoctor has reached its daily limit. Try again tomorrow.", code: "daily_cap" }, 429);
     }
     // Credits: with BILLING on, a paid action needs a signed-in account and is charged before it runs; the wrapper
     // below gives the credits back if the action fails. The site owners are never charged.
@@ -1623,6 +1685,11 @@ async function handle(req, rawEnv, hooks) {
         try {
           let peek = {};
           if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/make/improve" || u.pathname === "/pack/image")) peek = await req.clone().json().catch(() => ({}));
+          const feature = proOnly(u.pathname, peek);
+          if (feature) {
+            const a = await dbRpc(env, "billing_refresh", { uid: who.id });
+            if (!PRO_PLANS.includes(a.plan)) return json(env, { error: feature === "platforms" ? "Google and TikTok ads are on the Pro plan." : "Best-quality images are on the Pro plan.", code: "pro_only", feature }, 403);
+          }
           let cost = creditCost(u.pathname, peek);
           if (cost > 0 && peek.grant && ((u.pathname === "/make/ad" && peek.base) || u.pathname === "/make/improve")) {
             const left = await useGrant(env, who.id, peek.grant);
@@ -1651,22 +1718,22 @@ async function handle(req, rawEnv, hooks) {
         const okDate = (d) => (/^\d{4}-\d\d-\d\d$/.test(d || "") ? d : "");
         const src = spySource(env);
         if (!src) return json(env, { error: "No Ad Library source is set up on the server. Use the AdDoctor helper to read the page in your own browser instead.", code: "no_source" }, 503);
-        if (src !== "apify") return json(env, { run: hexEnc({ id, country, from: okDate(b.from), to: okDate(b.to), src }), paged: src === "sc", max: adCap(env) });
+        if (src !== "apify") return json(env, { run: await runSeal(env, { id, country, from: okDate(b.from), to: okDate(b.to), src }, who && who.id), paged: src === "sc", max: adCap(env) });
         const url = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&is_targeted_country=false&media_type=all&search_type=page&view_all_page_id=${id}`;
         const input = { startUrls: [{ url }], resultsLimit: Math.min(Number(env.MAX_ADS) || 200, 800) };
         if (/^\d{4}-\d\d-\d\d$/.test(b.from || "")) input.onlyAdsNewerThan = b.from;
         if (/^\d{4}-\d\d-\d\d$/.test(b.to || "")) input.onlyAdsOlderThan = b.to;
         const r = await fetch(apify(`acts/${ACTOR}/runs`), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
         const j = await r.json();
-        if (!r.ok || !j.data) return json(env, { error: (j.error && j.error.message) || "Could not start the crawl" }, 502);
+        if (!r.ok || !j.data) { console.log("apify error", r.status, String((j.error && j.error.message) || "").slice(0, 300)); return json(env, { error: "Could not start reading the Ad Library. Try again in a minute." }, 502); }
         return json(env, { run: j.data.id });
       }
       // 1b. read the next few pages of a ScrapeCreators run; the page calls this until "cursor" comes back empty
       if (u.pathname === "/page" && req.method === "POST") {
         const b = await req.json();
         const run = String(b.run || "").replace(/[^A-Za-z0-9]/g, "");
-        const q = run.startsWith("meta") ? hexDec(run) : {};
-        if (q.src !== "sc" || !env.SCRAPECREATORS_KEY) return json(env, { error: "This run can't be read in pages" }, 400);
+        const q = (await runOpen(env, run, who && who.id)) || {};
+        if (q.src !== "sc" || !env.SCRAPECREATORS_KEY) return json(env, { error: "This read has expired or can't be read in pages. Start the analysis again." }, 400);
         const room = adCap(env) - Math.max(0, Number(b.have) || 0);
         if (room <= 0) return json(env, { ads: [], cursor: "" });
         const { items, cursor } = await scAds(env, q, String(b.cursor || "").slice(0, 20000), 6, room);
@@ -1693,7 +1760,8 @@ async function handle(req, rawEnv, hooks) {
           raw = b.ads.length;
           ads = dedupe(b.ads.slice(0, 1200).filter((x) => x && typeof x === "object")).slice(0, 1000);
         } else if (run.startsWith("meta")) {
-          const q = hexDec(run);
+          const q = await runOpen(env, run, who && who.id);
+          if (!q) return json(env, { error: "This read has expired. Start the analysis again." }, 400);
           official = q.src !== "sc";
           if (official) ads = await metaAds(env, q);
           else { const { items } = await scAds(env, q); raw = items.length; ads = dedupe(items); }

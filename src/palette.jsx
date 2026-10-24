@@ -12,6 +12,8 @@ const PAGES = [
   { id: "static", label: "Create Static Ads", hint: "Make an image ad", icon: Icon.Layout, keys: "image create make" },
   { id: "pack", label: "30-Day Drop", hint: "A month of organic posts", icon: Icon.Image, keys: "posts instagram organic month" },
   { id: "spy", label: "Competitor Analysis", hint: "See what a brand runs", icon: Icon.Eye, keys: "competitor ad library meta research" },
+  { id: "rivals", label: "Find Competitors", hint: "Who you are up against", icon: Icon.Target, keys: "rivals competitors research brand" },
+  { id: "inspiration", label: "Idea Engine", hint: "Ad ideas for your product", icon: Icon.Sparkle, keys: "inspiration ideas hooks angles headlines" },
   { id: "vault", label: "Saved Vault", hint: "Reports and saved ads", icon: Icon.Bookmark, keys: "saved library reports" },
 ];
 const ACTIONS = [

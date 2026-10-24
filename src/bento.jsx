@@ -17,11 +17,12 @@ const isCreative = (f) => !!f && /^(image|video)\//.test(f.type);
 
 // What each mode asks for (typed out as the placeholder) and what its button says.
 const MODES = [
-  { id: "examine", label: "Examine Ad", go: "Run Diagnosis", hints: ["Paste a store/competitor URL (e.g. gymshark.com) or drop an ad creative to examine...", "Paste a screenshot of your ad...", "Upload an image or a video thumbnail..."] },
+  { id: "examine", label: "Examine Ad", go: "Run Diagnosis", hints: ["Paste your ad's headline or copy, or drop the creative to examine...", "Paste a screenshot of your ad...", "Upload an image or a video thumbnail..."] },
   { id: "spy", label: "Competitor Analysis", go: "Spy on Brand", hints: ["Enter a competitor domain, e.g. gymshark.com", "glossier.com", "Or just a brand name..."] },
-  { id: "url", label: "Generate from URL", go: "Generate Ads", hints: ["Paste your store link, e.g. https://yourstore.com/collections/hoodies", "A shop, a collection or a product page..."] },
   { id: "drop", label: "30-Day Drop", go: "Build My Drop", hints: ["Paste a store URL to plan 30 days of posts...", "https://yourstore.com"] },
 ];
+// A web address typed into Examine is a competitor to look up, not ad copy.
+const looksLikeSite = (s) => /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(s);
 
 const TILES = [
   { id: "examine", title: "Examine an Ad", text: "10-pillar creative audit (Hook, Offer, CTA) with prescription fixes." },
@@ -67,8 +68,9 @@ function Composer({ onExamine, onSpy, onPack, onBrowse }) {
     setErr(""); setFile(f); setMode("examine");
   };
   const submit = () => {
-    if (mode === "examine") onExamine(file || undefined);
-    else if (mode === "spy") onSpy(text.trim());
+    const t = text.trim();
+    if (mode === "examine") { if (!file && looksLikeSite(t)) onSpy(t); else onExamine(file || undefined, t); }
+    else if (mode === "spy") onSpy(t);
     else onPack(text.trim());
   };
   // Paste an image anywhere on Home (outside a text field) to attach it.

@@ -6,7 +6,7 @@ import { spyBookmarklet, spyFromLib, SPY_FB_ORIGIN } from "./spyHelper.js";
 import { track } from "./track.js";
 import { CreativeGallery } from "./creatives.jsx";
 import OtherPlatform from "./spyMore.jsx";
-import { useBillingOn, COSTS } from "./billing.js";
+import { useBillingOn, useProLock, askUpgrade, COSTS } from "./billing.js";
 import { SPY_ANGLES, SPY_ANGLE } from "./angles.js";
 
 /* ============================ Competitor Analysis ============================ */
@@ -615,6 +615,8 @@ function SpyView({ onRebuild, onExamine, notify, seed = "" }) {
   const libOk = lib && !lib.error;
   const [dateMsg, setDateMsg] = useState("");
   const billingOn = useBillingOn();
+  const proLock = useProLock();
+  const [pending, setPending] = useState(null); // ads handed over in the window name, waiting for the visitor's OK
   const datesMatch = !!libOk && lib.from === from && lib.to === to;
   // Puts the chosen dates into the pasted link, so the link and the date range never disagree. Only the two date
   // values change; the advertiser, country and everything else in the link stay as pasted.
@@ -633,7 +635,13 @@ function SpyView({ onRebuild, onExamine, notify, seed = "" }) {
     setDateMsg(`Applied: ${from} to ${to}.`);
     notify("Dates applied to the link");
   };
-  useEffect(() => { if (libOk) { setCountry(lib.country || ""); if (lib.name) setBrand(lib.name); if (lib.from) setFrom(lib.from); if (lib.to) setTo(lib.to); } }, [lib]);
+  // A link this page built itself (pickBrand) already matches the dates on screen; its end date is one day later
+  // because the Ad Library's end is exclusive, so reading it back would move "To" forward on every pick.
+  const builtLink = useRef("");   // the exact link pickBrand built, so a link pasted later is never mistaken for it
+  useEffect(() => {
+    const own = !!builtLink.current && builtLink.current === libRaw;
+    if (libOk) { setCountry(lib.country || ""); if (lib.name) setBrand(lib.name); if (!own && lib.from) setFrom(lib.from); if (!own && lib.to) setTo(lib.to); }
+  }, [lib]);
 
   const finish = (source, ads, slide, insights, b, more) => {
     const tagged = ads.map(spyTag);
@@ -737,7 +745,7 @@ function SpyView({ onRebuild, onExamine, notify, seed = "" }) {
       if (!SPY_API) return local("This copy of AdDoctor has no server set up.");
       let out;
       try { out = await apiFetch("/analyze", { body: { ads: raw }, signal: ctrl.signal, timeout: 120000 }); }
-      catch (e) { if (isCancel(e)) throw e; return local(e.code === "rate_limited" || e.code === "daily_cap" ? e.message : e.code === "api" || e.code === "server" ? "The AdDoctor server has not been updated to read these yet." : "The AdDoctor server could not be reached."); }
+      catch (e) { if (isCancel(e)) throw e; return local(["rate_limited", "daily_cap", "signin_required", "no_credits"].includes(e.code) ? e.message : e.code === "api" || e.code === "server" ? "The AdDoctor server has not been updated to read these yet." : "The AdDoctor server could not be reached."); }
       if (!Array.isArray(out.ads)) return local("The AdDoctor server has not been updated to read these yet.");
       const name = out.brand || "";
       setBrand(name);
@@ -765,7 +773,8 @@ function SpyView({ onRebuild, onExamine, notify, seed = "" }) {
     // AdDoctor is ready, and it sends them as a message.
     let named = null;
     try { if (window.name.indexOf("addoctor:") === 0) { named = JSON.parse(window.name.slice(9)); window.name = "addoctor-done"; } } catch (e) { /* not ours */ }
-    if (named && Array.isArray(named.ads)) postedRef.current(named);
+    // Any website can open this page with a window name set, so these ads wait for a click before anything is spent.
+    if (named && Array.isArray(named.ads) && named.ads.length) setPending(named);
     else if (window.name !== "addoctor-done") try { if (window.opener) window.opener.postMessage({ type: "addoctor-ready" }, "*"); } catch (e) { /* no opener */ }   // a reload must not ask for the ads again
     return () => window.removeEventListener("message", onMsg);
   }, []);
@@ -912,7 +921,8 @@ ${spyCompact(ads)}`;
     if (name.length >= 2) searchBrands(name);
   }, [seed]); // eslint-disable-line react-hooks/exhaustive-deps
   const pickBrand = (b) => {
-    setLibRaw(spyUrl(b.id, country || "ALL", from, to));
+    builtLink.current = spyUrl(b.id, country || "ALL", from, to);
+    setLibRaw(builtLink.current);
     setBrand(b.name);
     setPickedIg({ id: b.id, ig: b.ig || "" });
     setFind({ q: "", busy: false, err: "", list: null });
@@ -935,6 +945,7 @@ ${spyCompact(ads)}`;
     notify(ok === false ? "Couldn't copy. Select the text manually." : msg);
   };
   const downloadDeck = async () => {
+    if (proLock) { askUpgrade("pro_only", "pptx"); return; }
     try {
       const { downloadSpyDeck } = await import("./spyDeck.js");
       await downloadSpyDeck({ brand: state.brand, reports: state.reports, title: spyPlatformTitle(state.brand, Object.keys(state.reports)) });
@@ -960,13 +971,25 @@ ${spyCompact(ads)}`;
 
   return (
     <div className="mt-6 space-y-6">
+      {pending && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+          <p className="min-w-0 flex-1">{pending.ads.length} ads arrived from the AdDoctor helper. Analyze them{billingOn ? ` for ${COSTS.analyze} credits` : ""}?</p>
+          <button type="button" onClick={() => setPending(null)} className="rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">Dismiss</button>
+          <button type="button" onClick={() => { const d = pending; setPending(null); postedRef.current(d); }} className="rounded-full bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">Analyze</button>
+        </div>
+      )}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
         <h2 className="text-lg font-semibold tracking-tight text-slate-900">Find a competitor</h2>
         {spyMoreOk && (
           <div className="mt-3 inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Ad platform">
-            {["Meta", "Google", "TikTok"].map((p) => (
-              <button key={p} type="button" onClick={() => setPlatform(p)} aria-pressed={platform === p} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${platform === p ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>{p}</button>
-            ))}
+            {["Meta", "Google", "TikTok"].map((p) => {
+              const locked = p !== "Meta" && proLock;
+              return (
+                <button key={p} type="button" onClick={() => (locked ? askUpgrade("pro_only", "platforms") : setPlatform(p))} aria-pressed={platform === p} aria-label={locked ? `${p} (Pro)` : undefined} className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition ${platform === p ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+                  {p}{locked && <span className="inline-flex items-center gap-0.5 rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-pink-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}
+                </button>
+              );
+            })}
           </div>
         )}
         {platform !== "Meta" ? <OtherPlatform key={platform} platform={platform.toLowerCase()} onDone={addOther} notify={notify} /> : (<>
@@ -1035,7 +1058,7 @@ ${spyCompact(ads)}`;
             Change dates <Icon.Chevron className={`h-4 w-4 transition ${opts ? "rotate-180" : ""}`} />
           </button>
           <button id="spy-helper-toggle" onClick={() => setHelper((v) => !v)} aria-expanded={helper || noDesktop} className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-500 hover:text-slate-800">
-            Read it in your own browser (free) <Icon.Chevron className={`h-4 w-4 transition ${helper || noDesktop ? "rotate-180" : ""}`} />
+            Read it in your own browser{billingOn ? "" : " (free)"} <Icon.Chevron className={`h-4 w-4 transition ${helper || noDesktop ? "rotate-180" : ""}`} />
           </button>
         </div>
         <div>
@@ -1073,7 +1096,7 @@ ${spyCompact(ads)}`;
           <p className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700 ring-1 ring-blue-100">{srcLabel} · {spyPlural(res.n, "ad")}</p>
           <div className="flex flex-wrap items-center gap-2">
             <button id="spy-pptx" onClick={downloadDeck} className="inline-flex items-center gap-1.5 rounded-full bg-[#2563EB] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
-              <Icon.Download className="h-3.5 w-3.5" /> Download PowerPoint
+              {proLock ? <Icon.Lock className="h-3.5 w-3.5" /> : <Icon.Download className="h-3.5 w-3.5" />} Download PowerPoint{proLock ? " · Pro" : ""}
             </button>
                       <button id="spy-copy" onClick={() => copy(reportText(), "Slide text copied")} className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20">
             <Icon.Copy className="h-3.5 w-3.5" /> Copy slide text
@@ -1150,7 +1173,7 @@ ${spyCompact(ads)}`;
         <div className="mt-8 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h3 className="text-base font-semibold text-slate-900">{res.ads.some((a) => a.img) ? "Ads without an image" : "Ads analyzed"}</h3>
-            <p className="text-xs text-slate-500">Each ad is tagged with its angle, product and promotions. Rebuild opens the closest template in the Studio.</p>
+            <p className="text-xs text-slate-500">Each ad is tagged with its angle, product and promotions. Rebuild opens the closest template, ready for your product.</p>
           </div>
           <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="Sort ads">
             {[["days", "Longest live"], ["promo", "Promotions"], ["angle", "Angle"]].map(([id, l]) => (

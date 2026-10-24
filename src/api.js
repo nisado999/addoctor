@@ -14,6 +14,7 @@ const MESSAGES = {
   signin_required: "Sign in to use this feature.",
   owner_only: "Only the site owner can use this.",
   no_credits: "You are out of credits for this. Top up or upgrade your plan.",
+  pro_only: "This is a Pro feature.",
   server: "The AdDoctor server had a problem. Try again in a moment.",
   bad_response: "The AdDoctor server sent an answer this page can't read. Try again.",
   api: "The AdDoctor server couldn't do that.",
@@ -72,6 +73,7 @@ function toError(r, j) {
   if (code === "signin_required") return new ApiError("signin_required", said, extra);
   if (code === "owner_only") return new ApiError("owner_only", said, extra);
   if (code === "no_credits") return new ApiError("no_credits", said, extra);
+  if (code === "pro_only") return new ApiError("pro_only", said, { ...extra, feature: j.feature });
   if (code === "daily_cap") return new ApiError("daily_cap", said, extra);
   if (status === 429 || code === "rate_limited") {
     const wait = retryAfter(r, j);
@@ -178,6 +180,7 @@ async function apiFetch(path, opts = {}) {
       if (wait < 0) {
         if (err.code === "signin_required" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("addoctor:signin-required"));
         if (err.code === "no_credits" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("addoctor:no-credits"));
+        if (err.code === "pro_only" && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("addoctor:upgrade", { detail: { reason: "pro_only", feature: err.feature } }));
         throw err;
       }
       await sleep(wait, signal);

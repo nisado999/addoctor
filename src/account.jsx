@@ -2,19 +2,23 @@ import { useState, useEffect, useRef } from "react";
 import { Icon } from "./ui";
 import { field } from "./shared.js";
 import { track } from "./track.js";
-import { signInGoogle, signInEmail, signUpEmail, authOptions } from "./auth.js";
+import { signInGoogle, signInEmail, signUpEmail, sendReset, setNewPassword, authOptions } from "./auth.js";
 
-/* Sign in or create an account. Closing on success is the caller's job: it hears about the new session
-   from watchAuth and closes this dialog. */
-function AuthModal({ onClose, notify }) {
-  const [mode, setMode] = useState("in");            // "in" = sign in, "up" = create account
+/* Sign in, create an account, ask for a reset link, or (back from that link) choose a new password. Closing on
+   success is the caller's job: it hears about the new session from watchAuth and closes this dialog. */
+const TITLE = { in: "Sign in to AdDoctor", up: "Create your account", forgot: "Reset your password", recovery: "Choose a new password" };
+const SUB = { in: "Welcome back.", up: "Free to start. No card needed.", forgot: "We'll email you a link to choose a new one.", recovery: "You're signed in. Pick a password for next time." };
+
+function AuthModal({ onClose, notify, initialMode = "in" }) {
+  const [mode, setMode] = useState(TITLE[initialMode] ? initialMode : "in");   // "in" | "up" | "forgot" | "recovery"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState("");              // "" | "google" | "email"
   const [err, setErr] = useState("");
-  const [sent, setSent] = useState(false);           // a confirmation email is on its way
+  const [sent, setSent] = useState("");              // "" | "confirm" (sign-up email) | "reset" (reset link)
   const [opts, setOpts] = useState({ google: false, email: true });
   const first = useRef(null);
+  const needsEmail = mode !== "recovery", needsPassword = mode !== "forgot";
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose();
@@ -27,6 +31,8 @@ function AuthModal({ onClose, notify }) {
     return () => { dead = true; window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
   }, [onClose]);
 
+  const go = (m) => { setMode(m); setErr(""); };
+
   const google = async () => {
     setBusy("google"); setErr("");
     try { await signInGoogle(); }                     // the browser leaves for Google here
@@ -36,14 +42,21 @@ function AuthModal({ onClose, notify }) {
   const submit = async (e) => {
     e.preventDefault();
     if (busy) return;
-    if (password.length < 8) { setErr("Use a password of at least 8 characters."); return; }
+    if (needsPassword && password.length < 8) { setErr("Use a password of at least 8 characters."); return; }
     setBusy("email"); setErr("");
     try {
       if (mode === "up") {
         const ready = await signUpEmail(email.trim(), password);
         track("sign_up", { method: "email" });
-        if (!ready) setSent(true);
+        if (!ready) setSent("confirm");
         else notify("Account created. You're signed in.", 2600);
+      } else if (mode === "forgot") {
+        await sendReset(email.trim());
+        setSent("reset");
+      } else if (mode === "recovery") {
+        await setNewPassword(password);
+        notify("Password changed. You're signed in.", 2600);
+        onClose();
       } else {
         await signInEmail(email.trim(), password);
       }
@@ -54,6 +67,7 @@ function AuthModal({ onClose, notify }) {
   };
 
   const btn = "inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-xl text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:opacity-60";
+  const link = "font-semibold text-slate-900 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 rounded";
 
   return (
     <div className="dlg-veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" onClick={onClose}>
@@ -69,15 +83,19 @@ function AuthModal({ onClose, notify }) {
         {sent ? (
           <>
             <h2 id="auth-title" className="pr-10 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">Check your email</h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">We sent a confirmation link to <b className="font-semibold text-slate-900">{email.trim()}</b>. Open it to finish creating your account, then come back here.</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              {sent === "reset"
+                ? <>If <b className="font-semibold text-slate-900">{email.trim()}</b> has an account, a link to choose a new password is on its way. Open it on this device.</>
+                : <>We sent a confirmation link to <b className="font-semibold text-slate-900">{email.trim()}</b>. Open it to finish creating your account, then come back here.</>}
+            </p>
             <button onClick={onClose} className={`${btn} mt-6 bg-slate-950 text-white hover:bg-slate-800`}>Done</button>
           </>
         ) : (
           <>
-            <h2 id="auth-title" className="pr-10 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">{mode === "up" ? "Create your account" : "Sign in to AdDoctor"}</h2>
-            <p className="mt-1 text-[13px] text-slate-500">{mode === "up" ? "Free to start. No card needed." : "Welcome back."}</p>
+            <h2 id="auth-title" className="pr-10 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">{TITLE[mode]}</h2>
+            <p className="mt-1 text-[13px] text-slate-500">{SUB[mode]}</p>
 
-            {opts.google && (
+            {opts.google && (mode === "in" || mode === "up") && (
               <>
                 <button id="auth-google" onClick={google} disabled={!!busy} className={`${btn} mt-5 border border-slate-200 bg-white text-slate-800 hover:border-slate-300`}>
                   <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" aria-hidden="true">
@@ -92,22 +110,41 @@ function AuthModal({ onClose, notify }) {
               </>
             )}
 
-            <form onSubmit={submit} className={opts.google ? "" : "mt-5"}>
-              <label htmlFor="auth-email" className="mb-1.5 block text-xs font-semibold text-slate-700">Email</label>
-              <input id="auth-email" ref={first} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} placeholder="you@company.com" />
-              <label htmlFor="auth-password" className="mb-1.5 mt-3 block text-xs font-semibold text-slate-700">Password</label>
-              <input id="auth-password" type="password" required minLength={8} autoComplete={mode === "up" ? "new-password" : "current-password"} value={password} onChange={(e) => setPassword(e.target.value)} className={field} placeholder={mode === "up" ? "At least 8 characters" : "Your password"} />
+            <form onSubmit={submit} className={opts.google && (mode === "in" || mode === "up") ? "" : "mt-5"}>
+              {needsEmail && (
+                <>
+                  <label htmlFor="auth-email" className="mb-1.5 block text-xs font-semibold text-slate-700">Email</label>
+                  <input id="auth-email" ref={first} type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} placeholder="you@company.com" />
+                </>
+              )}
+              {needsPassword && (
+                <>
+                  <div className={`mb-1.5 flex items-baseline justify-between ${needsEmail ? "mt-3" : ""}`}>
+                    <label htmlFor="auth-password" className="block text-xs font-semibold text-slate-700">{mode === "recovery" ? "New password" : "Password"}</label>
+                    {mode === "in" && <button type="button" onClick={() => go("forgot")} className={`text-xs ${link}`}>Forgot password?</button>}
+                  </div>
+                  <input id="auth-password" ref={needsEmail ? undefined : first} type="password" required minLength={8} autoComplete={mode === "in" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} className={field} placeholder={mode === "in" ? "Your password" : "At least 8 characters"} />
+                </>
+              )}
               {err && <p role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2.5 text-[13px] font-medium text-rose-700 ring-1 ring-rose-100">{err}</p>}
               <button id="auth-submit" type="submit" disabled={!!busy} className={`${btn} mt-4 bg-slate-950 text-white shadow-sm shadow-slate-900/20 hover:bg-slate-800`}>
-                {busy === "email" ? "One moment…" : mode === "up" ? "Create account" : "Sign in"}
+                {busy === "email" ? "One moment…" : { in: "Sign in", up: "Create account", forgot: "Send reset link", recovery: "Save new password" }[mode]}
               </button>
             </form>
 
-            <p className="mt-4 text-center text-[13px] text-slate-500">
-              {mode === "up" ? "Already have an account?" : "New to AdDoctor?"}{" "}
-              <button id="auth-switch" type="button" onClick={() => { setMode(mode === "up" ? "in" : "up"); setErr(""); }} className="font-semibold text-slate-900 hover:text-slate-900">{mode === "up" ? "Sign in" : "Create an account"}</button>
-            </p>
-            <p className="mt-3 text-center text-[11px] text-slate-400">By continuing you agree to how AdDoctor handles data. <a href="./privacy.html" className="underline hover:text-slate-600">Privacy</a></p>
+            {mode !== "recovery" && (
+              <p className="mt-4 text-center text-[13px] text-slate-500">
+                {mode === "forgot" ? (
+                  <button id="auth-switch" type="button" onClick={() => go("in")} className={link}>Back to sign in</button>
+                ) : (
+                  <>
+                    {mode === "up" ? "Already have an account?" : "New to AdDoctor?"}{" "}
+                    <button id="auth-switch" type="button" onClick={() => go(mode === "up" ? "in" : "up")} className={link}>{mode === "up" ? "Sign in" : "Create an account"}</button>
+                  </>
+                )}
+              </p>
+            )}
+            <p className="mt-3 text-center text-[11px] text-slate-400">By continuing you agree to the <a href="./terms/" className="underline hover:text-slate-600">Terms</a> and how AdDoctor handles data (<a href="./privacy.html" className="underline hover:text-slate-600">Privacy</a>).</p>
           </>
         )}
       </div>

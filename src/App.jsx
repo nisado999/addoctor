@@ -34,10 +34,11 @@ const ProductModal = lazyRetry(() => import("./use"), (m) => m.ProductModal);
 const AuthModal = lazyRetry(() => import("./account"), (m) => m.AuthModal);
 const SpyView = lazyRetry(() => import("./spy"), (m) => m.SpyView);
 const PlansView = lazyRetry(() => import("./plans"), (m) => m.PlansView);
+const UpgradeModal = lazyRetry(() => import("./plans"), (m) => m.UpgradeModal);
 const PackView = lazyRetry(() => import("./pack"), (m) => m.PackView);
 const GuidedView = lazyRetry(() => import("./guided"), (m) => m.GuidedView);
 const LabView = lazyRetry(() => import("./lab"), (m) => m.LabView);
-const WinnersView = lazyRetry(() => import("./winners"), (m) => m.WinnersView);
+const IdeasView = lazyRetry(() => import("./ideas"), (m) => m.IdeasView);
 const RivalsView = lazyRetry(() => import("./rivals"), (m) => m.RivalsView);
 
 const scrollTop = () => {
@@ -131,15 +132,15 @@ const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(naviga
 
 const VIEWS = {
   home: { title: "Home" },
-  explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one, add your logo, or make a new one in its style." },
+  explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one and put your product in it, or make a new ad in its style." },
   video: { title: "Create Video Ads", sub: "Answer a few questions and we build a brief made for your brand. Video creation is coming soon." },
   static: { title: "Create Static Ads", sub: "Answer a few questions and we design ads from scratch, made for you. No templates." },
   pack: { title: "30-Day Drop", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Analysis", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
   rivals: { title: "Find Competitors", sub: "Enter your brand and we research who you are really up against." },
-  inspiration: { title: "Inspiration", sub: "Ads that kept running for a month or more. Brands only pay for ads that work, so these are proven. Find a style you like, then make it with your product." },
-  vault: { title: "Saved Vault", sub: "Prescriptions you saved, and competitor ads you kept from Spy." },
+  inspiration: { title: "Idea Engine", sub: "Say what you sell and get a hand of ready ad ideas: hooks written for your product, the shot to take, and a real long-running ad that proves the pattern works." },
+  vault: { title: "Saved Vault", sub: "Reports you saved, ads you made, and competitor ads you kept." },
   plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
@@ -274,6 +275,7 @@ function App() {
   const [askConsent, setAskConsent] = useState(needsConsent);
   const answerConsent = (ok) => { setConsent(ok); setAskConsent(false); };
   const [product, setProduct] = useState(null); // template being remade with the visitor's own product
+  const [upgrade, setUpgrade] = useState(null);  // { reason, feature } while the upgrade dialog is open
   const [favs, setFavs] = useState(() => loadFavs(FAVS_KEY, TEMPLATE_IDS));
   const [sort, setSort] = useState("featured");
   const [quick, setQuick] = useState(null); // null | "new" | "trending" | "video" | "favs"
@@ -300,7 +302,7 @@ function App() {
   if (view === "static" && quick === "video") setQuick(null);
 
   // Open dialogs, the one on top last.
-  const open = [look && "look", brand && "brand", inspire && "inspire", product && "product", studio && "studio", exam && "exam", authOpen && "auth"].filter(Boolean);
+  const open = [look && "look", brand && "brand", inspire && "inspire", product && "product", studio && "studio", exam && "exam", authOpen && "auth", upgrade && "upgrade"].filter(Boolean);
   const anyModal = open.length > 0;
   const openRef = useRef(open);
   const viewRef = useRef(view);
@@ -371,7 +373,7 @@ function App() {
     const c = navigator.connection;
     if (c && (c.saveData || /^(slow-2g|2g|3g)$/.test(c.effectiveType || ""))) return;
     const warm = () => {
-      ExamineModal.preload(); StudioModal.preload(); AuthModal.preload();
+      ExamineModal.preload(); AuthModal.preload();
       // Three dialogs share one file: fetch it once, and the other two come from it.
       BrandModal.preload().then((ok) => { if (ok) { InspireModal.preload(); ProductModal.preload(); } });
     };
@@ -388,7 +390,7 @@ function App() {
   const closeInspire = useCallback(() => setInspire(null), []);
   const closeProduct = useCallback(() => setProduct(null), []);
   const closeAll = useCallback(() => {
-    setExam(null); setStudio(null); setLook(null); setBrand(null); setInspire(null); setProduct(null); setAuthOpen(false);
+    setExam(null); setStudio(null); setLook(null); setBrand(null); setInspire(null); setProduct(null); setAuthOpen(false); setUpgrade(null);
   }, []);
 
   /* ------------------------------ Dialog history ------------------------------ */
@@ -417,6 +419,7 @@ function App() {
       else if (k === "product") setProduct(null);
       else if (k === "inspire") setInspire(null);
       else if (k === "brand") setBrand(null);
+      else if (k === "upgrade") setUpgrade(null);
       else setLook(null);
     };
     const onPop = () => {
@@ -524,10 +527,13 @@ function App() {
       if (!openRef.current.includes("auth")) openSignIn("in");
       notify("Sign in to use this feature.", 3200);
     };
-    const onNoCredits = () => { notify("You are out of credits for that. Pick a plan or top up.", 3600); if (gotoRef.current) gotoRef.current("plans"); };
+    // Opens over whatever is on screen rather than moving to Plans, so an open dialog and its work are kept.
+    const onNoCredits = () => setUpgrade({ reason: "no_credits" });
+    const onUpgrade = (e) => setUpgrade((e && e.detail) || { reason: "no_credits" });
     window.addEventListener("addoctor:signin-required", onNeed);
     window.addEventListener("addoctor:no-credits", onNoCredits);
-    return () => { window.removeEventListener("addoctor:signin-required", onNeed); window.removeEventListener("addoctor:no-credits", onNoCredits); };
+    window.addEventListener("addoctor:upgrade", onUpgrade);
+    return () => { window.removeEventListener("addoctor:signin-required", onNeed); window.removeEventListener("addoctor:no-credits", onNoCredits); window.removeEventListener("addoctor:upgrade", onUpgrade); };
   }, [openSignIn, notify]);
 
   useEffect(() => {
@@ -612,11 +618,12 @@ function App() {
   };
   gotoRef.current = goto;
 
-  const rebuild = (tplId) => {
-    // A competitor's creative becomes your own ad: the closest template opens in "Make it with my product".
+  // A competitor's creative or an Idea Engine idea becomes your own ad: the closest template opens in "Make it with
+  // my product", with the idea's hook as the headline when there is one.
+  const rebuild = (tplId, hook) => {
     const t = TEMPLATES.find((x) => x.id === tplId) || TEMPLATES[0];
-    setProduct(t);
-    notify(`Started from "${t.title}", the closest style to this ad. Add your product photo.`, 3200);
+    setProduct(typeof hook === "string" && hook ? { ...t, seedHeadline: hook } : t);
+    notify(`Started from "${t.title}". Add your product photo.`, 3200);
   };
 
   // True only when the report is really stored, so Examine never says "Saved" for one that will be gone on reload.
@@ -716,19 +723,20 @@ function App() {
   const isOwner = !!(user && user.email && OWNERS.includes(user.email.toLowerCase()));
   // With billing on, credits live on the server: this device's daily allowance is not used, and actions that run
   // in the browser (Examine) cost nothing.
-  const shownCredits = billing.on ? (billing.account ? billing.account.total : 0) : credits;
+  // A balance not known yet (signed out, or still loading) lets the action go to the server, which asks for a
+  // sign-in or opens the upgrade dialog, instead of telling a signed-out visitor they have 0 credits.
+  const shownCredits = billing.on ? (billing.account ? billing.account.total : Infinity) : credits;
   const doSpend = billing.on ? () => {} : spend;
   const quickChips = view === "static" ? QUICK.filter(([id]) => id !== "video") : QUICK;
   const noFavs = quick === "favs" && !favs.length;
 
   const toSpy = (name) => { setSpySeed(name || ""); goto("spy"); };
-  const browseTemplates = (term) => { if (goto("explore") && typeof term === "string") { setQuick(null); setCat("All"); setQ(term); } };
   const screen = (id) => (
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
     : id === "static" || id === "video" ? <GuidedView kind={id} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
     : id === "rivals" ? <RivalsView onSpy={toSpy} />
-    : id === "inspiration" ? <WinnersView notify={notify} onMake={rebuild} onBrowse={browseTemplates} active={view === "inspiration"} />
+    : id === "inspiration" ? <IdeasView notify={notify} onMake={rebuild} active={view === "inspiration"} />
     : <SpyView notify={notify} onRebuild={rebuild} onExamine={(file) => openExam({ file })} active={view === "spy"} seed={spySeed} />
   );
 
@@ -743,7 +751,7 @@ function App() {
 
       <Sidebar
         active={active} onNav={goto} open={menu} onClose={closeMenu} onExamine={() => openExam({})}
-        credits={credits} creditsPerDay={PER_DAY} bill={{ on: billing.on, account: billing.account, signedIn: !!user }} vaultCount={vault.length}
+        credits={credits} creditsPerDay={PER_DAY} bill={{ on: billing.on, account: billing.account, failed: !!billing.accountFailed, signedIn: !!user }} vaultCount={vault.length}
       />
 
       <div className="app-main min-h-screen lg:pl-64">
@@ -765,7 +773,7 @@ function App() {
                 onChange={(e) => { setQ(e.target.value); if (view === "home" && e.target.value.trim()) goto("explore"); }}
                 onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
                 onFocus={() => setSearchOn(true)} onBlur={() => setSearchOn(false)}
-                placeholder={view === "vault" ? "Search saved reports..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search saved reports" : "Search templates, niches, formats"}
+                placeholder={view === "vault" ? "Search your Vault..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search your Vault" : "Search templates, niches, formats"}
                 className="h-10 w-full rounded-full border border-slate-900/[.08] bg-white/75 pl-10 pr-4 md:pr-24 shadow-[inset_0_1px_2px_rgba(21,20,18,.05)] text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10"
               />
               {/* The shortcut lives in the search bar: a click opens the jump palette, Ctrl/⌘ K does the same from anywhere. */}
@@ -816,7 +824,7 @@ function App() {
           <div key={view} className={`mx-auto max-w-[1760px]${moved ? " view-in" : ""}`}>
           {view === "home" ? (
             <Bento
-              onExamine={(file) => openExam(file ? { file } : {})} onSpy={(domain) => { setSpySeed(domain || ""); goto("spy"); }} onPack={(url) => { setPackSeed(url || ""); goto("pack"); }}
+              onExamine={(file, copy) => openExam({ ...(file ? { file } : {}), ...(copy ? { copy } : {}) })} onSpy={(domain) => { setSpySeed(domain || ""); goto("spy"); }} onPack={(url) => { setPackSeed(url || ""); goto("pack"); }}
               onPick={inspect}
               onBrowse={(term) => { if (goto("explore") && typeof term === "string") { setQuick(null); setCat("All"); setQ(term); } }}
             />
@@ -965,7 +973,7 @@ function App() {
 
       {exam && (
         <DialogSlot key={examKey} label="examine" onClose={closeExam}>
-          <ExamineModal init={exam} onClose={closeExam} credits={billing.on ? 999 : credits} onSpend={doSpend} onSave={saveReport} savedKeys={savedKeys} notify={notify} />
+          <ExamineModal init={exam} onClose={closeExam} credits={billing.on ? Infinity : credits} onSpend={doSpend} onSave={saveReport} savedKeys={savedKeys} notify={notify} />
         </DialogSlot>
       )}
 
@@ -986,6 +994,11 @@ function App() {
       {product && <DialogSlot key={product.id} label="product" onClose={closeProduct}><ProductModal tpl={product} onClose={closeProduct} onBack={() => { const { mode, ...back } = product; setProduct(null); setLook(back); }} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
       {studio && <DialogSlot key={studio.id} label="studio" onClose={closeStudio}><StudioModal tpl={studio} onClose={closeStudio} notify={notify} /></DialogSlot>}
       {authOpen && <DialogSlot key={authMode} label="auth" onClose={closeAuth}><AuthModal onClose={closeAuth} notify={notify} initialMode={authMode} /></DialogSlot>}
+      {upgrade && (
+        <DialogSlot label="upgrade" onClose={() => setUpgrade(null)}>
+          <UpgradeModal {...upgrade} user={user} notify={notify} onClose={() => setUpgrade(null)} onSignIn={() => openSignIn("in")} onPlans={() => gotoRef.current && gotoRef.current("plans")} />
+        </DialogSlot>
+      )}
 
       <BottomNav active={active} onNav={goto} vaultCount={vault.length} />
       {palette && (

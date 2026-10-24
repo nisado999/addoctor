@@ -61,8 +61,10 @@ function shrink(dataUrl) {
 
 /* Saves one finished ad. Resolves with its id, or throws with a message the page can show. */
 export async function saveMyAd({ dataUrl, title, category, templateId }) {
+  // Full: say so, rather than quietly dropping the oldest saved ad to make room.
+  if (list.length >= MAX) throw new Error(`Your Vault holds ${MAX} ads and it is full. Remove an older one to save this.`);
   const thumb = await shrink(dataUrl);
-  const item = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, category, templateId, thumb, savedAt: Date.now() };
+  const item ={ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, category, templateId, thumb, savedAt: Date.now() };
   if (!commit(clean([item, ...list]))) throw new Error("Your browser has no room left to save this. Remove an older saved ad and try again.");
   return item.id;
 }

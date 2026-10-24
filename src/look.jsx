@@ -124,11 +124,6 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
             </div>
 
             <div className="sx-actions mt-6">
-              {isVideo && (
-                <button onClick={() => onInspire(tpl)} className="sx-action">
-                  <span><b>Make a new one inspired by it</b><small>A new video in this style with your brand, product and logo.</small></span><i aria-hidden="true">→</i>
-                </button>
-              )}
               <button onClick={() => onExamine(tpl)} className="sx-action">
                 <span><b>Examine an ad of mine</b><small>Check your own ad against this template.</small></span><i aria-hidden="true">→</i>
               </button>

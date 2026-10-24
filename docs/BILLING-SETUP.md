@@ -13,17 +13,18 @@ Dashboard > SQL Editor > New query > paste the whole of `supabase/billing.sql` >
 Then Project Settings > API > copy the **service_role** key (secret!).
 
 ## 2. Paddle: products and prices (sandbox)
-Catalogue > Products. Create one product "AdDoctor plans" with six recurring prices, and one product "AdDoctor credits" with one one-time price. Use USD (add EUR prices too if you want buyers to pay in euros).
+Catalogue > Products. Create one product "AdDoctor plans" with five recurring prices, and one product "AdDoctor credits" with one one-time price. Use USD (add EUR prices too if you want buyers to pay in euros). Starter has no yearly price on purpose (see docs/BILLING-STRATEGY.md); the page never offers `starter_year`.
 
 | Our key | Paddle price | Billing |
 |---|---|---|
 | starter_month | $19 | monthly |
-| starter_year | $190 | yearly |
 | pro_month | $49 | monthly |
-| pro_year | $490 | yearly |
+| pro_year | $468 | yearly ($39/mo; the Worker adds 1,500 bonus credits on each yearly payment) |
 | agency_month | $129 | monthly |
-| agency_year | $1,290 | yearly |
+| agency_year | $1,236 | yearly ($103/mo) |
 | topup | $15 | one-time (200 credits per unit) |
+
+The page shows these prices from `PLANS` in src/billing.js. If you change a price in Paddle, change it there too, or the checkout will show a different amount from the page.
 
 Copy each price id (looks like `pri_01...`).
 
@@ -41,7 +42,8 @@ Worker > Settings > Variables and Secrets. Add:
 | `PADDLE_WEBHOOK_SECRET` | Secret | the notification secret from step 3 |
 | `PADDLE_CLIENT_TOKEN` | Text | the client-side token from step 3 |
 | `PADDLE_ENV` | Text | `sandbox` (remove this when you go live) |
-| `PADDLE_PRICES` | Text | `{"starter_month":"pri_..","starter_year":"pri_..","pro_month":"pri_..","pro_year":"pri_..","agency_month":"pri_..","agency_year":"pri_..","topup":"pri_.."}` |
+| `PADDLE_PRICES` | Text | `{"starter_month":"pri_..","pro_month":"pri_..","pro_year":"pri_..","agency_month":"pri_..","agency_year":"pri_..","topup":"pri_.."}` |
+| `GRANT_SECRET` | Secret | any long random string; signs free edits and competitor-analysis runs (the Worker falls back to GEMINI_KEY if it is missing) |
 | `BILLING` | Text | leave **unset** until step 5 |
 
 Then paste the current `api/worker.js` (Edit code > Deploy). With `BILLING` unset the site behaves as it did.

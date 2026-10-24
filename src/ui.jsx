@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, memo } from "react";
 import { TEMPLATES } from "./data";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 import { useDialog } from "./dialog.jsx";
+import { PLAN_NAME, PLAN_CREDITS, PRO_PLANS, loadAccount } from "./billing.js";
 
 const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
 
@@ -10,6 +11,7 @@ const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
 const svgBase = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
 const Icon = {
   Plus: (p) => (<svg {...svgBase} strokeWidth="2.2" {...p}><path d="M12 5v14M5 12h14" /></svg>),
+  Lock: (p) => (<svg {...svgBase} {...p}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>),
   Grid: (p) => (<svg {...svgBase} {...p}><rect x="3.5" y="3.5" width="7" height="7" rx="1.8" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.8" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.8" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.8" /></svg>),
   Stethoscope: (p) => (<svg {...svgBase} {...p}><path d="M5 3v5a5 5 0 0 0 10 0V3" /><path d="M10 13v2a5 5 0 0 0 10 0v-1" /><circle cx="20" cy="11.5" r="2" /></svg>),
   Video: (p) => (<svg {...svgBase} {...p}><rect x="2.5" y="5.5" width="13" height="13" rx="2.5" /><path d="M15.5 10.2 21 7v10l-5.5-3.2z" /></svg>),
@@ -294,7 +296,7 @@ const NAV = [
     { id: "spy", label: "Competitor Analysis", icon: Icon.Eye },
   ] },
   { head: "Library", items: [
-    { id: "inspiration", label: "Inspiration", icon: Icon.Trophy, note: "New" },
+    { id: "inspiration", label: "Idea Engine", icon: Icon.Sparkle, note: "New" },
     { id: "vault", label: "Saved Vault", icon: Icon.Bookmark },
   ] },
 ];
@@ -406,15 +408,19 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
             bill.account ? (
               <>
                 <p className="text-xs font-medium text-slate-600">
-                  <span className={`font-semibold tabular-nums ${bill.account.total > 0 ? "text-slate-900" : "text-rose-700"}`}>{bill.account.total}</span> credits · {bill.account.plan === "free" ? "Free" : bill.account.plan.charAt(0).toUpperCase() + bill.account.plan.slice(1)} plan
+                  <span className={`font-semibold tabular-nums ${bill.account.total > 0 ? "text-slate-900" : "text-rose-700"}`}>{bill.account.total}</span> credits · {PLAN_NAME[bill.account.plan] || bill.account.plan} plan
                 </p>
                 <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                  <div className="h-full rounded-full bg-slate-950 transition-all duration-500" style={{ width: `${Math.min(100, (bill.account.total / Math.max(1, { free: 25, starter: 300, pro: 900, agency: 2500 }[bill.account.plan] || 25)) * 100)}%` }} />
+                  <div className="h-full rounded-full bg-slate-950 transition-all duration-500" style={{ width: `${Math.min(100, (bill.account.total / Math.max(1, PLAN_CREDITS[bill.account.plan] || PLAN_CREDITS.free)) * 100)}%` }} />
                 </div>
-                <button onClick={() => onNav("plans")} className={`mt-2 block rounded text-[11px] font-semibold text-blue-600 transition hover:text-blue-700 ${ring}`}>{bill.account.plan === "free" ? "Upgrade plan →" : "Plans and top-ups →"}</button>
+                <button onClick={() => { onNav("plans"); onClose(); }} className={`mt-2 block rounded text-[11px] font-semibold text-blue-600 transition hover:text-blue-700 ${ring}`}>{PRO_PLANS.includes(bill.account.plan) ? "Plans and top-ups →" : "Get Pro yearly →"}</button>
               </>
             ) : (
-              <p className="text-xs font-medium text-slate-600">{bill.signedIn ? "Loading your credits…" : "Sign in for 25 free credits a month."}</p>
+              bill.signedIn && bill.failed ? (
+                <p className="text-xs font-medium text-slate-600">Couldn't load your credits. <button onClick={() => loadAccount()} className={`rounded font-semibold text-blue-600 hover:text-blue-700 ${ring}`}>Retry</button></p>
+              ) : (
+                <p className="text-xs font-medium text-slate-600">{bill.signedIn ? "Loading your credits…" : `Sign in for ${PLAN_CREDITS.free} free credits a month.`}</p>
+              )
             )
           )}
           {!(bill && bill.on) && left !== null && (

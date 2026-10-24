@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Icon } from "./ui";
 import { SPY_API } from "./shared.js";
 import { apiFetch } from "./api.js";
-import { imageCost } from "./billing.js";
+import { imageCost, billingOn, COSTS } from "./billing.js";
 import { packShrink, packB64, packExt, packSave } from "./pack";
 
 /* ---------------------- Guided builder: an interview, then an ad made for this customer ---------------------- */
@@ -100,12 +100,15 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
   useEffect(() => { const l = life.current; return () => l.abort(); }, []);
 
   const unit = imageCost(false);
-  const total = unit * VERSIONS;
+  // With billing on, planning the ads (/make/plan) is charged too.
+  const total = unit * VERSIONS + (billingOn() ? COSTS.packText : 0);
   const setAd = (i, patch) => { adsRef.current = adsRef.current.map((a) => (a.i === i ? { ...a, ...patch } : a)); setAds(adsRef.current); };
 
-  // Questions the website reading already answered are skipped.
+  // Questions the website reading already answered are skipped. Worked out once, when the questions start, so
+  // typing an answer by hand can't make the question vanish under the cursor.
   const val = (id) => String(answers[id] || "");
-  const pending = questions.filter((x) => !(x.site && site && val(x.id).trim()));
+  const [skip, setSkip] = useState([]);
+  const pending = questions.filter((x) => !skip.includes(x.id));
   const q = pending[step];
 
   const addFiles = async (list) => {
@@ -131,6 +134,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
   const begin = () => {
     if (source === "photo" && !files.length) { setErr("Add at least one product photo, or choose another option."); return; }
     if (source === "site" && !site) { setErr("Read your website first, or choose another option."); return; }
+    setSkip(site ? questions.filter((x) => x.site && val(x.id).trim()).map((x) => x.id) : []);
     setErr(""); setStep(0); setPhase("questions");
   };
 

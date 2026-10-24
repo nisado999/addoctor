@@ -24,6 +24,9 @@ create table if not exists public.billing_accounts (
   updated_at             timestamptz not null default now()
 );
 
+-- When the latest Paddle subscription event happened, so a late, retried older event can't undo a newer one.
+alter table public.billing_accounts add column if not exists last_event_at timestamptz;
+
 create table if not exists public.credit_ledger (
   id           bigserial primary key,
   user_id      uuid not null references auth.users(id) on delete cascade,
@@ -43,10 +46,10 @@ create policy "read own billing account" on public.billing_accounts for select u
 drop policy if exists "read own ledger" on public.credit_ledger;
 create policy "read own ledger" on public.credit_ledger for select using (auth.uid() = user_id);
 
--- Monthly credits per plan. Keep in step with PLAN_CREDITS in api/worker.js and src/plans.js.
+-- Monthly credits per plan. Keep in step with PLANS in src/billing.js.
 create or replace function public.plan_allowance(p text) returns integer
 language sql immutable as $$
-  select case p when 'starter' then 200 when 'pro' then 900 when 'agency' then 2500 else 25 end
+  select case p when 'starter' then 100 when 'pro' then 900 when 'agency' then 2500 else 25 end
 $$;
 
 -- Creates the account on first use, ends a lapsed paid plan, refills the month, expires old top-ups.
@@ -132,10 +135,12 @@ begin
 end $$;
 
 -- Records the plan from a Paddle subscription event. `reset` (a new payment) restarts the month with the plan's
--- full allowance. The same `ref` (the Paddle event id) applies once.
+-- full allowance. The same `ref` (the Paddle event id) applies once. An event older than the newest one already
+-- applied (`event_at`, Paddle's occurred_at) changes no plan, status or period: Paddle retries can arrive late.
+drop function if exists public.billing_set_plan(uuid, text, text, text, timestamptz, text, text, boolean, text);
 create or replace function public.billing_set_plan(
   uid uuid, new_plan text, new_status text, new_interval text, period_end timestamptz,
-  customer text, subscription text, reset boolean, ref_id text
+  customer text, subscription text, reset boolean, ref_id text, event_at timestamptz default null
 ) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare a public.billing_accounts; was_pc integer;
@@ -144,10 +149,20 @@ begin
   if exists (select 1 from public.credit_ledger where ref = ref_id) then
     return jsonb_build_object('ok', true, 'duplicate', true);
   end if;
+  if event_at is not null and a.last_event_at is not null and event_at < a.last_event_at then
+    new_plan := null; new_status := null; new_interval := null; period_end := null;
+  end if;
+  -- After someone cancels and buys a new plan, the old subscription still sends events (its cancellation at period
+  -- end). Only a payment (reset) switches the account to another subscription; other events from an older one are
+  -- ignored, so they can't mark the new plan as cancelled.
+  if not reset and subscription is not null and a.paddle_subscription_id is not null and subscription <> a.paddle_subscription_id then
+    new_plan := null; new_status := null; new_interval := null; period_end := null; subscription := null;
+  end if;
   was_pc := a.plan_credits;
   update public.billing_accounts
      set plan = coalesce(new_plan, plan), status = coalesce(new_status, status), billing_interval = coalesce(new_interval, billing_interval),
          current_period_end = coalesce(period_end, current_period_end),
+         last_event_at = greatest(last_event_at, event_at),
          paddle_customer_id = coalesce(customer, paddle_customer_id), paddle_subscription_id = coalesce(subscription, paddle_subscription_id),
          plan_credits = case when reset then public.plan_allowance(coalesce(new_plan, plan)) else plan_credits end,
          refill_at = case when reset then now() + interval '1 month' else refill_at end,
@@ -183,16 +198,35 @@ begin
   update public.billing_accounts set segment = seg, updated_at = now() where user_id = uid and seg in ('shop', 'freelancer', 'agency');
 end $$;
 
+-- Counts one free change on a grant (see useGrant in api/worker.js). Each use is a ledger row with a unique ref, so
+-- requests sent at the same moment can't all take the same free change. Returns the free changes left after this
+-- one, or -1 when they are all used.
+create or replace function public.billing_use_grant(uid uuid, grant_id text, max_uses integer) returns integer
+language plpgsql security definer set search_path = public as $$
+begin
+  for n in 1..max_uses loop
+    begin
+      insert into public.credit_ledger (user_id, delta, reason, ref) values (uid, 0, 'free change', 'grant:' || grant_id || ':' || n);
+      return max_uses - n;
+    exception when unique_violation then
+      null;   -- this use is taken, try the next one
+    end;
+  end loop;
+  return -1;
+end $$;
+
 -- Only the Worker's service role may call these.
 revoke all on function public.billing_refresh(uuid) from public, anon, authenticated;
 revoke all on function public.billing_spend(uuid, integer, text, text) from public, anon, authenticated;
 revoke all on function public.billing_refund(uuid, text) from public, anon, authenticated;
-revoke all on function public.billing_set_plan(uuid, text, text, text, timestamptz, text, text, boolean, text) from public, anon, authenticated;
+revoke all on function public.billing_set_plan(uuid, text, text, text, timestamptz, text, text, boolean, text, timestamptz) from public, anon, authenticated;
 revoke all on function public.billing_add_extra(uuid, integer, text) from public, anon, authenticated;
 revoke all on function public.billing_set_segment(uuid, text) from public, anon, authenticated;
+revoke all on function public.billing_use_grant(uuid, text, integer) from public, anon, authenticated;
 grant execute on function public.billing_refresh(uuid) to service_role;
 grant execute on function public.billing_spend(uuid, integer, text, text) to service_role;
 grant execute on function public.billing_refund(uuid, text) to service_role;
-grant execute on function public.billing_set_plan(uuid, text, text, text, timestamptz, text, text, boolean, text) to service_role;
+grant execute on function public.billing_set_plan(uuid, text, text, text, timestamptz, text, text, boolean, text, timestamptz) to service_role;
 grant execute on function public.billing_add_extra(uuid, integer, text) to service_role;
 grant execute on function public.billing_set_segment(uuid, text) to service_role;
+grant execute on function public.billing_use_grant(uuid, text, integer) to service_role;

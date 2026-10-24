@@ -388,7 +388,7 @@ function CreativeGallery({ ads, brand, organicHint, onRebuild, onExamine, notify
     else a.sort((x, y) => (y.versions || 1) - (x.versions || 1));
     return a;
   }, [ads, format, sort, onlyLong, onlySaved, status, saved]);
-  useEffect(() => { setShown(PAGE); }, [format, sort, onlyLong, onlySaved, ads]);
+  useEffect(() => { setShown(PAGE); }, [format, sort, onlyLong, onlySaved, status, ads]);
 
   const toggleSave = async (ad) => {
     try {

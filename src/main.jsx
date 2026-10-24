@@ -2,9 +2,28 @@ import { createRoot } from "react-dom/client";
 import { initTracking } from "./track.js";
 import { installGlobalHandlers } from "./report.js";
 import { ErrorBoundary } from "./boundary.jsx";
+// The fonts come from this site, not from Google, so nothing is sent to a third party before consent.
+import "@fontsource/archivo/700.css";
+import "@fontsource/archivo/800.css";
+import "@fontsource/archivo/900.css";
+import "@fontsource/caveat/600.css";
+import "@fontsource/inter-tight/400.css";
+import "@fontsource/inter-tight/500.css";
+import "@fontsource/inter-tight/600.css";
+import "@fontsource/inter-tight/700.css";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
 import "./styles.css";
 import { App } from "./App";
 import { initMotion } from "./motion.js";
+
+// GitHub Pages can't send frame-ancestors, so a copy framed by another site hides itself: nothing there to click.
+if (import.meta.env.PROD && window.top !== window.self) {
+  document.documentElement.style.visibility = "hidden";
+  try { window.top.location.replace(window.location.href); } catch (e) { /* stays hidden */ }
+}
 
 initTracking();
 installGlobalHandlers();

@@ -230,7 +230,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
   const start = init.input || null;
   const [brand, setBrand] = useState(start ? start.brand : "");
   const [headline, setHeadline] = useState(start ? start.headline : "");
-  const [copy, setCopy] = useState(start ? start.copy : "");
+  const [copy, setCopy] = useState(start ? start.copy : init.copy || "");   // init.copy: ad copy typed on Home
   const [type, setType] = useState(start ? start.type : tpl ? (tpl.type === "video" ? "video" : "static") : init.type || "static");
   const [sampleId, setSampleId] = useState(null);
   const [applied, setApplied] = useState(false);
@@ -469,7 +469,9 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
           {stage === "input" && (
             <>
               <p className="flex-1 text-xs text-slate-500">
-                {credits > 0 ? (
+                {credits === Infinity ? (
+                  <span className="font-semibold text-emerald-700">Free on every plan</span>
+                ) : credits > 0 ? (
                   <>Uses <span className="font-semibold tabular-nums text-slate-700">1 credit</span> · {credits} left</>
                 ) : (
                   <span className="font-medium text-rose-600">You are out of credits.</span>

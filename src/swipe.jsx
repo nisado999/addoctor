@@ -71,6 +71,8 @@ async function makeThumb(img) {
    the page can show. A missing picture does not stop the save: the text is kept either way. */
 export async function toggleSwipe(ad, brand) {
   if (isSwiped(ad.libId)) { commit(list.filter((x) => x.id !== ad.libId)); return "removed"; }
+  // Full: say so, rather than quietly dropping the oldest saved ad to make room.
+  if (list.length >= MAX) throw new Error(`You have saved ${MAX} competitor ads, the most this browser keeps. Remove an older one to save this.`);
   let thumb = "";
   try { thumb = await makeThumb(ad.img); } catch (e) { /* kept without a picture */ }
   const item = {

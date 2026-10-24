@@ -4,7 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { Icon } from "./ui";
 import { field, copyText, SPY_API } from "./shared.js";
 import { apiFetch } from "./api.js";
-import { makeCost } from "./billing.js";
+import { makeCost, useProLock, askUpgrade } from "./billing.js";
 import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 import { saveMyAd } from "./myads.jsx";
@@ -694,9 +694,10 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const inspired = tpl.mode === "inspired";          // a new ad in this mood, not a one-to-one copy
   const [photos, setPhotos] = useState([]);          // [{ src, name }]
-  const [headline, setHeadline] = useState(inspired ? "" : tpl.headline || "");
+  const [headline, setHeadline] = useState(inspired ? "" : tpl.seedHeadline || tpl.headline || "");
   const [note, setNote] = useState("");
   const [premium, setPremium] = useState(false);
+  const proLock = useProLock();
   const [busy, setBusy] = useState("");              // "" | what is happening now
   const [err, setErr] = useState("");
   const editing = !!tpl.editImage;                   // a saved ad opened from the Vault: start from its picture, no template to rebuild from
@@ -1164,7 +1165,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
           {ad && <button onClick={download} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
           {!editing && (
             <button id="make-go" ref={goRef} onClick={generate} disabled={!photos.length || !!busy} className={`${primaryBtn} !px-7 !py-3 !text-[15px]`}>
-              {busy ? "Working…" : ad ? "Make another version" : inspired ? `Generate 3 options · ${VARIANTS * makeCost(premium)} credits` : `Generate my ad · ${makeCost(premium)} credits`}
+              {busy ? "Working…" : ad ? "Make another version" : inspired ? `Generate 3 options · ${VARIANTS * makeCost(premium)} credits` : `Generate my ad · ${makeCost(premium)} credit${makeCost(premium) === 1 ? "" : "s"}`}
             </button>
           )}
         </>
@@ -1306,10 +1307,10 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                 </Step>
                 <div className="sx-step flex items-center gap-4">
                   <div className="min-w-0 flex-1 sm:pl-[34px]">
-                    <p className="text-sm font-semibold text-slate-950">Best quality</p>
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-950">Best quality{proLock && <span className="inline-flex items-center gap-0.5 rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-pink-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}</p>
                     <p className="mt-0.5 text-xs text-slate-400">Slower, and costs more to generate.</p>
                   </div>
-                  <Switch on={premium} onChange={setPremium} label="Best quality" />
+                  <Switch on={premium && !proLock} onChange={(v) => (v && proLock ? askUpgrade("pro_only", "premium") : setPremium(v))} label="Best quality" />
                 </div>
               </>
             ) : (

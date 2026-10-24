@@ -29,7 +29,7 @@
     <main>
       <a href="./"><img class="logo" src="./logo.png" alt="AdDoctor" /></a>
       <h1>Privacy</h1>
-      <p class="muted">Last updated 16 October 2026. This page describes what the site does today.</p>
+      <p class="muted">Last updated 24 October 2026. This page describes what the site does today.</p>
 
       <h2>The short version</h2>
       <ul>
@@ -46,7 +46,7 @@
       <p>Your favourite templates, the reports you save to the Vault and your free credits are kept in your browser's local storage on this device. They are not sent to a server and are not linked to your account, so signing in on another browser does not bring them along. Clearing your browser data removes them.</p>
       <p>The creatives you save in Competitor Spy are kept the same way: only a short list of Ad Library ad numbers, in this browser, so the page can show which ones you marked. The ads themselves are not stored.</p>
       <p>Without an account, each device gets 15 free credits a day. The count is kept in this browser and refills to 15 at midnight your time. When credits are charged to an account (see Payments and credits below), your balance is kept in your account instead.</p>
-      <p>Browsing templates, Examine Ad, the Static Ads studio and "Add my logo" all run in your browser. A logo or ad you load there does not leave your device.</p>
+      <p>Browsing templates, Examine Ad, the Static Ads studio, the Idea Engine and placing your logo on a finished ad all run in your browser. A logo or ad you load there, and the product details you type into the Idea Engine, do not leave your device. The Idea Engine remembers what you typed in this browser so your ideas are there next time.</p>
 
       <h2>What is sent to a server, and to whom</h2>
       <div class="box">
@@ -54,16 +54,19 @@
           <tr><th>Feature</th><th>What is sent</th><th>Who processes it</th></tr>
           <tr><td>Competitor Spy</td><td>The advertiser's Ad Library link, and the public ads read from Meta's Ad Library (text, dates, image links)</td><td>Cloudflare (our server), ScrapeCreators (reads the public Ad Library when you paste a link), Anthropic (writes the analysis and looks at the ad images)</td></tr>
           <tr><td>Competitor Spy: search a brand by name</td><td>The brand name you type</td><td>Cloudflare, ScrapeCreators (looks the name up in Meta's public Ad Library)</td></tr>
+          <tr><td>Competitor Analysis on Google and TikTok (Pro)</td><td>The advertiser name you type, and the public ads read from Google's and TikTok's ad libraries</td><td>Cloudflare, ScrapeCreators (reads the public ad libraries), Anthropic (writes the analysis)</td></tr>
+          <tr><td>A brand's best Instagram and TikTok posts</td><td>The brand's public Instagram or TikTok handle</td><td>Cloudflare, ScrapeCreators (reads the public posts)</td></tr>
+          <tr><td>Find Competitors</td><td>The brand name or website you enter, and the market you pick. Our server reads the public pages of that website</td><td>Cloudflare, Anthropic (researches competitors on the public web with web search)</td></tr>
           <tr><td>Competitor Spy: open a creative, or ask about the ads</td><td>For a creative: the public ad's image link, text and how long it has run. For a question: your question, your earlier questions in that session, and the text of the public ads already read</td><td>Cloudflare, Anthropic (reads the ad image and writes the breakdown or the answer)</td></tr>
           <tr><td>Buying a plan or top-up</td><td>Your email address and the plan you chose (the payment details go straight to Paddle)</td><td>Paddle (takes the payment and sends us the result), Cloudflare and Supabase (record your plan and credits)</td></tr>
           <tr><td>Make it with my product</td><td>The product photos you upload, your headline and note, and the ad being edited or scored</td><td>Cloudflare, Google (Gemini generates the image), Anthropic (scores the ad)</td></tr>
           <tr><td>Social Pack</td><td>Your product description, product photos or store link, and the posts being checked</td><td>Cloudflare, Google (Gemini generates the images), Anthropic (writes the brief, captions and checks)</td></tr>
         </table>
       </div>
-      <p>Our server passes these on, returns the result to your browser and keeps no copy. The services above handle the data under their own terms and may keep it for a limited time for safety and abuse monitoring. Do not upload photos of people, or anything confidential, that you are not entitled to share with them.</p>
+      <p>Our server passes these on and returns the result to your browser. It keeps no copy of your photos, links or text, with two exceptions: it remembers your account id and email address for up to 5 minutes after checking your sign-in, so it doesn't have to ask Supabase on every click, and it keeps the score it gave an ad for up to 30 days (under a fingerprint of the ad, not the ad itself), so the same ad always gets the same score. The services above handle the data under their own terms and may keep it for a limited time for safety and abuse monitoring. Do not upload photos of people, or anything confidential, that you are not entitled to share with them.</p>
 
       <h2>Payments and credits</h2>
-      <p>When you buy a plan or a top-up, the payment is handled by <b>Paddle</b>, which is the seller of record. Paddle collects your card or other payment details, billing address and any tax details, and processes them under its own terms and privacy policy. We never see or store your card number. We receive your email address, which plan you bought, whether the subscription is active, the dates, and Paddle's transaction and subscription identifiers.</p>
+      <p>When you buy a plan or a top-up, the payment is handled by <b>Paddle</b>, which is the seller of record. Paddle collects your card or other payment details, billing address and any tax details, and processes them under its own terms and privacy policy. We never see or store your card number. We receive your email address, which plan you bought, whether the subscription is active, the dates, and Paddle's transaction and subscription identifiers. To match the payment to your account, the checkout also passes your AdDoctor account id (a random number, not your name) to Paddle.</p>
       <p>Your account keeps a credit balance and a ledger of changes (credits granted, spent, returned or expired, with the action that used them) so that your balance is correct and any dispute can be checked. This is stored with Supabase, in Frankfurt, with your account. It does not include the content of your photos, links or questions. If you delete your account, the balance and ledger are deleted with it; Paddle keeps its own records of payments for as long as the law requires.</p>
       <p>If you answer "which describes you best" on the Plans page (shop owner, freelancer or marketer, agency), that answer is stored with your account and used only to decide what to build.</p>
 
@@ -91,14 +94,34 @@
 
       <h2>Technical data</h2>
       <ul>
-        <li><b>Abuse limits.</b> Our server on Cloudflare uses your IP address to count requests per hour, so one visitor cannot run up unlimited costs. The count expires within a day. Cloudflare also keeps short-lived request logs.</li>
+        <li><b>Abuse limits.</b> Our server on Cloudflare counts requests per hour and per day, by your account when you are signed in and by your IP address when you are not, so one visitor cannot run up unlimited costs. The counts expire within a day. Cloudflare also keeps short-lived request logs.</li>
         <li><b>Hosting.</b> The site is served by GitHub Pages, which logs visitor IP addresses for security, as any web host does.</li>
-        <li><b>Fonts.</b> Fonts are loaded from Google Fonts, so your browser contacts Google when the page loads.</li>
+        <li><b>Fonts.</b> Fonts are served from AdDoctor's own site. Your browser does not contact Google Fonts.</li>
       </ul>
 
-      <h2>Your choices</h2>
+      <h2>Why we use your data</h2>
+      <ul>
+        <li><b>To provide what you ask for</b> (your account, the AI features you run, your plan and credits): this is needed to perform our agreement with you (GDPR Art. 6(1)(b)).</li>
+        <li><b>To keep the service safe and working</b> (abuse limits, crash reports, short-lived logs): our legitimate interest in preventing abuse and fixing faults (Art. 6(1)(f)).</li>
+        <li><b>Analytics:</b> only with your consent (Art. 6(1)(a)). You can withdraw it at any time with the "Ask me again" button above.</li>
+        <li><b>Payment records:</b> Paddle keeps these because tax and accounting law requires it (Art. 6(1)(c)).</li>
+      </ul>
+
+      <h2>Data processed outside the EU</h2>
+      <p>Supabase keeps your account in Frankfurt. Some of the other services listed on this page are based in the United States or run worldwide (Anthropic, Google, ScrapeCreators, Cloudflare, GitHub and Paddle), so data you send to a feature can be processed outside the EU. They handle it under their own data processing terms. Ask us (see Contact) if you want to know the safeguards for a specific service.</p>
+
+      <h2>How long data is kept</h2>
+      <ul>
+        <li>Your account, email address, plan, credit balance and ledger: until you delete your account.</li>
+        <li>Sign-in check on our server: 5 minutes. Ad scores: up to 30 days. Request counts: up to a day. Crash reports and request logs at Cloudflare: a few days.</li>
+        <li>Payment records at Paddle: as long as the law requires.</li>
+        <li>Everything kept in your browser: until you clear your browser data.</li>
+      </ul>
+
+      <h2>Your choices and rights</h2>
       <p>You can use the template gallery and the in-browser tools without sending anything to a server. AdDoctor keeps no stored copy of the photos, links or text you submit.</p>
-      <p>If you have an account, you can delete it yourself: open the account menu (your initial or picture at the top right) and choose <b>Delete account</b>. That removes your account and email address from Supabase. If the option is not there yet, or it does not work, ask for the deletion through the contact link below. GitHub issues are public, so do not post your email address there; say which way you signed in (email or Google) and we will tell you how to confirm it's yours.</p>
+      <p>You have the right to see the personal data we hold about you and get a copy of it, to have it corrected, to have it deleted, and to object to or limit how we use it. Ask through the contact below and we will answer within a month.</p>
+      <p>If you have an account, you can delete it yourself: open the account menu (your initial or picture at the top right) and choose <b>Delete account</b>. That removes your account, email address, credit balance and ledger from Supabase. If you are on a paid plan, cancel it first from the link in your Paddle receipt, so you are not charged again. If the option is not there yet, or it does not work, ask for the deletion through the contact link below. GitHub issues are public, so do not post your email address there; say which way you signed in (email or Google) and we will tell you how to confirm it's yours.</p>
       <p>If you are in the EU or UK you also have the right to complain to your data protection authority.</p>
 
       <h2>Contact</h2>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "./ui";
 import { copyText, SPY_API, SPY_KEY } from "./shared.js";
-import { imageCost } from "./billing.js";
+import { imageCost, billingOn, useProLock, askUpgrade, COSTS } from "./billing.js";
 import { apiFetch } from "./api.js";
 import { saveMyAd } from "./myads.jsx";
 
@@ -149,6 +149,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
   const [tone, setTone] = useState(PACK_TONES[0]);
   const [size, setSize] = useState(6);
   const [quality, setQuality] = useState("standard");
+  const proLock = useProLock();
   const [mode, setMode] = useState("store"); // store | upload | describe
   const [storeUrl, setStoreUrl] = useState(seed);
   useEffect(() => { if (seed) { setMode("store"); setStoreUrl(seed); } }, [seed]); // a store link typed on Home; reading it is left to the button
@@ -177,7 +178,8 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
 
   const unitOf = () => imageCost(qualityRef.current === "premium");
   const unit = imageCost(quality === "premium");
-  const cost = size * unit;
+  // With billing on the server also charges the brief and each batch of six planned posts (creditCost in api/worker.js).
+  const cost = size * unit + (billingOn() ? COSTS.packText * (1 + Math.ceil(size / 6)) : 0);
   const setP = (idx, patch) => { postsRef.current = postsRef.current.map((p) => (p.index === idx ? { ...p, ...patch } : p)); setPosts(postsRef.current); };
 
   // Posts that never got an image stop spinning: they show "Not generated" and a Retry button.
@@ -442,10 +444,15 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
 
           <p className="mt-6 text-sm font-semibold text-slate-900">Image quality</p>
           <div className="mt-2 inline-flex rounded-full bg-slate-100 p-1">
-            {[["standard", "Standard"], ["premium", "Premium"]].map(([k, l]) => (
-              <button key={k} onClick={() => setQuality(k)} aria-pressed={quality === k}
-                className={`rounded-full px-4 py-1.5 text-sm font-semibold ${quality === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>{l}</button>
-            ))}
+            {[["standard", "Standard"], ["premium", "Premium"]].map(([k, l]) => {
+              const locked = k === "premium" && proLock;
+              return (
+                <button key={k} onClick={() => (locked ? askUpgrade("pro_only", "premium") : setQuality(k))} aria-pressed={quality === k}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold ${quality === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>
+                  {l}{locked && <span className="inline-flex items-center gap-0.5 rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-pink-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}
+                </button>
+              );
+            })}
           </div>
           <p className="mt-2 text-xs text-slate-500">Premium uses the best image model: sharper text on images, {imageCost(true)} credits per post instead of {imageCost(false)}.</p>
 
@@ -455,7 +462,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
             <button id="pack-go" onClick={generate} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">
               <Icon.Sparkle className="h-4 w-4" />Create {size} posts
             </button>
-            <p className="text-sm text-slate-500"><span className="font-semibold text-slate-900">{cost} credits</span> · you have {credits}</p>
+            <p className="text-sm text-slate-500"><span className="font-semibold text-slate-900">{cost} credits</span>{Number.isFinite(credits) ? ` · you have ${credits}` : ""}</p>
           </div>
         </div>
       </div>

@@ -6,17 +6,27 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "./api.js";
 
+// year 0 = monthly only. Starter is kept small and monthly so the yearly saving, the bonus and the Pro-only
+// features all point at Pro. bonus = extra credits on each yearly payment (api/worker.js YEAR_BONUS).
 export const PLANS = [
-  { id: "free", name: "Free", month: 0, year: 0, credits: 25, seats: 1, who: "Try it with your own account" },
-  { id: "starter", name: "Starter", month: 19, year: 190, credits: 200, seats: 1, who: "Shop owners making their own ads" },
-  { id: "pro", name: "Pro", month: 49, year: 490, credits: 900, seats: 2, who: "Marketers and freelancers", popular: true },
-  { id: "agency", name: "For Teams", month: 129, year: 1290, credits: 2500, seats: 5, who: "Agencies and small teams" },
+  { id: "free", name: "Free", month: 0, year: 0, credits: 25, who: "Try it with your own account" },
+  { id: "starter", name: "Starter", month: 19, year: 0, credits: 100, who: "One shop testing a few ads a month" },
+  { id: "pro", name: "Pro", month: 49, year: 468, credits: 900, bonus: 1500, who: "Shops and marketers running ads every week", popular: true },
+  { id: "agency", name: "For Teams", month: 129, year: 1236, credits: 2500, who: "Agencies and heavy users" },
 ];
 export const PLAN_NAME = Object.fromEntries(PLANS.map((p) => [p.id, p.name]));
+export const PLAN_CREDITS = Object.fromEntries(PLANS.map((p) => [p.id, p.credits]));
 export const TOPUP = { price: 15, credits: 200 };
 
 // What one action costs, in credits.
 export const COSTS = { breakdown: 1, ask: 3, organic: 3, rivals: 3, analyze: 15, review: 1, packText: 2, image: 5, imagePremium: 12 };
+
+// Pro and For Teams only. The server enforces this too (proOnly in api/worker.js); here it only shows the lock.
+export const PRO_PLANS = ["pro", "agency"];
+export const PRO_FEATURE = { platforms: "Google and TikTok ads", pptx: "PowerPoint export", premium: "Best-quality images" };
+export const isPro = (a) => !!a && (!!a.owner || PRO_PLANS.includes(a.plan));
+// Opens the upgrade dialog (App.jsx). reason "pro_only" (with a PRO_FEATURE key) or "no_credits".
+export const askUpgrade = (reason, feature) => window.dispatchEvent(new CustomEvent("addoctor:upgrade", { detail: { reason, feature } }));
 
 const EMPTY = { config: null, account: null };
 let state = EMPTY;
@@ -38,8 +48,10 @@ export function loadBillingConfig() {
   return cfgP;
 }
 
+// accountFailed lets the page offer a retry instead of saying "Loading" forever.
 export async function loadAccount() {
-  try { const a = await apiFetch("/billing/me", { timeout: 20000, retries: 1 }); set({ account: a }); return a; } catch (e) { return null; }
+  try { const a = await apiFetch("/billing/me", { timeout: 20000, retries: 1 }); set({ account: a, accountFailed: false }); return a; }
+  catch (e) { if (!state.account) set({ accountFailed: true }); return null; }
 }
 export const clearAccount = () => set({ account: null });
 
@@ -69,6 +81,13 @@ export function useBillingOn() {
     return () => { subs.delete(f); };
   }, []);
   return on;
+}
+
+// True when a Pro-only control should show its lock: billing is on and this visitor is not on Pro or For Teams.
+export function useProLock() {
+  const [s, setS] = useState(state);
+  useEffect(() => { subs.add(setS); setS(state); loadBillingConfig(); return () => { subs.delete(setS); }; }, []);
+  return !!(s.config && s.config.enabled) && !isPro(s.account);
 }
 
 export async function saveSegment(segment) {
@@ -118,6 +137,12 @@ export async function openCheckout(priceKey, user, notify) {
   if (!cfg || !cfg.checkout) throw new Error("Payments are not open yet.");
   const priceId = cfg.prices && cfg.prices[priceKey];
   if (!priceId) throw new Error("That option is not available yet.");
+  // shortcut: there is no in-place plan change yet, and a second checkout would start a second Paddle subscription
+  // that keeps both billing. Upgrade by adding a Worker route that updates the subscription through Paddle's API.
+  const a = state.account;
+  if (/^(starter|pro|agency)_/.test(priceKey) && a && a.plan !== "free" && a.status !== "canceled") {
+    throw new Error(`You're on ${PLAN_NAME[a.plan] || a.plan} now. To switch, cancel it from the link in your Paddle receipt (it keeps working to the end of the period), then choose the new plan here.`);
+  }
   const P = await loadPaddle(cfg);
   onPaid = () => watchPurchase(notify);
   P.Checkout.open({
