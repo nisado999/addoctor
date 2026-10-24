@@ -747,6 +747,7 @@ Return ONLY JSON: {"thinking":"two short sentences","instruction":"one paragraph
   return t ? t + " Keep every other element exactly as it is, in the same size and place." : "";
 }
 
+const AD_CTAS = ["Shop Now", "Learn More", "Sign Up", "Get Offer", "Order Now", "Book Now", "Contact Us", "Download"];
 // Guided builder: the customer's answers (and what we read from their site) become three different ad concepts.
 async function planScratch(env, b) {
   const a = b.answers || {}, s = b.site || {};
@@ -759,10 +760,16 @@ THE BUSINESS
 ${facts}
 ${b.photos ? "Real photos of the product are provided, so every scene must feature that exact product." : "No product photo exists, so design the visual around the idea and do not claim to show the real product."}
 Rules: use only the facts above. ${a.offer ? "The offer may appear in the ad exactly as given." : "There is NO offer: print no discount, price, free shipping or deadline anywhere."} No invented numbers, ratings, awards or testimonials. Headlines are short (max 8 words), believable and in the language given, or the language of the brand.
-Return ONLY JSON: {"concepts":[{"title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here."}]}. Inside strings use single quotes, never double quotes.`, 1400);
+Return ONLY JSON: {"concepts":[{"title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.`, 2400);
   const list = (Array.isArray(o.concepts) ? o.concepts : []).slice(0, 3);
   if (list.length < 3) throw new Error("We could not plan the ads. Try again.");
-  return { concepts: list.map((c) => ({ title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700) })) };
+  return { concepts: list.map((c) => {
+    const k = c.copy && typeof c.copy === "object" ? c.copy : {};
+    return {
+      title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700),
+      copy: { primary: clip(k.primary, 320), headline: clip(k.headline, 60), description: clip(k.description, 50), cta: AD_CTAS.find((x) => x.toLowerCase() === String(k.cta || "").trim().toLowerCase()) || "Learn More" },
+    };
+  }) };
 }
 
 async function makeAd(env, b) {
@@ -1814,7 +1821,11 @@ async function handle(req, rawEnv, hooks) {
         if (u.pathname === "/pack/store") return json(env, await packStore(env, b));
         if (u.pathname === "/pack/brief") return json(env, { brief: await packBrief(env, b) });
         if (u.pathname === "/pack/posts") return json(env, { posts: await packPosts(env, b) });
-        if (u.pathname === "/pack/image") return json(env, await packImage(env, b, who));
+        if (u.pathname === "/pack/image") {
+          const out = await packImage(env, b, who);
+          out.grant = await signGrant(env, who ? who.id : "anon");   // free changes to this post go through /make/ad with it
+          return json(env, out);
+        }
         if (u.pathname === "/pack/review") return json(env, await packReview(env, b));
       }
       // ---- an ad from a template and a product photo ----

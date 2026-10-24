@@ -9,6 +9,8 @@ import { packShrink, packB64, packExt, packSave } from "./pack";
 
 const VIDEO_KEY = "addoctor.videobrief.v1";
 const VERSIONS = 3;
+const PASS_SCORE = 80;   // an ad under this review score is never shown
+const MAX_TRIES = 2;     // first render plus one remake
 const call = (path, body, signal) => apiFetch(path, { body, signal, timeout: 180000 });   // one image can take a while
 
 // type: text | area | choice. "site" marks what a website reading can answer. "custom" lets a choice be typed instead.
@@ -41,9 +43,22 @@ const read = (f) => new Promise((res, rej) => { const r = new FileReader(); r.on
 
 function Spinner() { return <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />; }
 
-function AdCard({ v, onDownload, onCheck, onRetry, busy }) {
-  const rv = v.review;
+function CopyRow({ label, text, onCopy }) {
+  if (!text) return null;
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <p className="text-xs text-slate-700"><span className="font-semibold text-slate-400">{label} </span>{text}</p>
+      <button onClick={() => onCopy(text)} aria-label={`Copy ${label}`} className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200 hover:text-slate-900">Copy</button>
+    </div>
+  );
+}
+
+function AdCard({ v, onDownload, onChange, onRetry, onCopy, unit, busy }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const rv = v.review, cp = v.copy;
   const tone = rv ? (rv.score >= 80 ? "bg-emerald-50 text-emerald-700 ring-emerald-100" : rv.score >= 60 ? "bg-amber-50 text-amber-700 ring-amber-100" : "bg-rose-50 text-rose-700 ring-rose-100") : "";
+  const apply = async () => { if (await onChange(v, text)) { setOpen(false); setText(""); } };
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
       <div className="relative bg-slate-100" style={{ aspectRatio: v.ratio.replace(":", " / ") }}>
@@ -65,11 +80,29 @@ function AdCard({ v, onDownload, onCheck, onRetry, busy }) {
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="text-sm font-semibold text-slate-900">{v.title}</p>
         <p className="text-xs text-slate-500">{v.angle}</p>
-        {rv && rv.fixes && rv.fixes[0] && <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-600">{rv.fixes[0]}</p>}
+        {cp && (cp.primary || cp.headline) && (
+          <div className="space-y-1.5 rounded-lg bg-slate-50 p-2.5">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ad copy</p>
+            <CopyRow label="Text" text={cp.primary} onCopy={onCopy} />
+            <CopyRow label="Headline" text={cp.headline} onCopy={onCopy} />
+            <CopyRow label="Description" text={cp.description} onCopy={onCopy} />
+            <p className="text-xs text-slate-700"><span className="font-semibold text-slate-400">Button </span>{cp.cta}</p>
+          </div>
+        )}
+        {v.src && open && (
+          <div className="rounded-lg bg-slate-50 p-2.5">
+            <label className="text-xs font-semibold text-slate-700" htmlFor={`chg-${v.i}`}>What should change?</label>
+            <textarea id={`chg-${v.i}`} rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Make the background lighter" className={field + " mt-1 !py-2 text-xs"} />
+            <div className="mt-2 flex gap-2">
+              <button disabled={busy || !text.trim()} onClick={apply} className="rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-40">Apply change</button>
+              <button onClick={() => setOpen(false)} className="text-xs font-semibold text-slate-500 hover:text-slate-900">Cancel</button>
+            </div>
+          </div>
+        )}
         {v.src && (
           <div className="mt-auto flex flex-wrap gap-2 pt-2">
             <button onClick={() => onDownload(v)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"><Icon.Download className="h-3.5 w-3.5" />Download</button>
-            <button disabled={busy} onClick={() => onCheck(v)} className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50">Check score</button>
+            <button disabled={busy} onClick={() => setOpen(!open)} className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50">{v.edits ? `Change again (${unit} credit${unit > 1 ? "s" : ""})` : "Change something (free)"}</button>
             <button disabled={busy} onClick={() => onRetry(v)} className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50">New version</button>
           </div>
         )}
@@ -142,8 +175,10 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
 
   const render = async (v, signal) => {
     const r = await call("/make/ad", { mode: "scratch", concept: v.concept, answers: ctxRef.current.answers, ratio: v.ratio, quality: "standard", ...refsNow() }, signal);
-    return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data };
+    return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, grant: r.grant || "" };
   };
+  // The full analysis: the same rubric as Check score, run on every ad before the customer sees it.
+  const review = async (src, v, signal) => call("/make/review", { image: await packShrink(src, 900), headline: v.concept.headline || "", refs: refsNow().refs.slice(0, 2), note: [val("sells"), val("offer") && `Offer: ${val("offer")}`].filter(Boolean).join(". ") }, signal);
 
   const finish = async () => {
     if (video) {
@@ -167,22 +202,31 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
       adsRef.current = plan.concepts.map((cn, i) => ({
         i, title: cn.title, angle: cn.angle, ratio,
         concept: noText ? { ...cn, headline: "", sub: "" } : typed ? { ...cn, headline: typed, sub: "" } : cn,
-        src: "", error: "", review: null,
+        copy: { ...cn.copy, ...(typed ? { headline: typed } : {}) },
+        src: "", error: "", review: null, edits: 0, held: false,
       }));
       setAds(adsRef.current);
-      let done = 0, failed = 0, n = 0;
+      let done = 0, held = 0, n = 0;
+      // An ad is only shown once its analysis reaches PASS_SCORE. One that misses is remade once; if it misses again it is held back.
       const worker = async () => {
         while (n < adsRef.current.length && !c.signal.aborted) {
           const v = adsRef.current[n++];
-          try { const im = await render(v, c.signal); setAd(v.i, im); done++; onSpend(unit); }
-          catch (e) { if (c.signal.aborted) return; setAd(v.i, { error: (e && e.message) || "The image failed" }); failed++; }
-          setStatus(`Creating images… ${done + failed} of ${VERSIONS}`);
+          let ok = false;
+          for (let t = 0; t < MAX_TRIES && !ok; t++) {
+            try {
+              setStatus(`Creating and checking your ads… ${done + held} of ${VERSIONS} done`);
+              const im = await render(v, c.signal); onSpend(unit);
+              const rv = await review(im.src, v, c.signal);
+              if (rv.score >= PASS_SCORE) { setAd(v.i, { ...im, review: rv }); ok = true; }
+            } catch (e) { if (c.signal.aborted) return; }
+          }
+          if (ok) done++; else { setAd(v.i, { held: true }); held++; }
         }
       };
       await Promise.all([worker(), worker()]);
       if (c.signal.aborted) return;
       setStatus(""); setPhase("done");
-      notify(failed ? `${done} ads ready, ${failed} need a retry.` : `Your ${done} ads are ready.`, 3200);
+      notify(done ? `Your ${done} ad${done > 1 ? "s are" : " is"} ready.` : "None of the ads reached our quality bar. Try again.", 3200);
     } catch (e) {
       if (c.signal.aborted) return;
       setErr((e && e.message) || "Something went wrong"); setPhase(adsRef.current.length ? "done" : "questions"); setStatus("");
@@ -198,18 +242,33 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
   const retry = async (v) => {
     if (credits < unit) { notify(`This needs ${unit} credit${unit > 1 ? "s" : ""} and you have ${credits}.`, 3200); return; }
     setBusy((b) => ({ ...b, [v.i]: true })); if (!v.src) setAd(v.i, { error: "" });
-    try { const im = await render(v, life.current.signal); setAd(v.i, { ...im, error: "", review: null }); onSpend(unit); }
+    try {
+      const im = await render(v, life.current.signal); onSpend(unit);
+      const rv = await review(im.src, v, life.current.signal).catch(() => null);
+      setAd(v.i, { ...im, error: "", review: rv, edits: 0 });
+    }
     catch (e) { if (life.current.signal.aborted) return; if (!v.src) setAd(v.i, { error: (e && e.message) || "Image failed" }); notify((e && e.message) || "The image failed", 3200); }
     setBusy((b) => ({ ...b, [v.i]: false }));
   };
-  const check = async (v) => {
+  // Every ad gets one free change; later ones cost a credit (with billing on the server decides, through the ad's grant).
+  const change = async (v, text) => {
+    const t = text.trim(); if (!t) return false;
+    const free = !v.edits;
+    if (!free && credits < unit) { notify(`This needs ${unit} credit${unit > 1 ? "s" : ""} and you have ${credits}.`, 3200); return false; }
     setBusy((b) => ({ ...b, [v.i]: true }));
+    let ok = false;
     try {
-      const rv = await call("/make/review", { image: await packShrink(v.src, 900), headline: v.concept.headline || "", refs: refsNow().refs.slice(0, 2), note: val("sells") }, life.current.signal);
-      setAd(v.i, { review: rv });
-    } catch (e) { if (!life.current.signal.aborted) notify((e && e.message) || "The check failed", 3000); }
+      const r = await call("/make/ad", { base: await packShrink(v.src, 1600), fix: t, grant: v.grant, ratio: v.ratio, quality: "standard", ...refsNow() }, life.current.signal);
+      if (!free && r.freeLeft === undefined) onSpend(unit);
+      const src = `data:${r.mime};base64,${r.data}`;
+      setAd(v.i, { src, mime: r.mime, b64: r.data, edits: v.edits + 1, review: null });
+      ok = true;
+      setAd(v.i, { review: await review(src, v, life.current.signal).catch(() => null) });
+    } catch (e) { if (!life.current.signal.aborted) notify((e && e.message) || "The change failed", 3200); }
     setBusy((b) => ({ ...b, [v.i]: false }));
+    return ok;
   };
+  const copyText = async (t) => { try { await navigator.clipboard.writeText(t); notify("Copied"); } catch (e) { notify("Could not copy. Select the text instead."); } };
   const download = (v) => packSave(new Blob([packB64(v.b64)], { type: v.mime }), `${(val("brand") || "ad").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${v.i + 1}.${packExt(v.mime)}`);
 
   const restart = () => { setPhase("source"); setStep(0); setAds([]); adsRef.current = []; setErr(""); setStatus(""); };
@@ -324,8 +383,9 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
           {err && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{err}</p>}
           {phase === "making" && !ads.length && <div className="mt-10"><Spinner /></div>}
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
-            {ads.map((v) => <AdCard key={v.i} v={v} busy={!!busy[v.i]} onDownload={download} onCheck={check} onRetry={retry} />)}
+            {ads.filter((v) => !v.held).map((v) => <AdCard key={v.i} v={v} busy={!!busy[v.i]} unit={unit} onDownload={download} onChange={change} onRetry={retry} onCopy={copyText} />)}
           </div>
+          {phase === "done" && ads.some((v) => v.held) && <p className="mt-4 text-sm text-slate-500">{ads.filter((v) => v.held).length} ad{ads.filter((v) => v.held).length > 1 ? "s were" : " was"} held back because {ads.filter((v) => v.held).length > 1 ? "they" : "it"} scored under {PASS_SCORE}/100 after a remake. We only hand over ads that pass.</p>}
         </div>
       )}
 

@@ -69,8 +69,10 @@ const PACK_TYPE_LABEL = {
   "flat-lay": "Flat lay", "benefit-callout": "Benefit", checklist: "Checklist", "brand-quote": "Brand voice", "behind-the-scenes": "Behind the scenes",
 };
 
-function PackCard({ post, onCopy, onDownload, onCheck, onFix, onSave, busy }) {
+function PackCard({ post, onCopy, onDownload, onCheck, onFix, onChange, onSave, unit, busy }) {
   const [saved, setSaved] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
   const full = [post.caption, (post.hashtags || []).join(" ")].filter(Boolean).join("\n\n");
   const rv = post.review;
   const tone = rv ? (rv.score >= 80 ? "emerald" : rv.score >= 60 ? "amber" : "rose") : "slate";
@@ -132,7 +134,19 @@ function PackCard({ post, onCopy, onDownload, onCheck, onFix, onSave, busy }) {
           </div>
         )}
 
+        {post.src && open && (
+          <div className="mt-3 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+            <label htmlFor={`chg-${post.index}`} className="text-xs font-semibold text-slate-700">What should change?</label>
+            <textarea id={`chg-${post.index}`} rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Make the background lighter" className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-slate-900 focus:outline-none" />
+            <div className="mt-2 flex gap-2">
+              <button disabled={busy || !text.trim()} onClick={async () => { if (await onChange(post, text)) { setOpen(false); setText(""); } }} className="rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-40">Apply change</button>
+              <button onClick={() => setOpen(false)} className="text-xs font-semibold text-slate-500 hover:text-slate-900">Cancel</button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-auto flex flex-wrap gap-2 pt-4">
+          <button disabled={!post.src || busy} onClick={() => setOpen(!open)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-40"><Icon.Wand className="h-3.5 w-3.5" />{post.edits ? `Change again (${unit} credit${unit > 1 ? "s" : ""})` : "Change something (free)"}</button>
           <button onClick={() => onCopy(full)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"><Icon.Copy className="h-3.5 w-3.5" />Copy caption</button>
           <button disabled={!post.src} onClick={() => onDownload(post)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-40"><Icon.Download className="h-3.5 w-3.5" />Download</button>
           <button disabled={!post.src || saved} onClick={async () => { if (await onSave(post)) setSaved(true); }} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-40"><Icon.Bookmark className="h-3.5 w-3.5" />{saved ? "Saved to Vault" : "Save to Vault"}</button>
@@ -188,7 +202,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
   const renderImage = async (post, fix, signal) => {
     const refs = refsRef.current.slice(0, 4);
     const r = await packCall("/pack/image", { refs, prompt: post.imagePrompt, overlayText: post.overlayText, brief: briefRef.current, quality: qualityRef.current, fix: fix || "" }, signal);
-    return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data };
+    return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, grant: r.grant || "" };
   };
 
   const fetchStore = async () => {
@@ -291,6 +305,23 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
       setP(p.index, p.src ? {} : { error: e.message, queued: false }); notify(e.message || "The image failed", 3200);
     }
     setBusy((b) => ({ ...b, [p.index]: false }));
+  };
+
+  // Every post gets one free change; later ones cost a credit (with billing on the server decides, through the post's grant).
+  const change = async (p, text) => {
+    const t = text.trim(); if (!t) return false;
+    const free = !p.edits;
+    if (!free && credits < unitOf()) { notify(`This needs ${unitOf()} credit${unitOf() > 1 ? "s" : ""} and you have ${credits}.`, 3200); return false; }
+    setBusy((b) => ({ ...b, [p.index]: true }));
+    let ok = false;
+    try {
+      const r = await packCall("/make/ad", { base: await packShrink(p.src, 1600), fix: t, grant: p.grant, ratio: "4:5", quality: qualityRef.current, refs: refsRef.current.slice(0, 3) }, life.current.signal);
+      if (!free && r.freeLeft === undefined) onSpend(unitOf());
+      setP(p.index, { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, edits: p.edits ? p.edits + 1 : 1, review: null });
+      ok = true;
+    } catch (e) { if (!life.current.signal.aborted) notify(e.message || "The change failed", 3200); }
+    setBusy((b) => ({ ...b, [p.index]: false }));
+    return ok;
   };
 
   const dl = (p) => packSave(new Blob([packB64(p.b64)], { type: p.mime }), `${String(p.index + 1).padStart(2, "0")}-${packSlug(p.title)}.${packExt(p.mime)}`);
@@ -494,7 +525,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
       </div>
       {err && <p className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-100">{err}</p>}
       <div id="pack-grid" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {posts.map((p) => <PackCard key={p.index} post={p} busy={!!busy[p.index]} onCopy={(t) => { copyText(t); notify("Caption copied."); }} onDownload={dl} onCheck={check} onFix={fix} onSave={saveToVault} />)}
+        {posts.map((p) => <PackCard key={p.index} post={p} busy={!!busy[p.index]} onCopy={(t) => { copyText(t); notify("Caption copied."); }} onDownload={dl} onCheck={check} onFix={fix} onChange={change} unit={unitOf()} onSave={saveToVault} />)}
       </div>
     </div>
   );
