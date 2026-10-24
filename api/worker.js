@@ -656,10 +656,13 @@ function imagePromptText(b, br) {
     ? `Print exactly this text on the image, spelled exactly as written, in clean modern typography with strong contrast and generous margins, nothing else written anywhere: "${clip(b.overlayText, 120)}".`
     : "Do not add any text, letters, captions, logos or watermarks anywhere in the image. Wording already printed on the product itself stays exactly as in the reference photos.";
   const fix = b.fix ? ` Important change to apply: ${clip(b.fix, 500)}` : "";
-  return `Create a photorealistic 4:5 portrait Instagram feed photo. ${style}${clip(b.prompt, 900)} ${text}${fix}`;
+  return `Create a photorealistic 4:5 portrait Instagram feed photo. ${style}${clip(b.prompt, 900)} ${PHOTO_DIRECTION}${text}${fix}`;
 }
 
 const FIDELITY = (n) => `The ${n > 1 ? n + " attached photos show" : "attached photo shows"} the REAL product${n > 1 ? " from different angles or in different colors" : ""}. They are the only source of truth for its design. Reproduce the product exactly: same shape, fabric, color, fit, logo, artwork and text, in the same position and size as in the photos. Do NOT add, invent, move, duplicate, restyle or crop any print, graphic, logo, text, patch, label, stitching or embroidery that is not visible in the photos. Any area of the product that the photos do not show (for example a back, a sleeve or a pocket) must stay plain and unprinted unless the photos show otherwise. Only the scene, the model, the light and the props are new. `;
+
+// The look of a real camera, not a render: this is what separates a shot that reads as photographed from one that reads as generated.
+const PHOTO_DIRECTION = "PHOTOGRAPHIC LOOK: shot on a full-frame camera with a 35mm or 50mm lens at f/2 to f/2.8, real depth of field, one clear focal point, natural fall-off at the edges. One soft, directional natural or cool daylight source (window, open shade, overcast sky) with believable shadows and honest colour, never an orange or yellow glow and never studio-flat light. A candid, caught-in-the-moment feel, not a posed render. Real surfaces and imperfections: visible skin pores and fine hair, fabric weave and creases, small scuffs and dust, fine film grain, true-to-life contrast with no plastic smoothing, no HDR look, no over-sharpening. Lived-in, specific settings (a real street, room or shop), not a blank studio, and a composition with foreground, subject and background layers. ";
 
 const inline = (x) => ({ inlineData: { mimeType: x.mime, data: x.data } });
 
@@ -681,7 +684,7 @@ async function geminiImage(env, parts, quality, ratio) {
     headers: { "x-goog-api-key": env.GEMINI_KEY, "content-type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts }],
-      generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: RATIOS.includes(ratio) ? ratio : "4:5" } },
+      generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: RATIOS.includes(ratio) ? ratio : "4:5", ...(quality === "premium" ? { imageSize: "2K" } : {}) } },
     }),
   });
   const j = await r.json().catch(() => ({}));
@@ -790,7 +793,7 @@ async function makeAd(env, b) {
     return geminiImage(env, [...refs.map(inline), { text: `Create a polished ${ratio} advert for Facebook and Instagram, designed from scratch for ${brand || "this business"}. ${a.sells ? "It sells: " + clip(a.sells, 240) + ". " : ""}${a.tone ? "Tone: " + clip(a.tone, 100) + ". " : ""}
 ${c.product ? `The product, as in the photos: ${clip(c.product, 300)}. ` : ""}Concept: ${clip(c.angle, 140)}. Scene and layout: ${clip(c.scene, 700)}
 ${refs.length ? PRODUCT_TRUTH(refs.length) + " Show the real product clearly and fully in frame." : "There is no product photo, so do not invent a specific branded product, logo or packaging; let the idea and the scene carry the ad."}
-People, if any, look real with natural hands and faces. Natural or cool light, never an orange glow. ${a.offer ? `The offer may be shown exactly as written, spelled exactly: "${clip(a.offer, 80)}".` : "Show no discount, price or offer anywhere."}
+People, if any, look real with natural hands and faces. ${PHOTO_DIRECTION}${a.offer ? `The offer may be shown exactly as written, spelled exactly: "${clip(a.offer, 80)}".` : "Show no discount, price or offer anywhere."}
 ${words}` }], b.quality, ratio);
   }
   if (!refs.length && !b.resize && !b.base) throw new Error("Add a photo of your product first");   // a saved ad opened from the Vault is edited without product photos
