@@ -1,5 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /404.html
-
-Sitemap: https://nisado999.github.io/addoctor/sitemap.xml
