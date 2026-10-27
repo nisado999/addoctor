@@ -1,6 +1,7 @@
 /* Hand-set order for the Featured sort. FEATURED_TOP come first, in this order; FEATURED_LAST sink to the end.
    Everything else keeps its order in data.jsx. Edit these two lists to curate the gallery. */
 const FEATURED_TOP = [
+  "cr-coat", "cr-dogtreats", "cr-hairoil", "cr-hoodies", "cr-petbed", "cr-powerbank", "cr-puffer", "cr-runshoe",
   "cr-coldbrew", "cr-sunglasses", "cr-serum", "cr-socks", "cr-earbuds", "cr-gummies", "cr-lipstick", "cr-armchair", "cr-chilicrisp", "cr-perfume", "cr-rainboots", "cr-towels", "cr-denim-car", "cr-suit",
   "ec9-bag-bf", "ec9-bag-cyber", "ec9-bag-xmas", "ec9-bag-halloween", "ec9-bag-valentine", "ec9-bag-summer", "ec9-bag-sneaker", "ec9-bag-beauty", "ec9-bag-newyear", "ec9-bag-easter",
   "ec8-creatine", "ec8-collagen", "ec8-bands", "ec8-runshoes", "ec8-preworkout", "ec8-dumbbells", "ec8-earrings", "ec8-mensrwatch", "ec8-pearls", "ec8-coffeebag", "ec8-hotsauce", "ec8-tea", "ec8-chocolate", "ec8-dogtreats", "ec8-catfountain", "ec8-vacuum", "ec8-airfryer", "ec8-cleaner", "ec8-baby", "ec8-thanksgiving", "ec8-y2kmegasale", "ec8-laborday", "ec8-grooming", "ec8-christmastech",
