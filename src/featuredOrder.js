@@ -13,5 +13,5 @@ const FEATURED_TOP = [
   "two-receipts-boots", "chat-insoles-shift", "selfie-captions-serum", "four-reasons-candle",
   "strikethrough-bottle", "compare-old-vs-new-bag", "timeline-7-14-30-nights", "notes-list-topper", "chat-espresso-group",
 ];
-const FEATURED_LAST = ["hero-product", "masthead-behind", "sand-message", "thermal-recovery", "scent-notes-map", "split-proof"];
+const FEATURED_LAST = ["hero-product", "masthead-behind", "sand-message", "split-proof"];
 export { FEATURED_TOP, FEATURED_LAST };

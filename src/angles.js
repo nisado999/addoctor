@@ -4,9 +4,9 @@
 
 export const SPY_ANGLES = [
   { id: "offer", label: "Discount / offer", tpl: "price-receipt", re: /(\d{1,2}\s?%\s?off|\$\d+\s?off|save\s\$?\d+|\bsale\b|\bbogo\b|buy\s(?:one|two|\d)\b[^.]*\bget\b|free shipping|\bbundle\b|\bcode\s+[A-Z0-9]{3,}|discount)/gi },
-  { id: "urgency", label: "Urgency / scarcity", tpl: "offer-lookbook", re: /(ends\s+(?:tonight|today|soon|sunday|monday|tuesday|wednesday|thursday|friday|saturday)|last chance|limited time|final hours|today only|while (?:supplies|stock)s? last|selling out|hurry|don't miss|only \d+ left)/gi },
+  { id: "urgency", label: "Urgency / scarcity", tpl: "ad-low-stock", re: /(ends\s+(?:tonight|today|soon|sunday|monday|tuesday|wednesday|thursday|friday|saturday)|last chance|limited time|final hours|today only|while (?:supplies|stock)s? last|selling out|hurry|don't miss|only \d+ left)/gi },
   { id: "proof", label: "Social proof", tpl: "review-stack", re: /(\d[\d,]*\+?\s(?:five-star\s)?(?:reviews|customers|people|happy)|★|5-star|five-star|\brated\b|dermatolog|clinically|\bdoctor|testimonial|"[^"]{10,}"|“[^”]{10,}”|trusted by|best[- ]?seller|#1\b)/gi },
-  { id: "problem", label: "Problem → solution", tpl: "mirror-pas", re: /(tired of|sick of|struggl|still (?:dealing|using|paying)|no more\b|stop (?:\w+ing)|breakout|flare|redness|red, |frustrat|finally|if you(?:'re| are)|ever (?:feel|wonder))/gi },
+  { id: "problem", label: "Problem → solution", tpl: "ad-problem-solution", re: /(tired of|sick of|struggl|still (?:dealing|using|paying)|no more\b|stop (?:\w+ing)|breakout|flare|redness|red, |frustrat|finally|if you(?:'re| are)|ever (?:feel|wonder))/gi },
   { id: "mechanism", label: "Product mechanism", tpl: "ingredient-dissection", re: /(ingredient|formula|niacinamide|ceramide|hyaluronic|peptide|\bspf\s?\d+|no white cast|mineral|hall-effect|lightweight|absorbs|engineered|patent|technology|made with|infused)/gi },
   { id: "compare", label: "Comparison", tpl: "us-vs-them", re: /(\svs\.?\s|versus|unlike|compared to|better than|other brands|the difference|switch(?:ed)? from|instead of)/gi },
   { id: "founder", label: "Founder / brand story", tpl: "founder-note", re: /(founder|i built|i started|our story|why we (?:made|built|started)|we started|after years)/gi },
