@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-throw", type: "static", trending: true, isNew: true, brandName: "HYGGELY",
+    category: "Home & Decor", label: "Home & Decor", title: "Cozy Is a Category",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "COZY IS A CATEGORY: 30% OFF", text: "Cozy Is a Category", sign: "HYGGELY", tag: "Home & Decor" },
+    why: ["A woman wrapped in a chunky knit throw with a hot mug is winter comfort.","Cream serif printed on the dark wall behind her stays readable."],
+    headline: "COZY IS A CATEGORY: 30% OFF",
+    primary: "A woman wrapped in a cream knit throw holding a mug on a grey sofa. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-sneakerduo", type: "static", trending: true, isNew: true, brandName: "NIMBUS",
+    category: "Fashion", label: "Fashion", title: "New Drop Sneakers",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "NEW DROP: 2 FOR $120", text: "New Drop Sneakers", sign: "NIMBUS", tag: "Fashion" },
+    why: ["Two friends in cream hoodies and white sneakers on baby blue is a clean flash campaign.","White type with a navy shadow reads clearly against the backdrop."],
+    headline: "NEW DROP: 2 FOR $120",
+    primary: "A man and a woman in cream hoodies and white sneakers on a baby-blue backdrop. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-sundress", type: "static", trending: true, isNew: true, brandName: "MARIGOLD",
+    category: "Fashion", label: "Fashion", title: "Sundress Season",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SUNDRESS SEASON. 3 FOR $75", text: "Sundress Season", sign: "MARIGOLD", tag: "Fashion" },
+    why: ["A woman twirling in a butter-yellow dress at golden hour is the feeling summer sells.","Burnt-orange script on the glowing sky has strong contrast."],
+    headline: "SUNDRESS SEASON. 3 FOR $75",
+    primary: "A woman laughing and twirling in a yellow sundress in a wheat field at golden hour. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-tennis", type: "static", trending: true, isNew: true, brandName: "ACEHOUSE",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Game Set Sale",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
@@ -180,9 +207,9 @@ const TEMPLATES = [
     id: "cr-baby", type: "static", trending: true, isNew: true, brandName: "LITTLE LOOM",
     category: "Kids & Baby", label: "Kids & Baby", title: "Tiny and Snug",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TINY AND SNUG. BABY ROMPERS 3 FOR $30", text: "Tiny and Snug", sign: "LITTLE LOOM", tag: "Kids & Baby" },
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TINY AND SNUG: 3 FOR $30", text: "Tiny and Snug", sign: "LITTLE LOOM", tag: "Kids & Baby" },
     why: ["A laughing baby in an oatmeal romper is warm and shows the product clearly.","Deep brown thin serif on soft cream stays calm and readable."],
-    headline: "TINY AND SNUG. BABY ROMPERS 3 FOR $30",
+    headline: "TINY AND SNUG: 3 FOR $30",
     primary: "A laughing baby in an oatmeal knit romper on a cream blanket. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
