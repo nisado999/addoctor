@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-speaker", type: "static", trending: true, isNew: true, brandName: "BOOMLY",
+    category: "Electronics", label: "Electronics", title: "Turn It Up",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TURN IT UP. 2 FOR $70", text: "Turn It Up", sign: "BOOMLY", tag: "Electronics" },
+    why: ["A big orange speaker on a plinth in a lilac arch is unmistakable.","Deep plum serif sits on the wall above it with strong contrast."],
+    headline: "TURN IT UP. 2 FOR $70",
+    primary: "An orange portable speaker on a cream plinth in a lilac arched room. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-linen", type: "static", trending: true, isNew: true, brandName: "SALTWELL",
+    category: "Fashion", label: "Fashion", title: "Linen Days",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LINEN DAYS. 2 FOR $90", text: "Linen Days", sign: "SALTWELL", tag: "Fashion" },
+    why: ["A couple in matching sand linen against terracotta is a clean summer campaign.","Deep brown serif on the warm wall reads easily."],
+    headline: "LINEN DAYS. 2 FOR $90",
+    primary: "A man and a woman in matching linen shirts and trousers against a terracotta wall. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-bootsroof", type: "static", trending: true, isNew: true, brandName: "TANNERY",
+    category: "Fashion", label: "Fashion", title: "Boot Weather",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BOOT WEATHER. 25% OFF", text: "Boot Weather", sign: "TANNERY", tag: "Fashion" },
+    why: ["A model on a classic car roof in leather chelsea boots shows the product clearly.","Bold charcoal serif on the pale sky has strong contrast."],
+    headline: "BOOT WEATHER. 25% OFF",
+    primary: "A woman in a camel coat and brown chelsea boots sitting on a classic car roof on an autumn street. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-throw", type: "static", trending: true, isNew: true, brandName: "HYGGELY",
     category: "Home & Decor", label: "Home & Decor", title: "Cozy Is a Category",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
