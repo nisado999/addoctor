@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-guestbook", type: "static", trending: true, isNew: true, brandName: "OUR DAY",
+    category: "Wedding & Events", label: "Wedding & Events", title: "Guest Books Hand Hold",
+    format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GUEST BOOKS: 2 FOR $30", text: "Guest Books Hand Hold", sign: "OUR DAY", tag: "Wedding & Events" },
+    why: ["A cream linen guest book held up against dusty blue says wedding at once.","Deep navy and cream type comes from the blue wall and the linen cover."],
+    headline: "GUEST BOOKS: 2 FOR $30",
+    primary: "A hand holding a cream linen wedding guest book against a dusty-blue wall. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-yogateal", type: "static", trending: true, isNew: true, brandName: "STILLWATER",
     category: "Health & Wellness", label: "Health & Wellness", title: "Yoga Mats Hand Hold",
     format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
