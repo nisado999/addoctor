@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-dogtoy", type: "static", trending: true, isNew: true, brandName: "TUGGLE",
+    category: "Pets", label: "Pets", title: "Tug of War",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TUG OF WAR: 3 FOR $15", text: "Tug of War", sign: "TUGGLE", tag: "Pets" },
+    why: ["A spaniel mid-tug on a bright orange rope toy shows the product working.","White type with a navy outline pops against the blue sky."],
+    headline: "TUG OF WAR: 3 FOR $15",
+    primary: "A spaniel tugging a braided orange rope toy on sunny grass. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-bride", type: "static", trending: true, isNew: true, brandName: "ELOWEN",
+    category: "Wedding & Events", label: "Wedding & Events", title: "Say Yes to the Dress",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SAY YES TO THE DRESS. 15% OFF", text: "Say Yes to the Dress", sign: "ELOWEN", tag: "Wedding & Events" },
+    why: ["A bride laughing in a sunlit garden is the feeling the product sells.","Thin cream serif sits on soft greenery with the offer inside the headline."],
+    headline: "SAY YES TO THE DRESS. 15% OFF",
+    primary: "A laughing bride in an ivory satin dress with a long veil in a sunlit garden. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-giftbox", type: "static", trending: true, isNew: true, brandName: "GIFT & CO",
     category: "Holidays & Offers", label: "Holidays & Offers", title: "Gift Sets Hand Hold",
     format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
