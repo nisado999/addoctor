@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-giftbox", type: "static", trending: true, isNew: true, brandName: "GIFT & CO",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Gift Sets Hand Hold",
+    format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GIFT SETS 2 FOR $40", text: "Gift Sets Hand Hold", sign: "GIFT & CO", tag: "Holidays & Offers" },
+    why: ["A red gift box with a gold ribbon is instantly a holiday gift.","Cream and red type comes from the box on a forest-green wall."],
+    headline: "GIFT SETS 2 FOR $40",
+    primary: "A hand holding a red gift box with a gold ribbon against a green wall. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-passport", type: "static", trending: true, isNew: true, brandName: "VOYAGE",
+    category: "Travel", label: "Travel", title: "Travel Wallets Hand Hold",
+    format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TRAVEL WALLETS: 2 FOR $20", text: "Travel Wallets Hand Hold", sign: "VOYAGE", tag: "Travel" },
+    why: ["A tan leather passport holder with a boarding pass says travel at a glance.","Orange and cream type is taken from the leather and the sky-blue wall."],
+    headline: "TRAVEL WALLETS: 2 FOR $20",
+    primary: "A hand holding a tan leather passport holder against a sky-blue wall. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-nailpolish", type: "static", trending: true, isNew: true, brandName: "LACQUERA",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Nail Polish Hand Hold",
+    format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "NAIL POLISH 3 FOR $15", text: "Nail Polish Hand Hold", sign: "LACQUERA", tag: "Beauty & Skincare" },
+    why: ["One cherry-red bottle held up beside matching nails is the whole ad.","Cherry red and cream type comes straight from the polish."],
+    headline: "NAIL POLISH 3 FOR $15",
+    primary: "A hand with red nails holding a nail polish bottle against a cream wall. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-bridesmaid", type: "static", trending: true, isNew: true, brandName: "VOW & CO",
     category: "Wedding & Events", label: "Wedding & Events", title: "Bridesmaid Box",
     format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
