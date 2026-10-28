@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-bridesmaid", type: "static", trending: true, isNew: true, brandName: "VOW & CO",
+    category: "Wedding & Events", label: "Wedding & Events", title: "Bridesmaid Box",
+    format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WILL YOU BE MY BRIDESMAID? BRIDESMAID BOXES $25", text: "Bridesmaid Box", sign: "VOW & CO", tag: "Wedding & Events" },
+    why: ["An open gift box with champagne and a candle is the whole proposal.","Gold script on blush pink feels like a real wedding brand."],
+    headline: "WILL YOU BE MY BRIDESMAID? BRIDESMAID BOXES $25",
+    primary: "A hand holding an open bridesmaid gift box against a blush wall. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-boots", type: "static", trending: true, isNew: true, brandName: "KICKR",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "New Season New Boots",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "NEW SEASON. NEW BOOTS. FOOTBALL BOOTS 20% OFF", text: "New Season New Boots", sign: "KICKR", tag: "Sport & Fitness" },
+    why: ["A player lacing neon boots under floodlights shows the product in use.","Brush script in the dusk sky sits clear of his head."],
+    headline: "NEW SEASON. NEW BOOTS. FOOTBALL BOOTS 20% OFF",
+    primary: "A footballer lacing bright yellow boots on a pitch at dusk. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-blackfriday-denim", type: "static", trending: true, isNew: true, brandName: "RANCHER",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Black Friday Denim",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BLACK FRIDAY. JEANS 2 FOR $80", text: "Black Friday Denim", sign: "RANCHER", tag: "Holidays & Offers" },
+    why: ["Two models back to back in head-to-toe denim on red is a real flash campaign.","Hand-brushed cream script says the sale without clutter."],
+    headline: "BLACK FRIDAY. JEANS 2 FOR $80",
+    primary: "A man and a woman back to back in light-wash denim on a red backdrop. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-baby", type: "static", trending: true, isNew: true, brandName: "LITTLE LOOM",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Tiny and Snug",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TINY AND SNUG. BABY ROMPERS 3 FOR $30", text: "Tiny and Snug", sign: "LITTLE LOOM", tag: "Kids & Baby" },
+    why: ["A laughing baby in an oatmeal romper is warm and shows the product clearly.","Deep brown thin serif on soft cream stays calm and readable."],
+    headline: "TINY AND SNUG. BABY ROMPERS 3 FOR $30",
+    primary: "A laughing baby in an oatmeal knit romper on a cream blanket. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-y2kshades", type: "static", trending: true, isNew: true, brandName: "FLASHBACK",
     category: "Fashion", label: "Fashion", title: "Shades Up",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
@@ -98,11 +134,11 @@ const TEMPLATES = [
   {
     id: "cr-mouse", type: "static", trending: true, isNew: true, brandName: "CLICKR",
     category: "Electronics", label: "Electronics", title: "Cyber Monday Mouse",
-    format: "4:5 · Static · Hand-held product with warped type", framework: "Offer",
+    format: "4:5 · Static · Product with warped type", framework: "Offer",
     art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CYBER MONDAY: 40% OFF", text: "Cyber Monday Mouse", sign: "CLICKR", tag: "Electronics" },
-    why: ["A hand on a glowing white mouse is instantly a gaming-mouse ad.","Cyan and pink warped type matches the purple glow."],
+    why: ["A single glowing white mouse on a purple desk is instantly a gaming-mouse ad.","Cyan and pink warped type matches the purple glow."],
     headline: "CYBER MONDAY: 40% OFF",
-    primary: "A hand on a white gaming mouse on a purple desk. The brand shown is a made-up placeholder: your name and logo replace it.",
+    primary: "A white gaming mouse alone on a purple desk. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "cr-mothersday", type: "static", trending: true, isNew: true, brandName: "LUMEX",
