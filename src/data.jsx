@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-cozyslippers", type: "static", trending: true, isNew: true, brandName: "SOFTSTEP",
+    category: "Home & Decor", label: "Home & Decor", title: "Soft Landing",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SOFT LANDING. SLIPPERS 2 FOR $25", text: "Soft Landing", sign: "SOFTSTEP", tag: "Home & Decor" },
+    why: ["A relaxed man in pyjamas with grey fleece slippers up on a stool makes the slippers big and cosy.","Warm brown rounded lettering stacks at the upper right over the soft wall."],
+    headline: "SOFT LANDING. SLIPPERS 2 FOR $25",
+    primary: "A relaxed man in navy pyjamas sitting on a sofa with a mug, his feet in thick grey fleece-lined slippers on a stool in soft window light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-desklamps", type: "static", trending: true, isNew: true, brandName: "GLOWDESK",
+    category: "Home & Decor", label: "Home & Decor", title: "Light Up Your Desk",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LIGHT UP YOUR DESK. LAMPS 30% OFF", text: "Light Up Your Desk", sign: "GLOWDESK", tag: "Home & Decor" },
+    why: ["A man working on a laptop under a warm black LED desk lamp makes the lamp and the cosy mood clear.","Warm cream condensed lettering stacks in the upper left over the dark wall."],
+    headline: "LIGHT UP YOUR DESK. LAMPS 30% OFF",
+    primary: "A relaxed young man in a green jumper working on a laptop at a wooden desk in the evening beside a matte black adjustable LED desk lamp. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-kitchenscales", type: "static", trending: true, isNew: true, brandName: "WEIGHWELL",
+    category: "Home & Decor", label: "Home & Decor", title: "Weigh It Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WEIGH IT UP. KITCHEN SCALES 25% OFF", text: "Weigh It Up", sign: "WEIGHWELL", tag: "Home & Decor" },
+    why: ["A happy baker weighing flour on a slim digital scale makes the product obvious in a real moment.","Deep teal chunky lettering stacks on the right over the pale kitchen wall."],
+    headline: "WEIGH IT UP. KITCHEN SCALES 25% OFF",
+    primary: "A cheerful woman in a floral apron weighing flour into a bowl on a slim white digital kitchen scale with eggs and a rolling pin beside it. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-bikelights", type: "static", trending: true, isNew: true, brandName: "LUMEN",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Ride Safe",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "RIDE SAFE. BIKE LIGHTS 2 FOR $15", text: "Ride Safe", sign: "LUMEN", tag: "Sport & Fitness" },
+    why: ["A smiling commuter with a bright front bike light on a dusk city street shows the light doing its job.","White bold lettering stacks at the lower left over the dark road."],
+    headline: "RIDE SAFE. BIKE LIGHTS 2 FOR $15",
+    primary: "A smiling cyclist in a helmet and reflective jacket riding a commuter bike with a bright white front light on a city street at dusk. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-gardengloves", type: "static", trending: true, isNew: true, brandName: "GROWWELL",
     category: "Home & Decor", label: "Home & Decor", title: "Dig In",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
