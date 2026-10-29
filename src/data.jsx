@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-babybibs", type: "static", trending: true, isNew: true, brandName: "MESSYFUN",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Messy Fun",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "MESSY FUN. BABY BIBS 3 FOR $15", text: "Messy Fun", sign: "MESSYFUN", tag: "Kids & Baby" },
+    why: ["A laughing baby in a mustard silicone bib covered in carrot makes the bib the hero in a real mealtime.","Deep teal rounded lettering stacks at the upper left over the pale kitchen wall."],
+    headline: "MESSY FUN. BABY BIBS 3 FOR $15",
+    primary: "A laughing baby in a high chair wearing a mustard silicone food-catcher bib covered in mashed carrot with a smiling mum beside in a bright kitchen. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-cosyhotwaterbottles", type: "static", trending: true, isNew: true, brandName: "SNUGGLE",
+    category: "Health & Wellness", label: "Health & Wellness", title: "Warm Hugs",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WARM HUGS. HOT WATER BOTTLES 2 FOR $20", text: "Warm Hugs", sign: "SNUGGLE", tag: "Health & Wellness" },
+    why: ["A woman hugging a knitted grey hot water bottle on a green sofa on a cold evening is cosy and clear.","Warm cream lettering stacks at the upper right over the dark wall."],
+    headline: "WARM HUGS. HOT WATER BOTTLES 2 FOR $20",
+    primary: "A cosy woman in a cream jumper on a dark green sofa hugging a knitted-cover grey hot water bottle with a mug of tea and a lit lamp beside her. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-smoothieblenders", type: "static", trending: true, isNew: true, brandName: "WHIZZ",
+    category: "Home & Decor", label: "Home & Decor", title: "Blend It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BLEND IT. BLENDERS 30% OFF", text: "Blend It", sign: "WHIZZ", tag: "Home & Decor" },
+    why: ["A cheerful man pouring a green smoothie from a white countertop blender makes the product and the result clear.","Deep green bold lettering sits along the bottom over the counter."],
+    headline: "BLEND IT. BLENDERS 30% OFF",
+    primary: "A cheerful young man in a grey tee pouring a green smoothie from a sleek white countertop blender with fresh fruit in a bright kitchen. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-alarmclocks", type: "static", trending: true, isNew: true, brandName: "DAWNBELL",
     category: "Home & Decor", label: "Home & Decor", title: "Rise and Shine",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
