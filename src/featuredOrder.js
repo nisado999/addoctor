@@ -1,6 +1,7 @@
 /* Hand-set order for the Featured sort. FEATURED_TOP come first, in this order; FEATURED_LAST sink to the end.
    Everything else keeps its order in data.jsx. Edit these two lists to curate the gallery. */
 const FEATURED_TOP = [
+  "cr-mistletoe", "cr-petstocking", "cr-pudding", "cr-santahat", "cr-santasack", "cr-snowmankit", "cr-treeskirt", "cr-treetopper", "cr-velvetdress",
   "cr-cakestand", "cr-decanter", "cr-oversizedshirt", "cr-placemats", "cr-plantstand", "cr-shoerack", "cr-snufflemat", "cr-wallmirror",
   "cr-blouse", "cr-catgrass", "cr-deskorganiser", "cr-drill", "cr-guitar", "cr-karaokemic", "cr-paintbynumbers", "cr-wateringcan", "cr-welcomesign",
   "cr-beret", "cr-carwashkit", "cr-ebike", "cr-playtent", "cr-treatjar",
