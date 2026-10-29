@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-cabinbags", type: "static", trending: true, isNew: true, brandName: "SKYLARK",
+    category: "Travel", label: "Travel", title: "Carry On",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CARRY ON. CABIN BAGS 30% OFF", text: "Carry On", sign: "SKYLARK", tag: "Travel" },
+    why: ["A laughing traveller pulling a mint hard-shell cabin case through a bright airport shows the product in use.","White bold lettering reads clearly on the bright terminal ceiling."],
+    headline: "CARRY ON. CABIN BAGS 30% OFF",
+    primary: "A cheerful young traveller with a backpack strap on one shoulder pulling a hard-shell mint green cabin suitcase through a bright modern airport terminal. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-throwblankets", type: "static", trending: true, isNew: true, brandName: "HEARTHWOOL",
+    category: "Home & Decor", label: "Home & Decor", title: "Sofa Season",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SOFA SEASON. THROW BLANKETS 2 FOR $40", text: "Sofa Season", sign: "HEARTHWOOL", tag: "Home & Decor" },
+    why: ["A woman curled up in a chunky mustard knit throw with a mug and rain on the window is pure cosy.","Warm cream serif lettering glows against the dark rainy window."],
+    headline: "SOFA SEASON. THROW BLANKETS 2 FOR $40",
+    primary: "A relaxed young woman with a messy bun curled up on a sofa under a chunky mustard-and-cream knitted throw blanket with fringe, holding a mug of tea with rain on the window behind. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-totebags", type: "static", trending: true, isNew: true, brandName: "MARKET & CO",
+    category: "Fashion", label: "Fashion", title: "Bag It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BAG IT. TOTE BAGS 3 FOR $15", text: "Bag It", sign: "MARKET & CO", tag: "Fashion" },
+    why: ["A smiling shopper carrying a canvas tote full of vegetables and a baguette at a sunny market is a real-life use shot.","Dark green serif lettering sits on the market awnings above her."],
+    headline: "BAG IT. TOTE BAGS 3 FOR $15",
+    primary: "A friendly woman with wavy hair carrying a natural canvas tote bag overflowing with fresh vegetables and a baguette through a sunny farmers market. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-dogbeds", type: "static", trending: true, isNew: true, brandName: "SNOOZEWORKS",
+    category: "Pets", label: "Pets", title: "Snooze Control",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SNOOZE CONTROL. DOG BEDS 30% OFF", text: "Snooze Control", sign: "SNOOZEWORKS", tag: "Pets" },
+    why: ["A sleeping French bulldog in a plush oatmeal donut bed makes the bed the obvious hero.","Deep blue bold rounded lettering reads clearly on the pale wall above."],
+    headline: "SNOOZE CONTROL. DOG BEDS 30% OFF",
+    primary: "A sleeping grey and white French bulldog curled up in a plush round oatmeal donut-shaped dog bed on a wooden floor in a bright living room. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-yogamats", type: "static", trending: true, isNew: true, brandName: "ROLLWELL",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Roll Out",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
