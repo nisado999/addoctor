@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-spinmop", type: "static", trending: true, isNew: true, brandName: "SPINZY",
+    category: "Home & Decor", label: "Home & Decor", title: "Mop Up",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "MOP UP. SPIN MOPS 25% OFF", text: "Mop Up", sign: "SPINZY", tag: "Home & Decor" },
+    why: ["A spin mop and bucket on a gleaming wooden hallway floor against yellow is bright and clear.","Deep teal type sits on the pale yellow wall above the mop."],
+    headline: "MOP UP. SPIN MOPS 25% OFF",
+    primary: "A modern spin mop in a bucket with a spinner standing on a gleaming wooden floor in a bright hallway. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-groutcleaner", type: "static", trending: true, isNew: true, brandName: "GROUTY",
+    category: "Home & Decor", label: "Home & Decor", title: "Grime Time Over",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GRIME TIME OVER. GROUT CLEANERS 2 FOR $14", text: "Grime Time Over", sign: "GROUTY", tag: "Home & Decor" },
+    why: ["A split-screen of grimy grout beside sparkling white grout tells the story at a glance.","Deep teal type reads clearly across both halves."],
+    headline: "GRIME TIME OVER. GROUT CLEANERS 2 FOR $14",
+    primary: "A split-screen of grimy dark bathroom tile grout on the left and bright white sparkling grout on the right with a grout cleaner bottle. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-dishsoap", type: "static", trending: true, isNew: true, brandName: "SUDSTER",
+    category: "Home & Decor", label: "Home & Decor", title: "Plate Expectations",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "PLATE EXPECTATIONS. WASHING-UP LIQUID 3 FOR $10", text: "Plate Expectations", sign: "SUDSTER", tag: "Home & Decor" },
+    why: ["A yellow bottle of washing-up liquid beside clean plates and a lemon on mint is fresh and clear.","Deep teal type sits on the pale mint wall above the bottle."],
+    headline: "PLATE EXPECTATIONS. WASHING-UP LIQUID 3 FOR $10",
+    primary: "A bright yellow bottle of washing-up liquid beside a stack of clean white plates and a lemon on a pale kitchen counter. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-pilatesring", type: "static", trending: true, isNew: true, brandName: "RINGLEADER",
     category: "Health & Wellness", label: "Health & Wellness", title: "Ring Leader",
     format: "4:5 · Static · Product concept", framework: "Offer",
