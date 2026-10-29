@@ -1,5 +1,13 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "cr-strawbag": 1793258459,
+  "cr-mixingbowls": 1793258458,
+  "cr-kidsscooter": 1793258457,
+  "cr-pencilcase": 1793258456,
+  "cr-telescope": 1793258455,
+  "cr-petdoor": 1793258454,
+  "cr-chessset": 1793258453,
+  "cr-binoculars": 1793258452,
   "cr-yoyo": 1793257244,
   "cr-trainset": 1793257243,
   "cr-tapemeasure": 1793257242,
