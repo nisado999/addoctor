@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-washitape", type: "static", trending: true, isNew: true, brandName: "TAPEESCAPE",
+    category: "Home & Decor", label: "Home & Decor", title: "Tape Escape",
+    format: "4:5 · Static · Price-anchor flat lay", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TAPE ESCAPE. WASHI TAPE 6 FOR $10", text: "Tape Escape", sign: "TAPEESCAPE", tag: "Home & Decor" },
+    why: ["A ring of patterned washi tape rolls with scissors on cream is crafty and clear.","Deep teal type sits on the clear cream surface above the rolls."],
+    headline: "TAPE ESCAPE. WASHI TAPE 6 FOR $10",
+    primary: "An overhead flat lay of a ring of patterned washi tape rolls with copper scissors and torn tape strips on a cream surface. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-keyring", type: "static", trending: true, isNew: true, brandName: "KEYMOMENT",
+    category: "Fashion", label: "Fashion", title: "Key Moment",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "KEY MOMENT. LEATHER KEYRINGS 3 FOR $15", text: "Key Moment", sign: "KEYMOMENT", tag: "Fashion" },
+    why: ["Colourful leather tassel keyrings on a pale wood table against butter yellow are warm and clear.","Deep brown type sits on the butter-yellow wall above the keyrings."],
+    headline: "KEY MOMENT. LEATHER KEYRINGS 3 FOR $15",
+    primary: "A set of colourful leather tassel keyrings fanned on a pale wooden table. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-highlighters", type: "static", trending: true, isNew: true, brandName: "MARKUP",
+    category: "Home & Decor", label: "Home & Decor", title: "Highlight Reel",
+    format: "4:5 · Static · Price-anchor flat lay", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "HIGHLIGHT REEL. HIGHLIGHTERS 6 FOR $12", text: "Highlight Reel", sign: "MARKUP", tag: "Home & Decor" },
+    why: ["Six pastel highlighters fanned over a marked-up page is clear and tidy.","Deep navy type sits on the white desk above the pens."],
+    headline: "HIGHLIGHT REEL. HIGHLIGHTERS 6 FOR $12",
+    primary: "An overhead flat lay of six pastel highlighter pens fanned beside a page of highlighted notes on a white desk. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-calculator", type: "static", trending: true, isNew: true, brandName: "ADDITUP",
+    category: "Electronics", label: "Electronics", title: "Add It Up",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "ADD IT UP. CALCULATORS 2 FOR $18", text: "Add It Up", sign: "ADDITUP", tag: "Electronics" },
+    why: ["A pink desktop calculator beside a small succulent against mint is cute and unmistakable.","Deep teal type sits on the mint wall above the calculator."],
+    headline: "ADD IT UP. CALCULATORS 2 FOR $18",
+    primary: "A pastel pink desktop calculator with a digital display on a white desk beside a small potted succulent. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-windchimes", type: "static", trending: true, isNew: true, brandName: "CHIMEIN",
     category: "Home & Decor", label: "Home & Decor", title: "Chime In",
     format: "4:5 · Static · Product concept", framework: "Offer",
