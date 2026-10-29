@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-skincareflat", type: "static", trending: true, isNew: true, brandName: "DEWDROP",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Dew You",
+    format: "4:5 · Static · Price-anchor flat lay", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "DEW YOU. SKINCARE SETS 3 FOR $40", text: "Dew You", sign: "DEWDROP", tag: "Beauty & Skincare" },
+    why: ["Pink skincare bottles and jars on pink terrazzo with a palm shadow make a clean beauty flat lay.","Deep burgundy serif lettering stacks on the left with strong contrast on the pink."],
+    headline: "DEW YOU. SKINCARE SETS 3 FOR $40",
+    primary: "Three pale pink skincare bottles and a round jar with a Dewdrop wordmark arranged on a pink terrazzo surface with hard sunlight and a palm leaf shadow, shot from above. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-standmixers", type: "static", trending: true, isNew: true, brandName: "MIXWELL",
+    category: "Home & Decor", label: "Home & Decor", title: "Mix It Up",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "MIX IT UP. STAND MIXERS 25% OFF", text: "Mix It Up", sign: "MIXWELL", tag: "Home & Decor" },
+    why: ["A cream retro stand mixer whipping pink icing in a pastel 1950s kitchen is a charming painted advert.","Red script and teal slab lettering read clearly across the painted wall."],
+    headline: "MIX IT UP. STAND MIXERS 25% OFF",
+    primary: "A cream retro stand mixer with a chrome bowl of swirled pink icing on a counter in a pastel 1950s kitchen with gingham curtains, painted in a vintage advertisement illustration style. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-dogtoys", type: "static", trending: true, isNew: true, brandName: "TUGGLE",
+    category: "Pets", label: "Pets", title: "Tug of Love",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TUG OF LOVE. DOG TOYS 3 FOR $12", text: "Tug of Love", sign: "TUGGLE", tag: "Pets" },
+    why: ["A Labrador puppy tugging a red-and-white rope toy on a sunny lawn is pure joy and the toy is front and centre.","Chunky white rounded lettering with a soft shadow sits along the bottom over the grass."],
+    headline: "TUG OF LOVE. DOG TOYS 3 FOR $12",
+    primary: "A playful golden Labrador puppy with floppy ears tugging a thick red-and-white braided rope toy on a sunny garden lawn, shot at dog height. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-bbqtools", type: "static", trending: true, isNew: true, brandName: "FIREPIT",
     category: "Home & Decor", label: "Home & Decor", title: "Fire It Up",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
