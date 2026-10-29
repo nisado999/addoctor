@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-bbqtools", type: "static", trending: true, isNew: true, brandName: "FIREPIT",
+    category: "Home & Decor", label: "Home & Decor", title: "Fire It Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FIRE IT UP. BBQ TOOLS 25% OFF", text: "Fire It Up", sign: "FIREPIT", tag: "Home & Decor" },
+    why: ["A laughing dad flipping burgers with steel tongs and a spatula at golden hour makes the tools the clear hero.","Warm orange condensed lettering stacks on the right over the soft garden."],
+    headline: "FIRE IT UP. BBQ TOOLS 25% OFF",
+    primary: "A friendly dad in his 40s with a grey-flecked beard in a denim apron laughing and flipping burgers with a stainless steel spatula and tongs at a smoking backyard barbecue at golden hour. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-babycarriers", type: "static", trending: true, isNew: true, brandName: "LITTLE HUG",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Baby On Board",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BABY ON BOARD. BABY CARRIERS 25% OFF", text: "Baby On Board", sign: "LITTLE HUG", tag: "Kids & Baby" },
+    why: ["A smiling mum with her happy baby snug in a grey carrier on a blossom path makes the carrier the obvious hero.","Dark teal lettering stacks on the left over the soft blossom trees."],
+    headline: "BABY ON BOARD. BABY CARRIERS 25% OFF",
+    primary: "A smiling mother in her early 30s with a baby in a soft grey carrier on her chest standing on a sunny tree-lined park path under spring blossom. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-gymsets", type: "static", trending: true, isNew: true, brandName: "FITLAB",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Set the Pace",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
