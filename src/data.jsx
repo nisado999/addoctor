@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-carwashkits", type: "static", trending: true, isNew: true, brandName: "SUDSY",
+    category: "Automotive", label: "Automotive", title: "Wash Day",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WASH DAY. CAR WASH KITS 25% OFF", text: "Wash Day", sign: "SUDSY", tag: "Automotive" },
+    why: ["A laughing guy washing a shiny red hatchback with a yellow sponge and foam bucket is a cheerful driveway scene.","White bold lettering with a soft shadow sits on the blue sky in the upper left."],
+    headline: "WASH DAY. CAR WASH KITS 25% OFF",
+    primary: "A cheerful man in a T-shirt and shorts laughing while washing a shiny red hatchback in a sunny driveway with a big yellow sponge and a bucket of foam. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-moisturiserjar", type: "static", trending: true, isNew: true, brandName: "DEWDROP",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Glow Getter",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GLOW GETTER. MOISTURISER 2 FOR $30", text: "Glow Getter", sign: "DEWDROP", tag: "Beauty & Skincare" },
+    why: ["A glowing woman in a towel wrap holding a big white moisturiser jar up front makes the jar the hero.","Charcoal condensed lettering stacks on the left over the white bathroom wall."],
+    headline: "GLOW GETTER. MOISTURISER 2 FOR $30",
+    primary: "A woman in her late 20s with glowing skin and her hair wrapped in a white towel smiling and holding a round white Dewdrop moisturiser jar in front of her in a bright white bathroom. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-woodenblocks", type: "static", trending: true, isNew: true, brandName: "TUMBLE TOWN",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Build It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BUILD IT. WOODEN BLOCKS 2 FOR $25", text: "Build It", sign: "TUMBLE TOWN", tag: "Kids & Baby" },
+    why: ["A laughing toddler building a tall colourful wooden block tower in a sunny playroom shows the toy and the joy.","Navy chunky lettering stacks in the upper right over the bright window wall."],
+    headline: "BUILD IT. WOODEN BLOCKS 2 FOR $25",
+    primary: "A happy young child kneeling on a sunny playroom floor building a tall tower of colourful natural wooden building blocks with toys and a bright window behind. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-skincareflat", type: "static", trending: true, isNew: true, brandName: "DEWDROP",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Dew You",
     format: "4:5 · Static · Price-anchor flat lay", framework: "Offer",
