@@ -1,5 +1,11 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "cr-gardengloves": B + "templates/cr-gardengloves.jpg",
+  "cr-carvacuums": B + "templates/cr-carvacuums.jpg",
+  "cr-writenotebooks": B + "templates/cr-writenotebooks.jpg",
+  "cr-skigoggles": B + "templates/cr-skigoggles.jpg",
+  "cr-dogballs": B + "templates/cr-dogballs.jpg",
+  "cr-chefknives": B + "templates/cr-chefknives.jpg",
   "cr-lashmascara": B + "templates/cr-lashmascara.jpg",
   "cr-swaddles": B + "templates/cr-swaddles.jpg",
   "cr-jumpropes": B + "templates/cr-jumpropes.jpg",
