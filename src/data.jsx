@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-gymsets", type: "static", trending: true, isNew: true, brandName: "FITLAB",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Set the Pace",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SET THE PACE. GYM SETS 30% OFF", text: "Set the Pace", sign: "FITLAB", tag: "Sport & Fitness" },
+    why: ["Two friends high-fiving in matching black gym sets in a bright concrete gym show the outfits in full.","White italic lettering sits along the bottom over the gym floor."],
+    headline: "SET THE PACE. GYM SETS 30% OFF",
+    primary: "A man and a woman in matching black gym sets, a fitted tee and shorts and a sports bra and leggings, high-fiving and laughing in a bright concrete-and-glass gym. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-trailbottles", type: "static", trending: true, isNew: true, brandName: "SUMMITLY",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Stay Topped Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "STAY TOPPED UP. WATER BOTTLES 2 FOR $25", text: "Stay Topped Up", sign: "SUMMITLY", tag: "Sport & Fitness" },
+    why: ["A hiker holding a green steel bottle up to camera on a mountain ridge puts the bottle front and centre.","Huge white condensed lettering stacks in the lower left over the rocky ground."],
+    headline: "STAY TOPPED UP. WATER BOTTLES 2 FOR $25",
+    primary: "A smiling bearded hiker in his 30s on a mountain ridge at golden hour holding a matte forest green insulated steel water bottle right up toward the camera. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-lunchboxes", type: "static", trending: true, isNew: true, brandName: "LUNCHLY",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Lunch Sorted",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LUNCH SORTED. LUNCHBOXES 2 FOR $18", text: "Lunch Sorted", sign: "LUNCHLY", tag: "Kids & Baby" },
+    why: ["A gap-toothed child proudly holding up a bright yellow lunchbox at the school gate is instantly relatable.","Navy chunky lettering sits on the blurred gates in the upper right."],
+    headline: "LUNCH SORTED. LUNCHBOXES 2 FOR $18",
+    primary: "A happy seven-year-old with a gap-toothed grin at a school gate holding up a bright yellow bento lunchbox with a green clip. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-balconypots", type: "static", trending: true, isNew: true, brandName: "TERRACOTTA CLUB",
+    category: "Home & Decor", label: "Home & Decor", title: "Pot Luck",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "POT LUCK. PLANT POTS 3 FOR $20", text: "Pot Luck", sign: "TERRACOTTA CLUB", tag: "Home & Decor" },
+    why: ["A woman repotting a leafy plant on a sunny balcony with matching cream-and-terracotta pots is a warm real-life shot.","Dark green serif lettering sits on the blurred rooftops in the upper left."],
+    headline: "POT LUCK. PLANT POTS 3 FOR $20",
+    primary: "A cheerful woman in a denim apron with soil on her hands repotting a leafy green plant into a glazed terracotta-and-cream plant pot on a sunny balcony beside two matching pots. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-cabinbags", type: "static", trending: true, isNew: true, brandName: "SKYLARK",
     category: "Travel", label: "Travel", title: "Carry On",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
