@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-cookiecutters", type: "static", trending: true, isNew: true, brandName: "BAKE MERRY",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Bake Merry",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BAKE MERRY. COOKIE CUTTERS 3 FOR $10", text: "Bake Merry", sign: "BAKE MERRY", tag: "Holidays & Offers" },
+    why: ["A mum and daughter pressing star cookie cutters into dough is a warm Christmas baking moment.","Deep red bold lettering stacks on the left over the cream kitchen wall."],
+    headline: "BAKE MERRY. COOKIE CUTTERS 3 FOR $10",
+    primary: "A mum and a little girl in aprons pressing a star cookie cutter into rolled dough in a bright kitchen with a set of metal cookie cutters and iced cookies on the counter. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-boardgames", type: "static", trending: true, isNew: true, brandName: "GAMEBOX",
+    category: "Home & Decor", label: "Home & Decor", title: "Game Night",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GAME NIGHT. BOARD GAMES 25% OFF", text: "Game Night", sign: "GAMEBOX", tag: "Home & Decor" },
+    why: ["Four friends laughing over a colourful board game with snacks shows exactly why you buy it.","Warm cream bold lettering with a soft shadow sits along the bottom over the dark table."],
+    headline: "GAME NIGHT. BOARD GAMES 25% OFF",
+    primary: "Four friends laughing around a wooden table on a game night with snacks and a colourful board game with cards and dice spread out. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-snowboots", type: "static", trending: true, isNew: true, brandName: "TRAILFOX",
+    category: "Fashion", label: "Fashion", title: "Snow Ready",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SNOW READY. WINTER BOOTS 30% OFF", text: "Snow Ready", sign: "TRAILFOX", tag: "Fashion" },
+    why: ["A couple walking hand in hand in chunky brown snow boots on a forest path puts the boots in a real winter moment.","Deep navy bold lettering stacks at the upper right over the pale sky."],
+    headline: "SNOW READY. WINTER BOOTS 30% OFF",
+    primary: "A happy couple in puffer coats and chunky brown lace-up waterproof snow boots walking hand in hand along a snowy forest path. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-adventcalendars", type: "static", trending: true, isNew: true, brandName: "DECEMBER DOORS",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Count Down",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "COUNT DOWN. ADVENT CALENDARS 25% OFF", text: "Count Down", sign: "DECEMBER DOORS", tag: "Holidays & Offers" },
+    why: ["Two kids in pyjamas opening a wooden advent calendar by the tree is Christmas in one frame.","White bold lettering with a soft shadow stacks at the upper left over the warm wall."],
+    headline: "COUNT DOWN. ADVENT CALENDARS 25% OFF",
+    primary: "Two excited kids in pyjamas on a cosy living room rug opening a small door on a colourful wooden advent calendar house with a Christmas tree glowing behind. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-babybibs", type: "static", trending: true, isNew: true, brandName: "MESSYFUN",
     category: "Kids & Baby", label: "Kids & Baby", title: "Messy Fun",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
