@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-fh-linenshirts", type: "static", trending: true, isNew: true, brandName: "AEGEAN LINEN",
+    category: "Fashion", label: "Fashion", title: "Shirt Happens",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SHIRT HAPPENS. LINEN SHIRTS 3 FOR $60", text: "Shirt Happens", sign: "AEGEAN LINEN", tag: "Fashion" },
+    why: ["A laughing man in an untucked pale blue linen shirt by a whitewashed seaside wall is easy summer style.","Bold navy lettering stands out on the pale sky above the sea."],
+    headline: "SHIRT HAPPENS. LINEN SHIRTS 3 FOR $60",
+    primary: "A relaxed man with short hair and light stubble in an untucked pale blue linen shirt and white shorts leaning on a whitewashed seaside wall with the deep blue sea behind. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-fh-crossbody", type: "static", trending: true, isNew: true, brandName: "TOTEM",
+    category: "Fashion", label: "Fashion", title: "Cross Your Heart",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CROSS YOUR HEART. CROSSBODY BAGS 2 FOR $40", text: "Cross Your Heart", sign: "TOTEM", tag: "Fashion" },
+    why: ["A smiling woman holding up a tan leather crossbody bag by a sunny cafe terrace keeps the bag in clear focus.","Dark brown serif lettering reads well on the cream wall."],
+    headline: "CROSS YOUR HEART. CROSSBODY BAGS 2 FOR $40",
+    primary: "A woman with a natural low ponytail in a cream knit and jeans holding up a small tan leather crossbody bag by its strap in front of a sunny cafe terrace. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-fh-backpacks", type: "static", trending: true, isNew: true, brandName: "TREKKA",
+    category: "Fashion", label: "Fashion", title: "Back To It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BACK TO IT. BACKPACKS 30% OFF", text: "Back To It", sign: "TREKKA", tag: "Fashion" },
+    why: ["Two students walking across a sunny courtyard with a green and a black backpack feel real and relatable.","Soft-shadowed white lettering sits clearly on the blue sky above the brick buildings."],
+    headline: "BACK TO IT. BACKPACKS 30% OFF",
+    primary: "A young guy with a forest green backpack and a girl with a black backpack walking and laughing across a sunny university courtyard with red brick buildings behind. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-fh-beanies", type: "static", trending: true, isNew: true, brandName: "WOOLLY & CO",
+    category: "Fashion", label: "Fashion", title: "Beanie Weather",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BEANIE WEATHER. BEANIES 3 FOR $20", text: "Beanie Weather", sign: "WOOLLY & CO", tag: "Fashion" },
+    why: ["A rosy-cheeked woman in a mustard knit beanie on a snowy street makes the beanie the clear hero.","Deep red bold lettering reads clearly against the pale snowy sky."],
+    headline: "BEANIE WEATHER. BEANIES 3 FOR $20",
+    primary: "A young woman with natural wavy hair in a slouchy mustard knit beanie and dark puffer jacket on a snowy old-town street with snowflakes in the air. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-fh-knitwear", type: "static", trending: true, isNew: true, brandName: "HEATHERMOOR",
     category: "Fashion", label: "Fashion", title: "Warm Front",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
