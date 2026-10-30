@@ -5082,6 +5082,15 @@ const TEMPLATES = [
     headline: "Pick your shade",
     primary: "Plain cotton twill caps in five colours. Add the fit and sizing details.",
   },
+  {
+    id: "cr-glowserum", type: "static", trending: true, isNew: true, brandName: "DEWLY",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Skin But Better",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SKIN, BUT BETTER. SERUMS 30% OFF", text: "Skin But Better", sign: "DEWLY", tag: "Beauty & Skincare" },
+    why: ["A woman with real glowing skin holding a small amber dropper serum right beside her cheek makes the product and the result clear.","Dark teal condensed lettering stacks on the left over the white tiles, clear of her face."],
+    headline: "SKIN, BUT BETTER. SERUMS 30% OFF",
+    primary: "A smiling woman with real glowing skin and a few freckles in a white towel robe holding a small amber dropper serum bottle with a made-up DEWLY label beside her cheek in a white tiled bathroom. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
 ];
 
 const SAMPLES = [
