@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-breathe", type: "static", trending: true, isNew: true, brandName: "MISTRAL",
+    category: "Health & Wellness", label: "Health & Wellness", title: "Breathe",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BREATHE. OIL DIFFUSERS 2 FOR $30", text: "Breathe", sign: "MISTRAL", tag: "Health & Wellness" },
+    why: ["A relaxed woman with her eyes closed beside a misting ceramic diffuser makes the diffuser turn a bedroom into a spa.","Dark purple hand-painted lettering is painted on the pale lilac bedroom wall on the right."],
+    headline: "BREATHE. OIL DIFFUSERS 2 FOR $30",
+    primary: "A relaxed woman with her eyes closed sitting on a bed beside a round white ceramic MISTRAL essential oil diffuser gently misting on a wooden bedside table, shot on film in soft window light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-toweloff", type: "static", trending: true, isNew: true, brandName: "SANDBAR",
+    category: "Travel", label: "Travel", title: "Towel Off",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TOWEL OFF. BEACH TOWELS 3 FOR $30", text: "Towel Off", sign: "SANDBAR", tag: "Travel" },
+    why: ["Two friends laughing in big striped coral and navy beach towels on a seaside pier make the towels the thing that turns any bit of sand into your spot.","Navy hand-painted lettering is painted on the whitewashed pier wall above them."],
+    headline: "TOWEL OFF. BEACH TOWELS 3 FOR $30",
+    primary: "Two friends laughing wrapped in big thick striped coral and navy SANDBAR beach towels on a seaside wooden pier with the sea behind, shot on film in bright sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-freshkicks", type: "static", trending: true, isNew: true, brandName: "SCRUBBY",
+    category: "Fashion", label: "Fashion", title: "Fresh Kicks",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FRESH KICKS. SNEAKER CLEANER 2 FOR $15", text: "Fresh Kicks", sign: "SCRUBBY", tag: "Fashion" },
+    why: ["A smiling young man scrubbing a plain white sneaker on a stoop makes the cleaning kit the Sunday ritual that makes white trainers new again.","Black hand-painted lettering is painted on the white wall of the stoop above him."],
+    headline: "FRESH KICKS. SNEAKER CLEANER 2 FOR $15",
+    primary: "A smiling young man in a grey hoodie sitting on brownstone steps scrubbing a plain white canvas sneaker with a brush beside a bottle of SCRUBBY sneaker cleaner, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-clearclutter", type: "static", trending: true, isNew: true, brandName: "WOVEN & CO",
     category: "Home & Decor", label: "Home & Decor", title: "Clear the Clutter",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
