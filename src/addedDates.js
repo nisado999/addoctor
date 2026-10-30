@@ -1,5 +1,10 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "cr-bootspace": 1793349162,
+  "cr-curlup": 1793349161,
+  "cr-swimteam": 1793349160,
+  "cr-sockit": 1793349159,
+  "cr-chopchop": 1793349158,
   "cr-brushup": 1793349017,
   "cr-overcoatseason": 1793348928,
   "cr-naptime": 1793348927,
