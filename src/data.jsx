@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-showoffcarwash", type: "static", trending: true, isNew: true, brandName: "SHINEWORKS",
+    category: "Automotive", label: "Automotive", title: "Show Off",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SHOW OFF. CAR WASH KITS 25% OFF", text: "Show Off", sign: "SHINEWORKS", tag: "Automotive" },
+    why: ["A proud man beside his freshly washed red hatchback with a soapy bucket kit at his feet makes the kit a weekend ritual.","Black hand-painted lettering is painted on the white garage door behind the car."],
+    headline: "SHOW OFF. CAR WASH KITS 25% OFF",
+    primary: "A grinning man in a grey tee holding a sponge beside a shiny red hatchback on a driveway with a blue SHINEWORKS bucket kit at his feet, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-departurescabin", type: "static", trending: true, isNew: true, brandName: "GLIDR",
+    category: "Travel", label: "Travel", title: "Pack Light",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "PACK LIGHT. CABIN BAGS 25% OFF", text: "Pack Light", sign: "GLIDR", tag: "Travel" },
+    why: ["A deadpan traveller dead centre in a pastel airport hall holding a mint hard-shell cabin bag makes the bag the whole trip.","White split-flap lettering sits on a black departures board across the top like a real airport sign."],
+    headline: "PACK LIGHT. CABIN BAGS 25% OFF",
+    primary: "A stoic woman in a camel coat standing dead centre in a pastel airport hall holding a mint-green hard-shell GLIDR cabin suitcase, symmetrical on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-skatesneakers", type: "static", trending: true, isNew: true, brandName: "KICKRUN",
     category: "Fashion", label: "Fashion", title: "Break Them In",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
