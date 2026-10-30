@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-sleepsacks", type: "static", trending: true, isNew: true, brandName: "SLEEPWELL",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Good Night Sleep Tight",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GOOD NIGHT, SLEEP TIGHT. SLEEP SACKS 2 FOR $40", text: "Good Night Sleep Tight", sign: "SLEEPWELL", tag: "Kids & Baby" },
+    why: ["A sleeping baby in a pale grey quilted sleep sack with a parent's hand resting on them makes the sack the cosy centre of the nursery.","Soft white lettering sits on the pale blue nursery wall above the cot."],
+    headline: "GOOD NIGHT, SLEEP TIGHT. SLEEP SACKS 2 FOR $40",
+    primary: "A sleeping baby in a pale grey quilted SLEEPWELL sleep sack in a wooden cot with a parent's hand resting on them, shot on film in soft window light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-dinnerin15", type: "static", trending: true, isNew: true, brandName: "CRISPIO",
+    category: "Home & Decor", label: "Home & Decor", title: "Dinner in 15",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "DINNER IN 15. AIR FRYERS 30% OFF", text: "Dinner in 15", sign: "CRISPIO", tag: "Home & Decor" },
+    why: ["A laughing mum and her son pulling golden fries from a black and copper air fryer in a busy family kitchen makes weeknight dinner easy.","Cream hand-painted lettering is painted on the sage-green wall beside the counter."],
+    headline: "DINNER IN 15. AIR FRYERS 30% OFF",
+    primary: "A laughing mum in a blue tee and her young son lifting a basket of golden fries from a black and copper CRISPIO air fryer in a lived-in kitchen, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-everydaypearls", type: "static", trending: true, isNew: true, brandName: "PEARLY",
     category: "Jewelry", label: "Jewelry", title: "Everyday Pearls",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
