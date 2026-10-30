@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-brushup", type: "static", trending: true, isNew: true, brandName: "BLUSHWORKS",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Brush Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BRUSH UP. MAKEUP BRUSHES 25% OFF", text: "Brush Up", sign: "BLUSHWORKS", tag: "Beauty & Skincare" },
+    why: ["A smiling woman sweeping a fluffy rose gold brush across her cheek beside a pot of brushes makes the full set the upgrade that makes a routine easier.","Dark red hand-painted lettering is painted on the pale peach wall in the upper left."],
+    headline: "BRUSH UP. MAKEUP BRUSHES 25% OFF",
+    primary: "A smiling woman holding a fluffy rose gold BLUSHWORKS makeup brush near her cheek beside a pot of rose gold brushes at a bright dressing table with a pale peach wall, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-overcoatseason", type: "static", trending: true, isNew: true, brandName: "NORDMANN",
     category: "Fashion", label: "Fashion", title: "Overcoat Season",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
