@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-sleeptight", type: "static", trending: true, isNew: true, brandName: "LULLABY",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Sleep Tight",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SLEEP TIGHT. BABY BLANKETS 3 FOR $30", text: "Sleep Tight", sign: "LULLABY", tag: "Kids & Baby" },
+    why: ["A happy baby wrapped in a soft cream muslin blanket in a wooden cot makes the blanket the gift every new parent keeps.","Dark green hand-painted lettering is painted on the pale sage nursery wall above the cot."],
+    headline: "SLEEP TIGHT. BABY BLANKETS 3 FOR $30",
+    primary: "A happy baby lying in a wooden cot wrapped in a soft cream LULLABY muslin blanket, a mother's hand resting on the blanket, in a bright sage-green nursery, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-pressplay", type: "static", trending: true, isNew: true, brandName: "BOOMBOX",
+    category: "Electronics", label: "Electronics", title: "Press Play",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "PRESS PLAY. SPEAKERS 30% OFF", text: "Press Play", sign: "BOOMBOX", tag: "Electronics" },
+    why: ["Three friends laughing on a picnic blanket holding up a mustard yellow speaker make the speaker the thing every picnic needs.","White hand-painted lettering is painted on the big dark painted wall behind them."],
+    headline: "PRESS PLAY. SPEAKERS 30% OFF",
+    primary: "Three friends laughing on a picnic blanket in a sunny park, one holding up a chunky rounded mustard yellow BOOMBOX bluetooth speaker, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-wrapitup", type: "static", trending: true, isNew: true, brandName: "WRAPSODY",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Wrap It Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WRAP IT UP. GIFT WRAP 3 FOR $10", text: "Wrap It Up", sign: "WRAPSODY", tag: "Holidays & Offers" },
+    why: ["A smiling woman wrapping presents beside rolls of red and kraft gift wrap by a Christmas tree makes cheap gift wrap the thing that turns a pile of presents into a gift shop.","White hand-painted lettering is painted on the cream wall above the tree on the right."],
+    headline: "WRAP IT UP. GIFT WRAP 3 FOR $10",
+    primary: "A smiling woman in a red jumper kneeling on a wooden floor wrapping a present beside big rolls of red and kraft WRAPSODY gift wrap and ribbon next to a decorated Christmas tree, shot on film with flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-bfhoodies", type: "static", trending: true, isNew: true, brandName: "NIGHTSHIFT",
     category: "Holidays & Offers", label: "Holidays & Offers", title: "Black Friday Hoodies",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
