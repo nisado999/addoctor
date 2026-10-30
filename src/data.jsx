@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-earntheview", type: "static", trending: true, isNew: true, brandName: "TRAILMADE",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Earn the View",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "EARN THE VIEW. HIKING BOOTS 30% OFF", text: "Earn the View", sign: "TRAILMADE", tag: "Sport & Fitness" },
+    why: ["A hiker lacing muddy tan boots on a summit rock at sunrise makes the boots the way to earn the view.","White hand-painted lettering is painted on the big sunlit rock face on the right."],
+    headline: "EARN THE VIEW. HIKING BOOTS 30% OFF",
+    primary: "A hiker in a beanie and dark fleece sitting on a mountain summit at sunrise lacing a pair of muddy tan leather TRAILMADE hiking boots in the foreground, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-goeswitheverything", type: "static", trending: true, isNew: true, brandName: "TRUESTEP",
     category: "Fashion", label: "Fashion", title: "Goes With Everything",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
