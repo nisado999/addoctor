@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-unrollmat", type: "static", trending: true, isNew: true, brandName: "ZENMAT",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Unroll",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "UNROLL. YOGA MATS 2 FOR $40", text: "Unroll", sign: "ZENMAT", tag: "Sport & Fitness" },
+    why: ["A calm woman sitting cross-legged on a bold coral yoga mat in a bright studio makes the mat the start of practice.","Dark grey hand-painted lettering is painted on the white studio wall above her."],
+    headline: "UNROLL. YOGA MATS 2 FOR $40",
+    primary: "A calm woman in a green tank and grey leggings sitting cross-legged on a bold coral ZENMAT yoga mat in a bright wooden-floored studio, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-goodhairday", type: "static", trending: true, isNew: true, brandName: "CURLY",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Good Hair Day",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GOOD HAIR DAY. HAIR OIL 2 FOR $24", text: "Good Hair Day", sign: "CURLY", tag: "Beauty & Skincare" },
+    why: ["A woman with big glossy curls smiling with eyes closed and a small amber hair oil bottle by her cheek makes the oil the good hair day.","Cream hand-painted lettering is painted on the rust-orange wall beside her."],
+    headline: "GOOD HAIR DAY. HAIR OIL 2 FOR $24",
+    primary: "A smiling woman with big glossy curls, eyes closed, holding a small amber CURLY hair oil bottle beside her face in a sunny salon doorway, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-bringithome", type: "static", trending: true, isNew: true, brandName: "TOTELY",
     category: "Fashion", label: "Fashion", title: "Bring It Home",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
