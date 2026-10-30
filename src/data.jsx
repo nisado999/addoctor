@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-getgrippy", type: "static", trending: true, isNew: true, brandName: "GRIPPY",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Get Grippy",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GET GRIPPY. CLIMBING SHOES 25% OFF", text: "Get Grippy", sign: "GRIPPY", tag: "Sport & Fitness" },
+    why: ["A smiling climber pulling on a red and black climbing shoe in a bouldering gym makes grippy shoes the one thing every climber needs.","Black hand-painted lettering is painted on the white gym wall in the upper left."],
+    headline: "GET GRIPPY. CLIMBING SHOES 25% OFF",
+    primary: "A smiling climber sitting on a padded gym floor pulling on a red and black GRIPPY climbing shoe with a second shoe huge in the foreground in a bouldering gym, shot on film from a low angle. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-snapit", type: "static", trending: true, isNew: true, brandName: "SNAPSHOT",
+    category: "Electronics", label: "Electronics", title: "Snap It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SNAP IT. INSTANT CAMERAS 20% OFF", text: "Snap It", sign: "SNAPSHOT", tag: "Electronics" },
+    why: ["Two friends laughing at a rooftop party with a pastel pink instant camera make the camera turn a night out into a printed memory.","Cream hand-painted lettering is painted on the teal rooftop wall above them."],
+    headline: "SNAP IT. INSTANT CAMERAS 20% OFF",
+    primary: "Two friends laughing at a dusk rooftop party under fairy lights, one holding up a pastel pink SNAPSHOT instant camera toward the lens, shot on film with direct flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-sayyes", type: "static", trending: true, isNew: true, brandName: "VOW",
     category: "Wedding & Events", label: "Wedding & Events", title: "Say Yes",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
