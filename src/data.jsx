@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-dailywin", type: "static", trending: true, isNew: true, brandName: "VITAHOUSE",
+    category: "Supplements", label: "Supplements", title: "Daily Win",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "DAILY WIN. VITAMINS 2 FOR $25", text: "Daily Win", sign: "VITAHOUSE", tag: "Supplements" },
+    why: ["A dad in a robe pouring a vitamin in a lived-in morning kitchen makes vitamins the small daily win.","White chalk lettering is written down the big black chalkboard wall like a kitchen note."],
+    headline: "DAILY WIN. VITAMINS 2 FOR $25",
+    primary: "A tired but happy dad in a robe pouring a vitamin into his palm in a family kitchen with a big amber VITAHOUSE vitamin jar on the counter, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-taxiperfume", type: "static", trending: true, isNew: true, brandName: "NOIRE",
+    category: "Fragrances", label: "Fragrances", title: "Leave a Trail",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LEAVE A TRAIL. PERFUME 2 FOR $50", text: "Leave a Trail", sign: "NOIRE", tag: "Fragrances" },
+    why: ["A woman holding a perfume bottle up in the back of a night taxi makes the scent feel like a moment from a film.","Pink neon-tube lettering glows on the rainy window like a neon sign, clear of her face."],
+    headline: "LEAVE A TRAIL. PERFUME 2 FOR $50",
+    primary: "A stylish woman in a dark coat in the back of a taxi at night holding a glass NOIRE perfume bottle near her face, neon street streaking past the rainy window, shot on CineStill film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-firstridebike", type: "static", trending: true, isNew: true, brandName: "SPOKEY",
     category: "Kids & Baby", label: "Kids & Baby", title: "First Ride",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
