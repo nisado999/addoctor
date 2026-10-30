@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-hearthcandle", type: "static", trending: true, isNew: true, brandName: "HEARTH",
+    category: "Home & Decor", label: "Home & Decor", title: "Cheaper Than Therapy",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CHEAPER THAN THERAPY. CANDLES 3 FOR $24", text: "Cheaper Than Therapy", sign: "HEARTH", tag: "Home & Decor" },
+    why: ["A woman reading on a sofa by the glow of one big lit candle makes the candle the whole cosy evening.","Cream condensed lettering stacks across the top over the dark wall like a painted sign."],
+    headline: "CHEAPER THAN THERAPY. CANDLES 3 FOR $24",
+    primary: "A woman in a cream jumper reading a book on a sofa in a dark room with a big lit amber HEARTH candle glowing in the foreground, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-firstdaybag", type: "static", trending: true, isNew: true, brandName: "TRAILKID",
+    category: "Kids & Baby", label: "Kids & Baby", title: "First Day Energy",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FIRST DAY ENERGY. SCHOOL BAGS 25% OFF", text: "First Day Energy", sign: "TRAILKID", tag: "Kids & Baby" },
+    why: ["A grinning boy marching down the street in a bright blue backpack makes the first day of school feel like a win.","Big white road-paint lettering is painted on the tarmac in front of him like a street marking."],
+    headline: "FIRST DAY ENERGY. SCHOOL BAGS 25% OFF",
+    primary: "A grinning boy in a blue tee walking down a tree-lined street in the morning wearing a bright blue TRAILKID backpack, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-naplord", type: "static", trending: true, isNew: true, brandName: "NAPLORD",
+    category: "Pets", label: "Pets", title: "Nap Lord",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "NAP LORD. DOG BEDS 25% OFF", text: "Nap Lord", sign: "NAPLORD", tag: "Pets" },
+    why: ["A bulldog sprawled upside down and blissed out on a big cream dog bed makes the bed the best seat in the house.","Cream hand-lettered type sits on the deep green wall above the bed like a painted sign."],
+    headline: "NAP LORD. DOG BEDS 25% OFF",
+    primary: "A bulldog flopped upside down with his tongue out on a big round cream NAPLORD dog bed on a wooden floor in front of a green wall, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-glossmirror", type: "static", trending: true, isNew: true, brandName: "GLOSSIP",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Shine On",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
