@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-latenightlamp", type: "static", trending: true, isNew: true, brandName: "LUMEN",
+    category: "Home & Decor", label: "Home & Decor", title: "Late Night Light",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LATE NIGHT LIGHT. DESK LAMPS 2 FOR $40", text: "Late Night Light", sign: "LUMEN", tag: "Home & Decor" },
+    why: ["A woman working late with her face lit by a glowing brass desk lamp makes the lamp the calm in the night.","Cream hand-lettered type is painted on the dark navy wall above the desk."],
+    headline: "LATE NIGHT LIGHT. DESK LAMPS 2 FOR $40",
+    primary: "A woman typing at a wooden desk at night lit by a glowing brass LUMEN adjustable desk lamp in a small home office, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-slowsunday", type: "static", trending: true, isNew: true, brandName: "BREWHAUS",
     category: "Home & Decor", label: "Home & Decor", title: "Slow Sunday",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
