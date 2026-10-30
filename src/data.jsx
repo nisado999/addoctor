@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-staycool", type: "static", trending: true, isNew: true, brandName: "FROSTY",
+    category: "Food & Bev", label: "Food & Bev", title: "Stay Cool",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "STAY COOL. ICE LOLLIES 6 FOR $5", text: "Stay Cool", sign: "FROSTY", tag: "Food & Bev" },
+    why: ["A girl biting a rainbow ice lolly beside a bag of lollies at a sunny street kiosk makes the lollies the cure for a hot day.","White hand-painted lettering is painted on the bright orange kiosk wall on the left."],
+    headline: "STAY COOL. ICE LOLLIES 6 FOR $5",
+    primary: "A sun-warmed young woman in a faded tee biting a rainbow ice lolly while holding a clear bag of FROSTY ice lollies beside an orange street kiosk, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-cheerswine", type: "static", trending: true, isNew: true, brandName: "CLINK",
     category: "Food & Bev", label: "Food & Bev", title: "Cheers",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
