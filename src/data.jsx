@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-trickortreat", type: "static", trending: true, isNew: true, brandName: "BOOTIQUE",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Trick or Treat",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TRICK OR TREAT. KIDS COSTUMES 3 FOR $30", text: "Trick or Treat", sign: "BOOTIQUE", tag: "Holidays & Offers" },
+    why: ["Two beaming kids in a witch costume and a ghost costume on a pumpkin-lit porch make cheap costumes the thing every kid begs for on Halloween.","Cream hand-painted lettering is painted on the dark green porch door above them."],
+    headline: "TRICK OR TREAT. KIDS COSTUMES 3 FOR $30",
+    primary: "Two beaming kids dressed as a witch in a purple BOOTIQUE costume with a pointy hat and a small white ghost on a porch with carved pumpkins and orange fairy lights at dusk, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-longway", type: "static", trending: true, isNew: true, brandName: "WAYFARER",
+    category: "Travel", label: "Travel", title: "Take the Long Way",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TAKE THE LONG WAY. DAY PACKS 25% OFF", text: "Take the Long Way", sign: "WAYFARER", tag: "Travel" },
+    why: ["A smiling traveller with a mustard yellow day pack beside a vintage green train makes the pack the thing you grab for any train out of town.","Cream painted lettering is painted on the dark green side of the train carriage on the right."],
+    headline: "TAKE THE LONG WAY. DAY PACKS 25% OFF",
+    primary: "A smiling young woman in a denim jacket wearing a mustard yellow canvas WAYFARER day pack on a sunny railway platform beside a vintage green train carriage, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-blowdry", type: "static", trending: true, isNew: true, brandName: "VELVA",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Blow Dry",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BLOW DRY. HAIR DRYERS 30% OFF", text: "Blow Dry", sign: "VELVA", tag: "Beauty & Skincare" },
+    why: ["A glamorous woman holding up a blush pink hair dryer in a pink salon makes the dryer the quick way to a salon blow dry at home.","Cream hand-painted lettering is painted on the pink salon wall in the upper left."],
+    headline: "BLOW DRY. HAIR DRYERS 30% OFF",
+    primary: "A glamorous woman with long glossy hair holding up a blush pink VELVA hair dryer in a small pink neighbourhood hair salon, shot on film with soft flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-walkies", type: "static", trending: true, isNew: true, brandName: "TAILGATE",
     category: "Pets", label: "Pets", title: "Walkies",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
