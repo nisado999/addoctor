@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-waterme", type: "static", trending: true, isNew: true, brandName: "GROWN",
+    category: "Home & Decor", label: "Home & Decor", title: "Water Me",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WATER ME. WATERING CANS 2 FOR $24", text: "Water Me", sign: "GROWN", tag: "Home & Decor" },
+    why: ["A smiling man watering a lush balcony garden with a bright yellow watering can makes the can the heart of the garden.","Dark green hand-painted lettering is painted on the white balcony wall above the plants."],
+    headline: "WATER ME. WATERING CANS 2 FOR $24",
+    primary: "A smiling man watering potted herbs on a sunny city balcony with a bright yellow GROWN watering can, shot on film in morning sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-mangia", type: "static", trending: true, isNew: true, brandName: "NONNA",
     category: "Food & Bev", label: "Food & Bev", title: "Mangia",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
