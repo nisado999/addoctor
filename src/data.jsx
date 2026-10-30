@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-toastday", type: "static", trending: true, isNew: true, brandName: "LUMEN",
+    category: "Wedding & Events", label: "Wedding & Events", title: "Toast the Day",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TOAST THE DAY. CHAMPAGNE FLUTES 2 FOR $25", text: "Toast the Day", sign: "LUMEN", tag: "Wedding & Events" },
+    why: ["A laughing bride and groom raising champagne flutes at a barn reception makes the flutes the way any toast feels like a wedding.","Black hand-painted lettering is painted on the whitewashed wooden wall behind them."],
+    headline: "TOAST THE DAY. CHAMPAGNE FLUTES 2 FOR $25",
+    primary: "A laughing bride and groom raising two crystal LUMEN champagne flutes at a rustic barn wedding reception with string lights, shot on film with flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-morningfuel", type: "static", trending: true, isNew: true, brandName: "IRONMILL",
+    category: "Supplements", label: "Supplements", title: "Morning Fuel",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "MORNING FUEL. PROTEIN POWDER 20% OFF", text: "Morning Fuel", sign: "IRONMILL", tag: "Supplements" },
+    why: ["A grinning man shaking a blender bottle beside a big green protein tub in a bright kitchen makes the powder the easy start of a workout morning.","Dark green hand-painted lettering is painted on the white tiled wall above him."],
+    headline: "MORNING FUEL. PROTEIN POWDER 20% OFF",
+    primary: "A grinning fit man in a grey tee shaking a blender bottle beside a big matte forest green IRONMILL protein powder tub on a kitchen counter, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-stackthem", type: "static", trending: true, isNew: true, brandName: "ORRA",
     category: "Jewelry", label: "Jewelry", title: "Stack Them",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
