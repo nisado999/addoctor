@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-bfhoodies", type: "static", trending: true, isNew: true, brandName: "NIGHTSHIFT",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Black Friday Hoodies",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BLACK FRIDAY. HOODIES 40% OFF", text: "Black Friday Hoodies", sign: "NIGHTSHIFT", tag: "Holidays & Offers" },
+    why: ["A deadpan young man in a heavy oversized black hoodie in front of a closed shopfront shutter makes the hoodie what everyone wants before the Black Friday rush.","White stencil lettering runs across the grey metal shutter on the left."],
+    headline: "BLACK FRIDAY. HOODIES 40% OFF",
+    primary: "A deadpan young man in a heavy oversized black NIGHTSHIFT hoodie with his hands in the pouch standing in front of a grey metal shopfront shutter at night, shot on film with direct flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-layerit", type: "static", trending: true, isNew: true, brandName: "SUGARCLOUD",
+    category: "Fragrances", label: "Fragrances", title: "Layer It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LAYER IT. BODY MIST 3 FOR $24", text: "Layer It", sign: "SUGARCLOUD", tag: "Fragrances" },
+    why: ["Two friends laughing on a messy bedroom floor spraying a pastel pink body mist make the mist the sleepover essential.","White bubbly hand-painted lettering is painted on the lilac bedroom wall above them."],
+    headline: "LAYER IT. BODY MIST 3 FOR $24",
+    primary: "Two young women laughing on a messy bedroom floor, one spraying a pastel pink SUGARCLOUD body mist bottle, in front of a lilac wall with fairy lights, shot on film with direct flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-timewellspent", type: "static", trending: true, isNew: true, brandName: "TIDEWELL",
+    category: "Jewelry", label: "Jewelry", title: "Time Well Spent",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TIME WELL SPENT. WATCHES 2 FOR $50", text: "Time Well Spent", sign: "TIDEWELL", tag: "Jewelry" },
+    why: ["A deadpan young man in a navy overcoat raising his wrist with a slim silver watch in an underground station makes the watch the cheap gift that looks expensive.","White hand-painted lettering runs along the white tiled station wall on the right."],
+    headline: "TIME WELL SPENT. WATCHES 2 FOR $50",
+    primary: "A deadpan young man in a navy overcoat raising his wrist to the lens with a slim silver TIDEWELL watch with a green dial and tan leather strap on a white-tiled underground platform, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-setthetable", type: "static", trending: true, isNew: true, brandName: "TAPER & CO",
     category: "Home & Decor", label: "Home & Decor", title: "Set the Table",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
