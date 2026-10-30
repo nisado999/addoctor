@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-packit", type: "static", trending: true, isNew: true, brandName: "TIDYTRIP",
+    category: "Travel", label: "Travel", title: "Pack It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "PACK IT. PACKING CUBES 2 FOR $20", text: "Pack It", sign: "TIDYTRIP", tag: "Travel" },
+    why: ["A happy woman sitting on a hotel bed beside an open suitcase of neat coral and teal packing cubes makes the cubes turn a messy suitcase into a calm holiday.","White hand-painted lettering is painted on the pale blue hotel room wall on the right."],
+    headline: "PACK IT. PACKING CUBES 2 FOR $20",
+    primary: "A happy woman sitting on a white hotel bed beside an open suitcase packed with coral and teal TIDYTRIP packing cubes, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-brewit", type: "static", trending: true, isNew: true, brandName: "PLUNGE",
+    category: "Home & Decor", label: "Home & Decor", title: "Brew It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BREW IT. FRENCH PRESS 25% OFF", text: "Brew It", sign: "PLUNGE", tag: "Home & Decor" },
+    why: ["A smiling man plunging a French press in a sunny kitchen makes the press a slow weekend coffee ritual.","White hand-painted lettering is written directly on the big kitchen window glass on the left."],
+    headline: "BREW IT. FRENCH PRESS 25% OFF",
+    primary: "A smiling man in a knit jumper plunging a glass and steel PLUNGE French press on a wooden kitchen counter in front of a sunny window, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-sleepbetter", type: "static", trending: true, isNew: true, brandName: "HUSHED",
+    category: "Health & Wellness", label: "Health & Wellness", title: "Sleep Better",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SLEEP BETTER. WEIGHTED BLANKETS 30% OFF", text: "Sleep Better", sign: "HUSHED", tag: "Health & Wellness" },
+    why: ["A sleepy woman under a big chunky grey weighted blanket on a sofa makes the blanket the thing that finally gets you to sleep.","Cream hand-painted lettering is painted on the dark teal wall above the sofa."],
+    headline: "SLEEP BETTER. WEIGHTED BLANKETS 30% OFF",
+    primary: "A sleepy woman lying on a deep grey sofa under a big chunky knitted grey HUSHED weighted blanket pulled up to her chin in lamp light, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-sleeptight", type: "static", trending: true, isNew: true, brandName: "LULLABY",
     category: "Kids & Baby", label: "Kids & Baby", title: "Sleep Tight",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
