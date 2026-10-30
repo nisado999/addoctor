@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-beachsunscreen", type: "static", trending: true, isNew: true, brandName: "SOLBLOK",
+    category: "Health & Wellness", label: "Health & Wellness", title: "Burn Nothing",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BURN NOTHING. SUNSCREEN 2 FOR $18", text: "Burn Nothing", sign: "SOLBLOK", tag: "Health & Wellness" },
+    why: ["A laughing woman squeezing sunscreen from a bright orange tube onto her shoulder on a turquoise beach shows exactly what it is for.","White heavy lettering with a soft shadow stacks at the upper left over the blue sky."],
+    headline: "BURN NOTHING. SUNSCREEN 2 FOR $18",
+    primary: "A laughing woman in an orange swimsuit squeezing white sunscreen from a bright orange SOLBLOK tube onto her shoulder on a sunny beach with turquoise sea behind. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-glowserum", type: "static", trending: true, isNew: true, brandName: "DEWLY",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Skin But Better",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SKIN, BUT BETTER. SERUMS 30% OFF", text: "Skin But Better", sign: "DEWLY", tag: "Beauty & Skincare" },
+    why: ["A woman with real glowing skin holding a small amber dropper serum right beside her cheek makes the product and the result clear.","Dark teal condensed lettering stacks on the left over the white tiles, clear of her face."],
+    headline: "SKIN, BUT BETTER. SERUMS 30% OFF",
+    primary: "A smiling woman with real glowing skin and a few freckles in a white towel robe holding a small amber dropper serum bottle with a made-up DEWLY label beside her cheek in a white tiled bathroom. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-neonheadphones", type: "static", trending: true, isNew: true, brandName: "VOLTA",
+    category: "Electronics", label: "Electronics", title: "Turn It Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TURN IT UP. HEADPHONES 30% OFF", text: "Turn It Up", sign: "VOLTA", tag: "Electronics" },
+    why: ["A man in over-ear headphones on a rainy neon city street makes the headphones the hero of a night out.","Hot-pink glowing neon-tube lettering stacks across the top over the dark night sky, clear of his head."],
+    headline: "TURN IT UP. HEADPHONES 30% OFF",
+    primary: "A man in a black jacket on a wet neon-lit city street at night wearing large matte black over-ear headphones with a thin pink glowing ring, smiling into the lens. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-yellowsuitcases", type: "static", trending: true, isNew: true, brandName: "TRAVLR",
     category: "Travel", label: "Travel", title: "Ready Set Go",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
