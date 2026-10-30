@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-everydaypearls", type: "static", trending: true, isNew: true, brandName: "PEARLY",
+    category: "Jewelry", label: "Jewelry", title: "Everyday Pearls",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "EVERYDAY PEARLS. NECKLACES 2 FOR $40", text: "Everyday Pearls", sign: "PEARLY", tag: "Jewelry" },
+    why: ["A woman in a plain white tee wearing a layered pearl necklace on a terracotta terrace makes pearls feel everyday.","Cream hand-painted lettering is painted on the terracotta wall beside her."],
+    headline: "EVERYDAY PEARLS. NECKLACES 2 FOR $40",
+    primary: "A woman in a white tee leaning on a terracotta wall wearing a layered freshwater PEARLY pearl necklace, gazing off to the side, shot on film in soft daylight. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-carryallyellow", type: "static", trending: true, isNew: true, brandName: "CARRYALL",
+    category: "Fashion", label: "Fashion", title: "Carry It All",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CARRY IT ALL. BACKPACKS 30% OFF", text: "Carry It All", sign: "CARRYALL", tag: "Fashion" },
+    why: ["A student wearing a bright yellow backpack in a grey metro crowd makes the bag stand out in the everyday rush.","Black stencil lettering is painted on the white tiled station wall above the crowd."],
+    headline: "CARRY IT ALL. BACKPACKS 30% OFF",
+    primary: "A deadpan student in a grey hoodie wearing a bright yellow CARRYALL backpack facing the lens on a busy metro platform, shot on film with the commuters blurred. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-bestpartwalk", type: "static", trending: true, isNew: true, brandName: "WALKIES",
     category: "Pets", label: "Pets", title: "Best Part of the Day",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
