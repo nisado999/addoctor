@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-floorrug", type: "static", trending: true, isNew: true, brandName: "RUGHAUS",
+    category: "Home & Decor", label: "Home & Decor", title: "Start From the Floor",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "START FROM THE FLOOR. RUGS 30% OFF", text: "Start From the Floor", sign: "RUGHAUS", tag: "Home & Decor" },
+    why: ["A kid drawing on a big terracotta striped rug with a dog beside her makes the rug the heart of the room.","Terracotta painted lettering sits on the white wall above the sofa like a mural."],
+    headline: "START FROM THE FLOOR. RUGS 30% OFF",
+    primary: "A child in pyjamas lying on a big terracotta and cream striped RUGHAUS rug drawing, with a small dog beside her in a sunny apartment, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-garageleggings", type: "static", trending: true, isNew: true, brandName: "MOVEWELL",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "No Excuses",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "NO EXCUSES. LEGGINGS 2 FOR $40", text: "No Excuses", sign: "MOVEWELL", tag: "Sport & Fitness" },
+    why: ["A woman mid-lunge in a gritty garage gym in dark green leggings makes the leggings look made for real workouts.","White block lettering is painted on the cinderblock wall behind her like gym wall rules."],
+    headline: "NO EXCUSES. LEGGINGS 2 FOR $40",
+    primary: "A fit woman in a grey tank and dark green MOVEWELL leggings mid-lunge in a gritty garage gym with a mirror and kettlebell, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-showoffcarwash", type: "static", trending: true, isNew: true, brandName: "SHINEWORKS",
     category: "Automotive", label: "Automotive", title: "Show Off",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
