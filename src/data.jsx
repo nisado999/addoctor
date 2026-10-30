@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-worththecold", type: "static", trending: true, isNew: true, brandName: "TOWELLY",
+    category: "Home & Decor", label: "Home & Decor", title: "Worth the Cold",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WORTH THE COLD. BEACH TOWELS 2 FOR $30", text: "Worth the Cold", sign: "TOWELLY", tag: "Home & Decor" },
+    why: ["A grinning woman wrapped in a thick teal towel after a dawn lake swim makes the towel the reward.","White hand-painted lettering is painted on the weathered wooden signpost beside the lake."],
+    headline: "WORTH THE COLD. BEACH TOWELS 2 FOR $30",
+    primary: "A grinning woman with wet hair wrapped in a thick teal TOWELLY towel beside a misty lake at dawn, with a weathered wooden signpost beside her, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-borntorun", type: "static", trending: true, isNew: true, brandName: "ZOOMERS",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Born to Run",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BORN TO RUN. KIDS TRAINERS 30% OFF", text: "Born to Run", sign: "ZOOMERS", tag: "Kids & Baby" },
+    why: ["A laughing boy sprinting past a giant blue trainer shot from ground level makes the shoes the speed of a school run.","Navy hand-painted lettering is painted on the yellow wall behind him."],
+    headline: "BORN TO RUN. KIDS TRAINERS 30% OFF",
+    primary: "A laughing boy mid-sprint on a sunny pavement with a bright blue ZOOMERS kids trainer huge in the foreground, shot on film from ground level. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-lasttouch", type: "static", trending: true, isNew: true, brandName: "SABLE",
     category: "Fragrances", label: "Fragrances", title: "Last Touch",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
