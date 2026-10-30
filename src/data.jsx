@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-stackthem", type: "static", trending: true, isNew: true, brandName: "ORRA",
+    category: "Jewelry", label: "Jewelry", title: "Stack Them",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "STACK THEM. GOLD RINGS 3 FOR $45", text: "Stack Them", sign: "ORRA", tag: "Jewelry" },
+    why: ["A woman resting her hand with a stack of thin gold rings against her cheek makes the rings the little thing that finishes an outfit.","Dark navy hand-painted lettering is painted on the pale blue wall in the upper left."],
+    headline: "STACK THEM. GOLD RINGS 3 FOR $45",
+    primary: "A young woman in a cream knit resting her hand wearing a stack of thin ORRA gold rings against her cheek, in front of a sunny pale blue wall, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-shineon", type: "static", trending: true, isNew: true, brandName: "GLOSSMAN",
+    category: "Automotive", label: "Automotive", title: "Shine On",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SHINE ON. CAR WAX 25% OFF", text: "Shine On", sign: "GLOSSMAN", tag: "Automotive" },
+    why: ["A smiling man buffing a red classic car hood with a tin and bottle of wax makes the wax the Saturday ritual that shines an old car.","Black stencil lettering is painted on the white garage door above him."],
+    headline: "SHINE ON. CAR WAX 25% OFF",
+    primary: "A smiling man in a white tee kneeling and buffing the red hood of a classic car with a cloth, a tin and bottle of GLOSSMAN car wax on the hood, shot on film in a driveway. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-spfup", type: "static", trending: true, isNew: true, brandName: "SUNNIE",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "SPF Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SPF UP. SUNSCREEN 2 FOR $15", text: "SPF Up", sign: "SUNNIE", tag: "Beauty & Skincare" },
+    why: ["A laughing woman holding up a bright orange sunscreen tube beside a lifeguard tower makes the sunscreen the thing that keeps a beach day going.","Navy blue hand-painted lettering is painted on the white side of the lifeguard tower on the right."],
+    headline: "SPF UP. SUNSCREEN 2 FOR $15",
+    primary: "A laughing woman in a straw hat rubbing sunscreen on her shoulder and holding up a big orange SUNNIE SPF 50 tube beside a faded lifeguard tower on a sunny beach, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-everydaytee", type: "static", trending: true, isNew: true, brandName: "GRIMLY",
     category: "Fashion", label: "Fashion", title: "Everyday Tee",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
