@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-lasttouch", type: "static", trending: true, isNew: true, brandName: "SABLE",
+    category: "Fragrances", label: "Fragrances", title: "Last Touch",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LAST TOUCH. COLOGNE 2 FOR $60", text: "Last Touch", sign: "SABLE", tag: "Fragrances" },
+    why: ["A man buttoning his cuff in a moody hotel room with a tall dark cologne bottle standing in front makes the cologne the last touch of a night out.","Cream hand-painted lettering is painted on the burgundy wall above him."],
+    headline: "LAST TOUCH. COLOGNE 2 FOR $60",
+    primary: "A man in a crisp white shirt buttoning his cuff in a moody hotel room with a tall dark glass SABLE cologne bottle with a silver cap standing in the foreground, shot on film by lamp light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-getplanting", type: "static", trending: true, isNew: true, brandName: "PLOTTER",
     category: "Home & Decor", label: "Home & Decor", title: "Get Planting",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
