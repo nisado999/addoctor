@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-coldnightfix", type: "static", trending: true, isNew: true, brandName: "HUGGLE",
+    category: "Home & Decor", label: "Home & Decor", title: "Cold Night Fix",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "COLD NIGHT FIX. HOT WATER BOTTLES 2 FOR $24", text: "Cold Night Fix", sign: "HUGGLE", tag: "Home & Decor" },
+    why: ["A woman hugging a rust knitted hot water bottle under a blanket makes the bottle the cure for a cold night.","Cream hand-lettered type is painted on the deep teal wall above her."],
+    headline: "COLD NIGHT FIX. HOT WATER BOTTLES 2 FOR $24",
+    primary: "A woman in a cream knit jumper under a blanket hugging a rust-coloured knitted HUGGLE hot water bottle in a dark teal bedroom, shot on film by lamp light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-earlymiles", type: "static", trending: true, isNew: true, brandName: "PACEUP",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Early Miles",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "EARLY MILES. RUNNING SHOES 30% OFF", text: "Early Miles", sign: "PACEUP", tag: "Sport & Fitness" },
+    why: ["A runner crouching to tie bright orange shoes on an empty bridge at sunrise makes the run the best part of the day.","White stencil lettering is painted on the concrete bridge wall beside the runner."],
+    headline: "EARLY MILES. RUNNING SHOES 30% OFF",
+    primary: "A runner crouching to tie bright orange PACEUP running shoes on an empty city bridge at sunrise, shot on film from a low angle. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-bareskin", type: "static", trending: true, isNew: true, brandName: "DEWLY",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Bare Skin Days",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BARE SKIN DAYS. SERUMS 30% OFF", text: "Bare Skin Days", sign: "DEWLY", tag: "Beauty & Skincare" },
+    why: ["A woman with real skin and wet hair holding a small amber dropper serum by her cheek makes the serum honest, not glossy.","Cream hand-painted lettering is painted on the sage-green tiled wall beside her."],
+    headline: "BARE SKIN DAYS. SERUMS 30% OFF",
+    primary: "A freckled woman in a white towel wrap holding a small amber DEWLY dropper serum beside her cheek in a sage-green tiled bathroom, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-raincheck", type: "static", trending: true, isNew: true, brandName: "STEEPLY",
     category: "Food & Bev", label: "Food & Bev", title: "Rain Check",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
