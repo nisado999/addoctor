@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-bringithome", type: "static", trending: true, isNew: true, brandName: "TOTELY",
+    category: "Fashion", label: "Fashion", title: "Bring It Home",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BRING IT HOME. TOTE BAGS 2 FOR $20", text: "Bring It Home", sign: "TOTELY", tag: "Fashion" },
+    why: ["A smiling woman carrying an overflowing canvas tote through a farmers market makes the tote the weekend haul.","White hand-painted lettering is painted on the blue market stall wall beside her."],
+    headline: "BRING IT HOME. TOTE BAGS 2 FOR $20",
+    primary: "A smiling woman at a farmers market holding a big natural canvas TOTELY tote bag overflowing with vegetables and flowers, shot on film in soft sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-turnuproof", type: "static", trending: true, isNew: true, brandName: "BOOMBOX",
+    category: "Electronics", label: "Electronics", title: "Turn Up the Roof",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TURN UP THE ROOF. SPEAKERS 25% OFF", text: "Turn Up the Roof", sign: "BOOMBOX", tag: "Electronics" },
+    why: ["Friends dancing on a rooftop at golden hour around a rugged cream speaker makes the speaker the party.","Red hand-painted lettering is painted on the white brick rooftop wall behind the speaker."],
+    headline: "TURN UP THE ROOF. SPEAKERS 25% OFF",
+    primary: "Three friends dancing on a city rooftop at golden hour around a rugged cream BOOMBOX portable speaker with a leather strap, shot on film with flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-poolday", type: "static", trending: true, isNew: true, brandName: "SPLASHY",
     category: "Fashion", label: "Fashion", title: "Pool Day",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
