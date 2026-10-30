@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-slamdunk", type: "static", trending: true, isNew: true, brandName: "HOOPCITY",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Slam Dunk",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SLAM DUNK. BASKETBALLS 2 FOR $40", text: "Slam Dunk", sign: "HOOPCITY", tag: "Sport & Fitness" },
+    why: ["A cheerful teenager holding a bright orange basketball toward the lens on an outdoor court at sunset makes the ball the cheapest way to make a whole street meet.","White painted lettering is painted on the black asphalt court surface across the lower half."],
+    headline: "SLAM DUNK. BASKETBALLS 2 FOR $40",
+    primary: "A cheerful teenager in a white tee holding a bright orange HOOPCITY basketball toward the lens on an outdoor blacktop court at sunset, shot on film from a low angle. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-glowdaily", type: "static", trending: true, isNew: true, brandName: "GLOWLY",
+    category: "Supplements", label: "Supplements", title: "Glow Daily",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GLOW DAILY. COLLAGEN GUMMIES 20% OFF", text: "Glow Daily", sign: "GLOWLY", tag: "Supplements" },
+    why: ["A glowing woman in a robe holding a pastel pink jar of collagen gummies on a peach bathroom vanity makes the gummies a sweet daily self-care habit.","Dark brown hand-painted lettering is painted on the peach wall in the upper left."],
+    headline: "GLOW DAILY. COLLAGEN GUMMIES 20% OFF",
+    primary: "A glowing woman in a white robe holding up a pastel pink GLOWLY collagen gummies jar and a gummy at a pastel peach bathroom vanity with a round mirror, shot on film in morning light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-catgameon", type: "static", trending: true, isNew: true, brandName: "PAWPLAY",
+    category: "Pets", label: "Pets", title: "Game On",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GAME ON. CAT TOYS 3 FOR $10", text: "Game On", sign: "PAWPLAY", tag: "Pets" },
+    why: ["A grey tabby leaping at a teal feather wand on a sunny wooden floor makes the wand the cheapest way to make a cat go wild.","Dark blue hand-painted lettering is written across the sunlit wooden floor in the upper half."],
+    headline: "GAME ON. CAT TOYS 3 FOR $10",
+    primary: "An energetic grey tabby cat leaping to bat a bright teal PAWPLAY feather wand toy on a sunlit wooden floor in a bright living room, shot on film at floor level. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-splashzone", type: "static", trending: true, isNew: true, brandName: "SPLASHY",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Splash Zone",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SPLASH ZONE. KIDS GOGGLES 2 FOR $16", text: "Splash Zone", sign: "SPLASHY", tag: "Kids & Baby" },
+    why: ["A laughing child peeking out of the pool in bright pink goggles makes the goggles the fun part of a swim lesson.","White painted lettering is painted on the blue tiled pool wall above the child."],
+    headline: "SPLASH ZONE. KIDS GOGGLES 2 FOR $16",
+    primary: "A laughing child at the pool edge with bright neon pink SPLASHY swim goggles pushed up on the forehead in front of a blue tiled pool wall, shot on film in bright sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-packit", type: "static", trending: true, isNew: true, brandName: "TIDYTRIP",
     category: "Travel", label: "Travel", title: "Pack It",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
