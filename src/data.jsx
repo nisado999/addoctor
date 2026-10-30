@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-everydaytee", type: "static", trending: true, isNew: true, brandName: "GRIMLY",
+    category: "Fashion", label: "Fashion", title: "Everyday Tee",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "EVERYDAY TEE. 3 FOR $30", text: "Everyday Tee", sign: "GRIMLY", tag: "Fashion" },
+    why: ["A deadpan boy in a heavy white tee sitting in a skatepark bowl makes the plain white tee the thing you reach for every day.","Huge white stencil lettering runs across the grey concrete wall at the top of the frame."],
+    headline: "EVERYDAY TEE. 3 FOR $30",
+    primary: "A deadpan boy in a heavy white cotton GRIMLY t-shirt and black jeans sitting on the edge of a graffiti skatepark bowl, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-bestseat", type: "static", trending: true, isNew: true, brandName: "SNOOZEDOG",
+    category: "Pets", label: "Pets", title: "Best Seat",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BEST SEAT. DOG BEDS 30% OFF", text: "Best Seat", sign: "SNOOZEDOG", tag: "Pets" },
+    why: ["A sleepy golden retriever curled up on a huge plush oatmeal bed makes the bed the one thing a dog actually wants.","White painted lettering is painted on the white brick wall on the right half."],
+    headline: "BEST SEAT. DOG BEDS 30% OFF",
+    primary: "A sleepy golden retriever curled up with its chin on the edge of a huge round plush oatmeal SNOOZEDOG dog bed in a sunlit living room, shot on film at dog height. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-freshground", type: "static", trending: true, isNew: true, brandName: "ROOKERY",
     category: "Food & Bev", label: "Food & Bev", title: "Fresh Ground",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
