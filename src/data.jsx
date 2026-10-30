@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-slowsunday", type: "static", trending: true, isNew: true, brandName: "BREWHAUS",
+    category: "Home & Decor", label: "Home & Decor", title: "Slow Sunday",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SLOW SUNDAY. COFFEE MAKERS 25% OFF", text: "Slow Sunday", sign: "BREWHAUS", tag: "Home & Decor" },
+    why: ["A man in a robe pouring coffee from a copper coffee maker on a sunny Sunday makes the machine the slow morning.","Cream hand-painted lettering is painted on the mustard kitchen wall beside him."],
+    headline: "SLOW SUNDAY. COFFEE MAKERS 25% OFF",
+    primary: "A man in a grey robe pouring coffee from a copper and black BREWHAUS coffee maker on a sunny kitchen counter, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-puddleready", type: "static", trending: true, isNew: true, brandName: "RAINBUG",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Puddle Ready",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "PUDDLE READY. KIDS RAINCOATS 30% OFF", text: "Puddle Ready", sign: "RAINBUG", tag: "Kids & Baby" },
+    why: ["A laughing child in a bright yellow raincoat and red boots mid-splash in a puddle makes the coat the fun of a wet day.","White painted lettering is painted on the grey brick wall beside the child."],
+    headline: "PUDDLE READY. KIDS RAINCOATS 30% OFF",
+    primary: "A laughing child in a bright yellow RAINBUG raincoat and red boots jumping in a puddle on a drizzly street with a grey brick wall behind, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-unrollmat", type: "static", trending: true, isNew: true, brandName: "ZENMAT",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Unroll",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
