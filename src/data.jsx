@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-onemorepage", type: "static", trending: true, isNew: true, brandName: "STORYTIME",
+    category: "Kids & Baby", label: "Kids & Baby", title: "One More Page",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "ONE MORE PAGE. KIDS BOOKS 3 FOR $20", text: "One More Page", sign: "STORYTIME", tag: "Kids & Baby" },
+    why: ["A dad reading a big picture book to his child on the bedroom floor makes the book the best part of bedtime.","Deep blue hand-painted lettering is painted on the warm yellow bedroom wall above them."],
+    headline: "ONE MORE PAGE. KIDS BOOKS 3 FOR $20",
+    primary: "A dad and his child in pyjamas on a cosy bedroom floor reading a big colourful STORYTIME picture book by lamp light, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-makeityours", type: "static", trending: true, isNew: true, brandName: "CASEY",
+    category: "Electronics", label: "Electronics", title: "Make It Yours",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "MAKE IT YOURS. PHONE CASES 3 FOR $20", text: "Make It Yours", sign: "CASEY", tag: "Electronics" },
+    why: ["A laughing teen holding up her phone in a glitter pink case in a mall food court makes the case the one thing that is hers.","Hot-pink hand-painted lettering is painted on the mint wall beside her."],
+    headline: "MAKE IT YOURS. PHONE CASES 3 FOR $20",
+    primary: "A laughing teen girl in a striped tee holding up a phone in a glitter pink CASEY phone case toward the lens in a mall food court, shot on film with direct flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-wakeupwell", type: "static", trending: true, isNew: true, brandName: "SILKI",
     category: "Home & Decor", label: "Home & Decor", title: "Wake Up Well",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
