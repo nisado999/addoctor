@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-readytoroll", type: "static", trending: true, isNew: true, brandName: "ROLLERGIRL",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Ready to Roll",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "READY TO ROLL. ROLLER SKATES 25% OFF", text: "Ready to Roll", sign: "ROLLERGIRL", tag: "Kids & Baby" },
+    why: ["A laughing girl mid-skate on cream retro roller skates with pink wheels makes the skates the cheapest way to make a Saturday feel like the 70s.","White hand-painted lettering is painted on the bright pink rink wall above her."],
+    headline: "READY TO ROLL. ROLLER SKATES 25% OFF",
+    primary: "A laughing girl mid-skate with her arms out on cream retro ROLLERGIRL roller skates with pink wheels on a polished wooden rink floor in front of a bright pink wall, shot on film with flash from a low angle. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-gobig", type: "static", trending: true, isNew: true, brandName: "ORRA",
+    category: "Jewelry", label: "Jewelry", title: "Go Big",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GO BIG. GOLD HOOPS 3 FOR $20", text: "Go Big", sign: "ORRA", tag: "Jewelry" },
+    why: ["A smiling woman wearing big shiny gold hoop earrings against a terracotta wall makes the hoops the cheapest way to look dressed up.","Cream hand-painted lettering is painted on the terracotta wall in the upper left."],
+    headline: "GO BIG. GOLD HOOPS 3 FOR $20",
+    primary: "A beautiful young woman smiling at the lens with big shiny gold hoop earrings against a sunny terracotta wall on a quiet street, shot on film in golden sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-bootseason", type: "static", trending: true, isNew: true, brandName: "TANNERY",
+    category: "Fashion", label: "Fashion", title: "Boot Season",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BOOT SEASON. LEATHER BOOTS 30% OFF", text: "Boot Season", sign: "TANNERY", tag: "Fashion" },
+    why: ["A man in a wool coat with chunky tan leather boots huge in the foreground on cobbles makes the boots the autumn shoe that lasts for years.","Cream hand-painted lettering is painted on the dark green door on the right."],
+    headline: "BOOT SEASON. LEATHER BOOTS 30% OFF",
+    primary: "A good-looking young man in a wool coat walking on a cobbled old-town street with chunky tan leather lace-up TANNERY boots huge in the foreground, shot on film at low angle in golden light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-breathe", type: "static", trending: true, isNew: true, brandName: "MISTRAL",
     category: "Health & Wellness", label: "Health & Wellness", title: "Breathe",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
