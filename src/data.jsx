@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-dinkit", type: "static", trending: true, isNew: true, brandName: "DINKR",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Dink It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "DINK IT. PADDLES 2 FOR $40", text: "Dink It", sign: "DINKR", tag: "Sport & Fitness" },
+    why: ["Three friends laughing with bright teal pickleball paddles under string lights make the paddles the cheap reason a neighbourhood meets.","White hand-painted lettering runs down the tall black chain-link fence on the right."],
+    headline: "DINK IT. PADDLES 2 FOR $40",
+    primary: "Three friends laughing at a dusk pickleball court holding bright teal and pink DINKR paddles under string lights, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-gameon", type: "static", trending: true, isNew: true, brandName: "VOLLEY",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Game On",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GAME ON. RACKETS 25% OFF", text: "Game On", sign: "VOLLEY", tag: "Sport & Fitness" },
+    why: ["A smiling woman holding a yellow racket on an empty clay court makes the racket the start of any Saturday match.","White painted lettering is written on the red clay court surface across the bottom of the frame."],
+    headline: "GAME ON. RACKETS 25% OFF",
+    primary: "A smiling woman in a white tennis dress holding a yellow and black VOLLEY tennis racket on an empty red clay court, shot on film from above. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-wakeupespresso", type: "static", trending: true, isNew: true, brandName: "ROMANO",
+    category: "Food & Bev", label: "Food & Bev", title: "Wake Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WAKE UP. ESPRESSO CUPS 4 FOR $20", text: "Wake Up", sign: "ROMANO", tag: "Food & Bev" },
+    why: ["A barista holding up white espresso cups in a mint tiled Italian bar makes the cups the small ritual that wakes a street up.","Cream hand-painted lettering is painted across the mint green tiled wall above the barista."],
+    headline: "WAKE UP. ESPRESSO CUPS 4 FOR $20",
+    primary: "A calm barista in a white apron centred at the bottom of the frame holding up thick white ROMANO espresso cups in a mint tiled Italian espresso bar, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-staycool", type: "static", trending: true, isNew: true, brandName: "FROSTY",
     category: "Food & Bev", label: "Food & Bev", title: "Stay Cool",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
