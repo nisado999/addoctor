@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-freshground", type: "static", trending: true, isNew: true, brandName: "ROOKERY",
+    category: "Food & Bev", label: "Food & Bev", title: "Fresh Ground",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FRESH GROUND. COFFEE BEANS 2 FOR $18", text: "Fresh Ground", sign: "ROOKERY", tag: "Food & Bev" },
+    why: ["A man in a wool coat holding a kraft bag of beans outside a roaster window makes the beans the best part of a coffee lover's morning.","Cream hand-painted lettering is lettered directly on the roaster shopfront window glass in the upper left."],
+    headline: "FRESH GROUND. COFFEE BEANS 2 FOR $18",
+    primary: "A deadpan man in a wool coat holding a kraft ROOKERY coffee bean bag outside a coffee roaster shopfront window on a rainy street, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-headfirst", type: "static", trending: true, isNew: true, brandName: "BONCE",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Head First",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "HEAD FIRST. KIDS HELMETS 20% OFF", text: "Head First", sign: "BONCE", tag: "Kids & Baby" },
+    why: ["A grinning girl braking her bike in a bright yellow helmet makes the helmet the thing parents stop worrying about.","White painted lettering is written on the grey road surface in the lower left."],
+    headline: "HEAD FIRST. KIDS HELMETS 20% OFF",
+    primary: "A grinning girl in a glossy sunshine yellow BONCE kids helmet braking a small red bike on a sunny suburban street, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-sleepin", type: "static", trending: true, isNew: true, brandName: "LINNEA",
+    category: "Home & Decor", label: "Home & Decor", title: "Sleep In",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SLEEP IN. LINEN SHEETS 30% OFF", text: "Sleep In", sign: "LINNEA", tag: "Home & Decor" },
+    why: ["A woman laughing into a pillow on rumpled sage green linen sheets makes the sheets the lazy luxury of a slow morning.","Dark green hand-painted lettering is painted on the pale plaster wall above the bed on the left."],
+    headline: "SLEEP IN. LINEN SHEETS 30% OFF",
+    primary: "A woman in a white tee laughing into a pillow on rumpled sage green LINNEA linen sheets in a bright bedroom with a wooden bed, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-dinkit", type: "static", trending: true, isNew: true, brandName: "DINKR",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Dink It",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
