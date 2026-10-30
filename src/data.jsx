@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-clearclutter", type: "static", trending: true, isNew: true, brandName: "WOVEN & CO",
+    category: "Home & Decor", label: "Home & Decor", title: "Clear the Clutter",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CLEAR THE CLUTTER. STORAGE BASKETS 3 FOR $30", text: "Clear the Clutter", sign: "WOVEN & CO", tag: "Home & Decor" },
+    why: ["A relaxed woman sitting on a hallway bench beside a stack of chunky woven baskets makes the baskets the calm fix for a messy hallway.","White hand-painted lettering is painted on the pale blue hallway wall in the upper left."],
+    headline: "CLEAR THE CLUTTER. STORAGE BASKETS 3 FOR $30",
+    primary: "A relaxed woman sitting on a wooden hallway bench smiling beside a stack of three chunky woven seagrass WOVEN & CO storage baskets in a bright hallway with a pale blue wall, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-spiceitup", type: "static", trending: true, isNew: true, brandName: "DIABLO",
     category: "Food & Bev", label: "Food & Bev", title: "Spice It Up",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
