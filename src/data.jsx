@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-glossmirror", type: "static", trending: true, isNew: true, brandName: "GLOSSIP",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Shine On",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SHINE ON. LIP GLOSS 3 FOR $15", text: "Shine On", sign: "GLOSSIP", tag: "Beauty & Skincare" },
+    why: ["Two friends laughing in a sticker-covered pink bathroom mirror, one holding up a glossy pink tube, make lip gloss feel like a night out.","Big pink bubble lettering is written across the mirror in lip gloss like a message from the girls."],
+    headline: "SHINE ON. LIP GLOSS 3 FOR $15",
+    primary: "Two laughing friends in a pink-tiled bathroom mirror with flash on film, one holding a pink GLOSSIP lip gloss tube up to the lens. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-dinercoffee", type: "static", trending: true, isNew: true, brandName: "DAYBREAK ROAST",
+    category: "Food & Bev", label: "Food & Bev", title: "First Things First",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FIRST THINGS FIRST. COFFEE 2 FOR $20", text: "First Things First", sign: "DAYBREAK ROAST", tag: "Food & Bev" },
+    why: ["A deadpan woman with a mug in an empty morning diner, a bag of coffee on the counter in front of her, makes coffee the first thing of the day.","Grey painted lettering sits on the diner window behind her like a sign, clear of her face."],
+    headline: "FIRST THINGS FIRST. COFFEE 2 FOR $20",
+    primary: "A deadpan woman in a mustard cardigan holding a mug at an empty diner counter with a big DAYBREAK ROAST coffee bag standing in front of her, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-beachsunscreen", type: "static", trending: true, isNew: true, brandName: "SOLBLOK",
     category: "Health & Wellness", label: "Health & Wellness", title: "Burn Nothing",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
