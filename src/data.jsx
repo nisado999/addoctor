@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-gobighoops", type: "static", trending: true, isNew: true, brandName: "HOOPLA",
+    category: "Jewelry", label: "Jewelry", title: "Go Big",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GO BIG. GOLD HOOPS 2 FOR $30", text: "Go Big", sign: "HOOPLA", tag: "Jewelry" },
+    why: ["A woman in a white tee wearing big chunky gold hoops against a pink wall makes the hoops the whole look.","Deep red hand-painted lettering is painted on the pink wall behind her."],
+    headline: "GO BIG. GOLD HOOPS 2 FOR $30",
+    primary: "A woman in a white tee wearing big chunky gold HOOPLA hoop earrings with a hang tag beside her face against a pastel pink wall, shot on film with direct flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-sofaupgrade", type: "static", trending: true, isNew: true, brandName: "COZYHAUS",
+    category: "Home & Decor", label: "Home & Decor", title: "Sofa Upgrade",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SOFA UPGRADE. CUSHIONS 3 FOR $30", text: "Sofa Upgrade", sign: "COZYHAUS", tag: "Home & Decor" },
+    why: ["A woman curled up with a book on a sofa piled with bold patterned cushions makes the cushions the room's upgrade.","Terracotta hand-painted lettering is painted on the white wall above the sofa."],
+    headline: "SOFA UPGRADE. CUSHIONS 3 FOR $30",
+    primary: "A woman smiling at a book on a cream sofa piled with bold mustard, terracotta and teal COZYHAUS cushions in a bright living room, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-goodboytreats", type: "static", trending: true, isNew: true, brandName: "TREATIE",
     category: "Pets", label: "Pets", title: "Who's a Good Boy",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
