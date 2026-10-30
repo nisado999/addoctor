@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-riseandtoast", type: "static", trending: true, isNew: true, brandName: "TOASTIE",
+    category: "Home & Decor", label: "Home & Decor", title: "Rise and Toast",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "RISE AND TOAST. TOASTERS 25% OFF", text: "Rise and Toast", sign: "TOASTIE", tag: "Home & Decor" },
+    why: ["A grinning boy in pyjamas holding jammy toast beside a cream retro toaster in a pastel kitchen makes the toaster the start of the day.","Dark red hand-painted lettering is painted on the mint kitchen wall beside the shelves."],
+    headline: "RISE AND TOAST. TOASTERS 25% OFF",
+    primary: "A grinning boy in blue striped pyjamas holding a slice of jammy toast on a stool beside a cream retro TOASTIE toaster in a pastel yellow and mint kitchen, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-redalert", type: "static", trending: true, isNew: true, brandName: "LAQUER",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Red Alert",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
