@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-yellowsuitcases", type: "static", trending: true, isNew: true, brandName: "TRAVLR",
+    category: "Travel", label: "Travel", title: "Ready Set Go",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "READY, SET, GO. SUITCASES 25% OFF", text: "Ready Set Go", sign: "TRAVLR", tag: "Travel" },
+    why: ["A woman leaping with a bright cobalt hard-shell suitcase on a sunny-yellow backdrop makes the suitcase and the joy of travel obvious.","Heavy navy lettering stacks across the top of the yellow backdrop, above her head."],
+    headline: "READY, SET, GO. SUITCASES 25% OFF",
+    primary: "A cheerful woman in a white tee and blue jeans jumping with joy and holding a bright cobalt blue hard-shell cabin suitcase on a vivid sunny-yellow seamless backdrop. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-embersauce", type: "static", trending: true, isNew: true, brandName: "EMBER",
+    category: "Food & Bev", label: "Food & Bev", title: "Bring the Heat",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BRING THE HEAT. HOT SAUCE 2 FOR $12", text: "Bring the Heat", sign: "EMBER", tag: "Food & Bev" },
+    why: ["A hot sauce bottle exploding in a splash of red sauce and chillies on a dark red backdrop makes the heat obvious.","Heavy cream condensed lettering stacks on the left over the dark backdrop."],
+    headline: "BRING THE HEAT. HOT SAUCE 2 FOR $12",
+    primary: "A glass bottle of hot sauce with a made-up EMBER label with bright red sauce mid-splash and fresh red chillies around it, hard flash light, dark red-black backdrop. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-climbprotein", type: "static", trending: true, isNew: true, brandName: "CLIMBR",
+    category: "Supplements", label: "Supplements", title: "Fuel the Climb",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FUEL THE CLIMB. PROTEIN 25% OFF", text: "Fuel the Climb", sign: "CLIMBR", tag: "Supplements" },
+    why: ["Tiny climbers roped up the side of a giant yellow protein tub turn a supplement into an expedition.","Black heavy condensed lettering stacks across the top of the electric yellow backdrop, clear of the tub."],
+    headline: "FUEL THE CLIMB. PROTEIN 25% OFF",
+    primary: "A giant yellow tub of protein powder with a made-up CLIMBR label in macro miniature-world photography with tiny climbers with ropes and ice axes scaling its side on a vivid yellow backdrop. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-sundayperfume", type: "static", trending: true, isNew: true, brandName: "AURELIA",
+    category: "Fragrances", label: "Fragrances", title: "Smells Like Sunday",
+    format: "4:5 · Static · Product concept", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SMELLS LIKE SUNDAY. PERFUME 2 FOR $50", text: "Smells Like Sunday", sign: "AURELIA", tag: "Fragrances" },
+    why: ["A tall glass perfume bottle standing like a monument on a dusty-rose dune at golden hour makes the scent feel like a mood.","Heavy cream serif lettering stacks at the upper left over the pink sky, clear of the bottle."],
+    headline: "SMELLS LIKE SUNDAY. PERFUME 2 FOR $50",
+    primary: "A tall rectangular glass perfume bottle with a gold cap and a small made-up label standing on a smooth sand dune at golden hour with a long soft shadow and a pale pink sky. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-ceramicmugs", type: "static", trending: true, isNew: true, brandName: "CLAYFIELD",
     category: "Home & Decor", label: "Home & Decor", title: "Sip Slow",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
