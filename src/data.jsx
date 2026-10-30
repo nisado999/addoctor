@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-buildit", type: "static", trending: true, isNew: true, brandName: "BRICKLY",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Build It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BUILD IT. BUILDING BLOCKS 25% OFF", text: "Build It", sign: "BRICKLY", tag: "Kids & Baby" },
+    why: ["A boy concentrating on a tall tower of colourful chunky blocks makes the blocks the toy that keeps a kid busy all afternoon.","Dark blue hand-painted lettering is painted on the pale yellow playroom wall in the upper right."],
+    headline: "BUILD IT. BUILDING BLOCKS 25% OFF",
+    primary: "A boy sitting on a grey rug in a bright playroom building a tall tower of chunky primary-colour BRICKLY building blocks beside a spilling tub, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-growsomething", type: "static", trending: true, isNew: true, brandName: "LEAFLET",
+    category: "Home & Decor", label: "Home & Decor", title: "Grow Something",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GROW SOMETHING. HOUSEPLANTS 3 FOR $20", text: "Grow Something", sign: "LEAFLET", tag: "Home & Decor" },
+    why: ["A smiling woman holding a big leafy monstera in a terracotta pot in a humid greenhouse makes cheap plants the easiest way to bring a flat alive.","White hand-painted lettering is written directly on the steamy greenhouse glass on the right."],
+    headline: "GROW SOMETHING. HOUSEPLANTS 3 FOR $20",
+    primary: "A smiling woman in a canvas apron holding a big healthy monstera in a terracotta LEAFLET pot inside a humid glass greenhouse plant shop, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-freshout", type: "static", trending: true, isNew: true, brandName: "HEARTH BAKERS",
+    category: "Food & Bev", label: "Food & Bev", title: "Fresh Out",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FRESH OUT. SOURDOUGH LOAVES 2 FOR $12", text: "Fresh Out", sign: "HEARTH BAKERS", tag: "Food & Bev" },
+    why: ["A smiling baker holding up a golden scored sourdough loaf at a corner bakery makes the loaf the best smell on the street.","Black hand-painted lettering is painted on the pale green wooden shutters on the left."],
+    headline: "FRESH OUT. SOURDOUGH LOAVES 2 FOR $12",
+    primary: "A smiling baker in a flour-dusted apron holding up a big golden scored HEARTH BAKERS sourdough loaf in front of a corner bakery shopfront, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-trickortreat", type: "static", trending: true, isNew: true, brandName: "BOOTIQUE",
     category: "Holidays & Offers", label: "Holidays & Offers", title: "Trick or Treat",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
