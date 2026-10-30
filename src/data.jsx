@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-brightidea", type: "static", trending: true, isNew: true, brandName: "LUMINA",
+    category: "Home & Decor", label: "Home & Decor", title: "Bright Idea",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BRIGHT IDEA. DESK LAMPS 30% OFF", text: "Bright Idea", sign: "LUMINA", tag: "Home & Decor" },
+    why: ["A smiling man at a wooden desk beside a glowing brass lamp makes the lamp the thing that makes a home office feel like your own.","Cream hand-painted lettering is painted on the sage green wall in the upper left."],
+    headline: "BRIGHT IDEA. DESK LAMPS 30% OFF",
+    primary: "A smiling man in a navy sweater sitting at a wooden desk beside a glowing brass LUMINA desk lamp with a cream shade in a tidy sage green home office at dusk, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-boxofjoy", type: "static", trending: true, isNew: true, brandName: "HOLEY MOLEY",
+    category: "Food & Bev", label: "Food & Bev", title: "Box of Joy",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BOX OF JOY. DONUTS 6 FOR $12", text: "Box of Joy", sign: "HOLEY MOLEY", tag: "Food & Bev" },
+    why: ["A laughing woman holding open a box of colourful glazed donuts against a pink wall makes the donuts turn any Friday into a celebration.","White hand-painted lettering is painted on the bright pink wall above her."],
+    headline: "BOX OF JOY. DONUTS 6 FOR $12",
+    primary: "A laughing young woman holding open a cardboard box of six colourful glazed and sprinkled HOLEY MOLEY donuts in front of a bright pink painted wall, shot on film with flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-lightitup", type: "static", trending: true, isNew: true, brandName: "TWINKLE",
     category: "Home & Decor", label: "Home & Decor", title: "Light It Up",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
