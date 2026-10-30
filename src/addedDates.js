@@ -1,5 +1,6 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "cr-mangia": 1793342072,
   "cr-onemorepage": 1793341475,
   "cr-makeityours": 1793341474,
   "cr-wakeupwell": 1793340925,

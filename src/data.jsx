@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-mangia", type: "static", trending: true, isNew: true, brandName: "NONNA",
+    category: "Food & Bev", label: "Food & Bev", title: "Mangia",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "MANGIA. PASTA 4 FOR $10", text: "Mangia", sign: "NONNA", tag: "Food & Bev" },
+    why: ["A smiling grandmother serving a big bowl of spaghetti in a sunny Italian kitchen makes the pasta the family dinner.","Cream hand-painted lettering is painted on the terracotta kitchen wall behind her."],
+    headline: "MANGIA. PASTA 4 FOR $10",
+    primary: "A smiling grandmother in an apron serving a big bowl of tomato spaghetti at a wooden table beside a NONNA dried pasta bag and a glass of red wine, shot on film in side window light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-onemorepage", type: "static", trending: true, isNew: true, brandName: "STORYTIME",
     category: "Kids & Baby", label: "Kids & Baby", title: "One More Page",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
