@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-matchymatchy", type: "static", trending: true, isNew: true, brandName: "MERRYKNIT",
+    category: "Holidays & Offers", label: "Holidays & Offers", title: "Matchy Matchy",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "MATCHY MATCHY. CHRISTMAS JUMPERS 3 FOR $50", text: "Matchy Matchy", sign: "MERRYKNIT", tag: "Holidays & Offers" },
+    why: ["A smiling family of three in matching red reindeer jumpers by a fireplace makes Christmas jumpers the family photo everyone wants.","Cream hand-painted lettering is painted on the dark green living room wall above them."],
+    headline: "MATCHY MATCHY. CHRISTMAS JUMPERS 3 FOR $50",
+    primary: "A smiling family of three in matching red knitted reindeer MERRYKNIT Christmas jumpers standing in a cosy living room with a fireplace, stockings and a tree, shot on film with flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-campout", type: "static", trending: true, isNew: true, brandName: "WILDNEST",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Camp Out",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CAMP OUT. TENTS 25% OFF", text: "Camp Out", sign: "WILDNEST", tag: "Sport & Fitness" },
+    why: ["Two friends with mugs in front of a bright orange pop-up tent by a lake make the tent the cheapest weekend escape.","White hand-painted lettering is painted on the weathered grey boathouse wall above them."],
+    headline: "CAMP OUT. TENTS 25% OFF",
+    primary: "Two friends sitting with mugs in front of a bright orange WILDNEST pop-up dome tent on a lakeside meadow in front of a weathered grey wooden boathouse, shot on film in early light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-shadeson", type: "static", trending: true, isNew: true, brandName: "SOLEIL",
+    category: "Fashion", label: "Fashion", title: "Shades On",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SHADES ON. SUNGLASSES 2 FOR $30", text: "Shades On", sign: "SOLEIL", tag: "Fashion" },
+    why: ["A smiling woman in big tortoiseshell sunglasses on a sunny city rooftop makes cheap sunglasses the quickest way to look like you are on holiday.","Cream hand-painted lettering is painted on the blue water tank behind her."],
+    headline: "SHADES ON. SUNGLASSES 2 FOR $30",
+    primary: "A smiling woman in a white shirt wearing big round tortoiseshell SOLEIL sunglasses on a sunny city rooftop in front of a blue painted water tank, shot on film from a low angle. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-loungemode", type: "static", trending: true, isNew: true, brandName: "SNOOZEWELL",
+    category: "Fashion", label: "Fashion", title: "Lounge Mode",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LOUNGE MODE. PYJAMA SETS 2 FOR $40", text: "Lounge Mode", sign: "SNOOZEWELL", tag: "Fashion" },
+    why: ["A smiling woman in navy striped pyjamas sitting cross-legged on a bed with a mug makes the pyjama set the reason Sundays are the best day.","Dark navy hand-painted lettering is painted on the white wooden bedroom door above her."],
+    headline: "LOUNGE MODE. PYJAMA SETS 2 FOR $40",
+    primary: "A smiling woman in a soft navy and white striped SNOOZEWELL pyjama set sitting cross-legged on an unmade bed with a mug of coffee in a pale pink bedroom, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-slamdunk", type: "static", trending: true, isNew: true, brandName: "HOOPCITY",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Slam Dunk",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
