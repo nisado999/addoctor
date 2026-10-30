@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-skatesneakers", type: "static", trending: true, isNew: true, brandName: "KICKRUN",
+    category: "Fashion", label: "Fashion", title: "Break Them In",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BREAK THEM IN. SNEAKERS 30% OFF", text: "Break Them In", sign: "KICKRUN", tag: "Fashion" },
+    why: ["A skater sitting in a concrete bowl with fresh white and red sneakers pushed to the lens makes the shoes the hero.","Red spray-paint lettering is sprayed across the grey concrete bowl wall behind him."],
+    headline: "BREAK THEM IN. SNEAKERS 30% OFF",
+    primary: "A deadpan teen skater crouching in a concrete skatepark bowl with a skateboard, fresh white and red KICKRUN sneakers big in the foreground, fisheye on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-tramheadphones", type: "static", trending: true, isNew: true, brandName: "HUSH",
+    category: "Electronics", label: "Electronics", title: "Tune Out",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TUNE OUT. HEADPHONES 30% OFF", text: "Tune Out", sign: "HUSH", tag: "Electronics" },
+    why: ["A woman in cream over-ear headphones on a rainy night tram, shut off from the city, makes the headphones the calm.","A red neon sign glows on the rainy window beside her like a shop sign, clear of her face."],
+    headline: "TUNE OUT. HEADPHONES 30% OFF",
+    primary: "A deadpan woman with damp hair wearing cream over-ear headphones on a night tram with a rainy neon window behind her, shot on CineStill film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-hearthcandle", type: "static", trending: true, isNew: true, brandName: "HEARTH",
     category: "Home & Decor", label: "Home & Decor", title: "Cheaper Than Therapy",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
