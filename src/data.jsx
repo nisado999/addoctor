@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-lunchsorted", type: "static", trending: true, isNew: true, brandName: "SNACKPACK",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Lunch Sorted",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LUNCH SORTED. LUNCH BOXES 3 FOR $30", text: "Lunch Sorted", sign: "SNACKPACK", tag: "Kids & Baby" },
+    why: ["A smiling schoolgirl holding open a bright orange lunch box with a sandwich and fruit makes the lunch box the best part of school.","White hand-painted lettering is painted on the pale green corridor wall beside her."],
+    headline: "LUNCH SORTED. LUNCH BOXES 3 FOR $30",
+    primary: "A smiling schoolgirl in uniform holding open a bright orange SNACKPACK lunch box with a sandwich and fruit in a school corridor with lockers, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-beardday", type: "static", trending: true, isNew: true, brandName: "BEARDLY",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Beard Day",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BEARD DAY. BEARD OIL 2 FOR $24", text: "Beard Day", sign: "BEARDLY", tag: "Beauty & Skincare" },
+    why: ["A bearded man in a vintage barber shop holding a small dropper bottle by his jaw makes the oil the beard day.","Cream hand-painted lettering is painted on the dark green tile wall behind him."],
+    headline: "BEARD DAY. BEARD OIL 2 FOR $24",
+    primary: "A bearded man in a denim shirt holding a small dark BEARDLY dropper bottle by his jaw in a vintage barber shop with green tiles, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-gobighoops", type: "static", trending: true, isNew: true, brandName: "HOOPLA",
     category: "Jewelry", label: "Jewelry", title: "Go Big",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
