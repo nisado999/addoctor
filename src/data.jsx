@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-walkies", type: "static", trending: true, isNew: true, brandName: "TAILGATE",
+    category: "Pets", label: "Pets", title: "Walkies",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WALKIES. DOG LEASHES 2 FOR $18", text: "Walkies", sign: "TAILGATE", tag: "Pets" },
+    why: ["A happy beagle trotting toward the lens on a bright red rope leash makes the leash the start of every adventure.","White painted lettering is painted on the gravel park path across the lower half."],
+    headline: "WALKIES. DOG LEASHES 2 FOR $18",
+    primary: "A happy beagle trotting toward the lens on a bright red TAILGATE rope leash held by an owner on a leafy gravel park path, shot on film at dog height. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-stretchitout", type: "static", trending: true, isNew: true, brandName: "ROLLA",
+    category: "Health & Wellness", label: "Health & Wellness", title: "Stretch It Out",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "STRETCH IT OUT. FOAM ROLLERS 25% OFF", text: "Stretch It Out", sign: "ROLLA", tag: "Health & Wellness" },
+    why: ["A smiling woman lying on a thick teal foam roller in a bright yoga studio makes the roller the cheap fix for tired legs.","White hand-painted lettering is written across the pale wooden floor in the lower half."],
+    headline: "STRETCH IT OUT. FOAM ROLLERS 25% OFF",
+    primary: "A smiling woman in grey leggings lying on a thick bright teal ROLLA foam roller on a pale pine floor in an empty yoga studio, shot on film from above. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-toastday", type: "static", trending: true, isNew: true, brandName: "LUMEN",
     category: "Wedding & Events", label: "Wedding & Events", title: "Toast the Day",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
