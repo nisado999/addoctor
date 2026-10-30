@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-cheerswine", type: "static", trending: true, isNew: true, brandName: "CLINK",
+    category: "Food & Bev", label: "Food & Bev", title: "Cheers",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "CHEERS. WINE GLASSES 6 FOR $24", text: "Cheers", sign: "CLINK", tag: "Food & Bev" },
+    why: ["Two friends laughing and clinking wine glasses beside a cream catering van at a street market makes the glasses the start of a good evening.","Orange-red hand-painted lettering is painted on the side of the cream catering van behind them."],
+    headline: "CHEERS. WINE GLASSES 6 FOR $24",
+    primary: "Two laughing women holding stemmed wine glasses of red wine beside a cream vintage catering van at a busy street food market, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-earntheview", type: "static", trending: true, isNew: true, brandName: "TRAILMADE",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Earn the View",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
