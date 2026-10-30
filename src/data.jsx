@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-rainorshine", type: "static", trending: true, isNew: true, brandName: "STORMPROOF",
+    category: "Fashion", label: "Fashion", title: "Rain or Shine",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "RAIN OR SHINE. UMBRELLAS 2 FOR $24", text: "Rain or Shine", sign: "STORMPROOF", tag: "Fashion" },
+    why: ["A woman in a camel coat under a bright yellow umbrella on a grey rainy street makes the umbrella the only colour in the picture.","Navy hand-painted lettering is painted on the grey stone wall beside her."],
+    headline: "RAIN OR SHINE. UMBRELLAS 2 FOR $24",
+    primary: "A woman in a camel coat under a huge bright yellow STORMPROOF umbrella on a grey rainy cobbled street, shot on film with symmetrical framing. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-lookdown", type: "static", trending: true, isNew: true, brandName: "SOXY",
+    category: "Fashion", label: "Fashion", title: "Look Down",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LOOK DOWN. SOCKS 5 FOR $15", text: "Look Down", sign: "SOXY", tag: "Fashion" },
+    why: ["A teen sitting on a bench with crossed feet and loud striped socks pushed to the lens makes the socks the one fun thing in the outfit.","Black hand-painted lettering is painted on the white wall behind him."],
+    headline: "LOOK DOWN. SOCKS 5 FOR $15",
+    primary: "A teen in a grey tee sitting on a wooden bench with crossed feet in loud yellow, pink and green striped SOXY socks, shot on film with direct flash. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-packedready", type: "static", trending: true, isNew: true, brandName: "GYMBAG",
     category: "Travel", label: "Travel", title: "Packed and Ready",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
