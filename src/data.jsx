@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-blendit", type: "static", trending: true, isNew: true, brandName: "BLENDLY",
+    category: "Home & Decor", label: "Home & Decor", title: "Blend It",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BLEND IT. BLENDERS 30% OFF", text: "Blend It", sign: "BLENDLY", tag: "Home & Decor" },
+    why: ["A woman pouring a pink smoothie from a blender jug into a glass makes the blender the breakfast hero.","Deep blue hand-painted lettering is painted on the pale blue kitchen wall above the counter."],
+    headline: "BLEND IT. BLENDERS 30% OFF",
+    primary: "A smiling woman in a cream tee pouring a pink smoothie from a clear BLENDLY blender jug into a glass in a sunny kitchen, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-dancenight", type: "static", trending: true, isNew: true, brandName: "SOLEMATE",
+    category: "Wedding & Events", label: "Wedding & Events", title: "Dance All Night",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "DANCE ALL NIGHT. BRIDAL SNEAKERS 25% OFF", text: "Dance All Night", sign: "SOLEMATE", tag: "Wedding & Events" },
+    why: ["A laughing bride lifting her dress to show white sneakers makes the sneakers the secret to dancing all night.","Gold hand-painted lettering is painted on the whitewashed garden wall behind her."],
+    headline: "DANCE ALL NIGHT. BRIDAL SNEAKERS 25% OFF",
+    primary: "A laughing bride in a lace dress sitting on a garden wall lifting the hem to show white lace SOLEMATE sneakers, shot on film in golden light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-spanight", type: "static", trending: true, isNew: true, brandName: "MASKIE",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Spa Night",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
