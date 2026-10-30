@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-seeyousunny", type: "static", trending: true, isNew: true, brandName: "SHADEHAUS",
+    category: "Fashion", label: "Fashion", title: "See You Sunny",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SEE YOU SUNNY. SUNGLASSES 2 FOR $30", text: "See You Sunny", sign: "SHADEHAUS", tag: "Fashion" },
+    why: ["A girl in black sunglasses leaning on a seaside boardwalk rail beside a hand-painted kiosk sign makes sunglasses the summer.","Black hand-painted lettering is painted on a big yellow kiosk sign beside her."],
+    headline: "SEE YOU SUNNY. SUNGLASSES 2 FOR $30",
+    primary: "A girl in oversized black SHADEHAUS sunglasses leaning on a wooden boardwalk rail beside a yellow hand-painted kiosk sign, shot on film in bright sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-thronecattree", type: "static", trending: true, isNew: true, brandName: "PURRCH",
+    category: "Pets", label: "Pets", title: "The Throne",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "THE THRONE. CAT TREES 25% OFF", text: "The Throne", sign: "PURRCH", tag: "Pets" },
+    why: ["A ginger cat looking down regally from the top of a tall cat tree makes the tree a throne.","Black hand-painted lettering is painted on the plain pale wall beside the tree like a sign."],
+    headline: "THE THRONE. CAT TREES 25% OFF",
+    primary: "A fluffy ginger cat sitting on the top platform of a tall grey sisal PURRCH cat tree in a sunny plant-filled living room, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-dailywin", type: "static", trending: true, isNew: true, brandName: "VITAHOUSE",
     category: "Supplements", label: "Supplements", title: "Daily Win",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
