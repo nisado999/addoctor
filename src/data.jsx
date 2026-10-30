@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-lunchoutside", type: "static", trending: true, isNew: true, brandName: "PICNICKY",
+    category: "Home & Decor", label: "Home & Decor", title: "Lunch Outside",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "LUNCH OUTSIDE. PICNIC BLANKETS 25% OFF", text: "Lunch Outside", sign: "PICNICKY", tag: "Home & Decor" },
+    why: ["Two friends laughing on a red gingham picnic blanket on a sunny lawn makes the blanket the day out.","Cream hand-painted lettering is painted on the old stone wall behind them."],
+    headline: "LUNCH OUTSIDE. PICNIC BLANKETS 25% OFF",
+    primary: "Two friends laughing and sharing fruit on a big red and cream gingham PICNICKY picnic blanket on a sunny park lawn, shot on film in dappled light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-beseen", type: "static", trending: true, isNew: true, brandName: "LUMOS",
+    category: "Automotive", label: "Automotive", title: "Be Seen",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BE SEEN. BIKE LIGHTS 2 FOR $20", text: "Be Seen", sign: "LUMOS", tag: "Automotive" },
+    why: ["A cyclist riding past at dusk with a bright front light and a red rear light glowing makes the lights the difference between seen and unseen.","White hand-painted lettering is painted on the dark brick wall beside the road."],
+    headline: "BE SEEN. BIKE LIGHTS 2 FOR $20",
+    primary: "A cyclist riding along a city street at dusk with a bright white LUMOS front light and a glowing red rear light, shot on film in blue-hour light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-rainorshine", type: "static", trending: true, isNew: true, brandName: "STORMPROOF",
     category: "Fashion", label: "Fashion", title: "Rain or Shine",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
