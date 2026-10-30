@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-poolday", type: "static", trending: true, isNew: true, brandName: "SPLASHY",
+    category: "Fashion", label: "Fashion", title: "Pool Day",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "POOL DAY. SWIMSUITS 3 FOR $60", text: "Pool Day", sign: "SPLASHY", tag: "Fashion" },
+    why: ["A woman laughing in a bold cobalt swimsuit on the edge of a retro hotel pool makes the suit the holiday.","White painted lettering is painted on the coral hotel wall across the pool."],
+    headline: "POOL DAY. SWIMSUITS 3 FOR $60",
+    primary: "A laughing woman in sunglasses and a bold cobalt SPLASHY one-piece swimsuit sitting on the edge of a pastel retro hotel pool, shot on film in harsh sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-sleepsacks", type: "static", trending: true, isNew: true, brandName: "SLEEPWELL",
     category: "Kids & Baby", label: "Kids & Baby", title: "Good Night Sleep Tight",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
