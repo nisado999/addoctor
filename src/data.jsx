@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-wakeupwell", type: "static", trending: true, isNew: true, brandName: "SILKI",
+    category: "Home & Decor", label: "Home & Decor", title: "Wake Up Well",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "WAKE UP WELL. SILK PILLOWCASES 2 FOR $30", text: "Wake Up Well", sign: "SILKI", tag: "Home & Decor" },
+    why: ["A woman waking with a sleepy smile on a champagne silk pillowcase makes the pillowcase the rested morning.","Cream condensed hand-painted lettering is painted on the dusty-pink bedroom wall above the bed."],
+    headline: "WAKE UP WELL. SILK PILLOWCASES 2 FOR $30",
+    primary: "A woman with a sleepy smile lying on a champagne silk SILKI pillowcase in a bright bedroom with a dusty-pink wall, shot on film in soft window light. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-lunchoutside", type: "static", trending: true, isNew: true, brandName: "PICNICKY",
     category: "Home & Decor", label: "Home & Decor", title: "Lunch Outside",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
