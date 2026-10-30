@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-sipslow", type: "static", trending: true, isNew: true, brandName: "GLAZE & CO",
+    category: "Home & Decor", label: "Home & Decor", title: "Sip Slow",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SIP SLOW. MUGS 4 FOR $24", text: "Sip Slow", sign: "GLAZE & CO", tag: "Home & Decor" },
+    why: ["A grandmother and her granddaughter laughing over speckled ceramic mugs in a farmhouse kitchen makes the mugs a slow morning that feels special.","White hand-painted lettering is painted on the sage green cupboard doors above them."],
+    headline: "SIP SLOW. MUGS 4 FOR $24",
+    primary: "A grandmother and her granddaughter laughing and holding up speckled cream GLAZE & CO ceramic mugs of tea at a wooden table in a farmhouse kitchen with sage green cupboards, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-tuneout", type: "static", trending: true, isNew: true, brandName: "HUMM",
+    category: "Electronics", label: "Electronics", title: "Tune Out",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "TUNE OUT. HEADPHONES 40% OFF", text: "Tune Out", sign: "HUMM", tag: "Electronics" },
+    why: ["A young woman in cream over-ear headphones on a laundromat bench makes the headphones turn a boring chore into a private concert.","White hand-painted lettering is painted on the teal laundromat wall in the upper left."],
+    headline: "TUNE OUT. HEADPHONES 40% OFF",
+    primary: "A young woman in a denim jacket wearing big cream HUMM wireless over-ear headphones on a bench in a bright night laundromat with a row of washing machines, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-matchymatchy", type: "static", trending: true, isNew: true, brandName: "MERRYKNIT",
     category: "Holidays & Offers", label: "Holidays & Offers", title: "Matchy Matchy",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
