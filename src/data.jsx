@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-getplanting", type: "static", trending: true, isNew: true, brandName: "PLOTTER",
+    category: "Home & Decor", label: "Home & Decor", title: "Get Planting",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "GET PLANTING. GARDEN TOOLS 25% OFF", text: "Get Planting", sign: "PLOTTER", tag: "Home & Decor" },
+    why: ["A smiling woman in a straw hat kneeling in a vegetable bed with bright green hand tools makes the tools the start of a spring project.","White hand-painted lettering is painted on the weathered wooden shed wall behind her."],
+    headline: "GET PLANTING. GARDEN TOOLS 25% OFF",
+    primary: "A smiling woman in a straw hat kneeling in an allotment vegetable bed with a trowel, bright green PLOTTER hand tools laid on the soil in the foreground, shot on film in soft sun. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-lunchsorted", type: "static", trending: true, isNew: true, brandName: "SNACKPACK",
     category: "Kids & Baby", label: "Kids & Baby", title: "Lunch Sorted",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
