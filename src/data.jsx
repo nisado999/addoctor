@@ -6,6 +6,24 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "cr-setthetable", type: "static", trending: true, isNew: true, brandName: "TAPER & CO",
+    category: "Home & Decor", label: "Home & Decor", title: "Set the Table",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SET THE TABLE. CANDLESTICKS 2 FOR $30", text: "Set the Table", sign: "TAPER & CO", tag: "Home & Decor" },
+    why: ["A smiling woman lighting a tall candle in a brass candlestick at a long dinner table makes the candlesticks the thing that turns dinner into an occasion.","Cream hand-painted lettering is painted on the deep green dining room wall on the left."],
+    headline: "SET THE TABLE. CANDLESTICKS 2 FOR $30",
+    primary: "A smiling woman in a black dress lighting a cream candle in a set of tall brass TAPER & CO candlesticks at a long wooden dinner table in a green-walled dining room, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "cr-straightup", type: "static", trending: true, isNew: true, brandName: "DENIM LAB",
+    category: "Fashion", label: "Fashion", title: "Straight Up",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "STRAIGHT UP. JEANS 2 FOR $60", text: "Straight Up", sign: "DENIM LAB", tag: "Fashion" },
+    why: ["A relaxed woman in a white tee and mid-blue straight-leg jeans in full length makes the jeans the one pair that goes with everything.","White painted lettering runs across the blue corrugated metal shutter above her."],
+    headline: "STRAIGHT UP. JEANS 2 FOR $60",
+    primary: "A relaxed woman in a white tee, classic mid-blue straight-leg DENIM LAB jeans and white trainers standing in full length in front of a blue corrugated metal shutter, shot on film. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "cr-buildit", type: "static", trending: true, isNew: true, brandName: "BRICKLY",
     category: "Kids & Baby", label: "Kids & Baby", title: "Build It",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
