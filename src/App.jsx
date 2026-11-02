@@ -905,11 +905,6 @@ function App() {
               </div>
               <p aria-live="polite" className="ml-auto text-xs font-medium tabular-nums text-slate-500">{list.length} {list.length === 1 ? "template" : "templates"}</p>
               <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                Sort
-                <select
-                  value={sort} onChange={(e) => setSort(e.target.value)}
-                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition [@media(pointer:coarse)]:h-10 hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
                 Style
                 <select
                   value={style} onChange={(e) => setStyle(e.target.value)} aria-label="Ad style"
@@ -919,6 +914,11 @@ function App() {
                   {STYLE_LABELS.filter(([id]) => STYLE_COUNT[id]).map(([id, label]) => <option key={id} value={id}>{label} ({STYLE_COUNT[id]})</option>)}
                 </select>
               </label>
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                Sort
+                <select
+                  value={sort} onChange={(e) => setSort(e.target.value)}
+                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition [@media(pointer:coarse)]:h-10 hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
                 >
                   {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
                 </select>
