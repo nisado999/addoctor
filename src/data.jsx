@@ -147,7 +147,7 @@ const TEMPLATES = [
     art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BACK IN STOCK. SOLD OUT IN 2 DAYS LAST TIME", text: "Back In Stock", sign: "MARLOW", tag: "Fashion" },
     why: ["A huge rubber stamp over a jacket says the thing shoppers waited for is back and that it sells fast.","A huge tilted red rubber stamp reads back in stock over the jacket with a small handwritten line under it."],
     headline: "BACK IN STOCK. SOLD OUT IN 2 DAYS LAST TIME",
-    primary: "A black leather biker jacket with an asymmetric zip and a belted waist on a wooden hanger against a warm cream plaster wall, with a small MARLOW label at the collar. The brand shown is a made-up placeholder: your name and logo replace it.",
+    primary: "An oversized, boxy black leather jacket in soft leather with a plain shirt collar and a smooth zip front on a wooden hanger against a warm cream plaster wall, with a small MARLOW label at the collar. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "cr-boxofmugs", type: "static", trending: true, isNew: true, brandName: "CLAYHOUSE",
