@@ -1,207 +1,119 @@
 /* Hand-set order for the Featured sort. FEATURED_TOP come first, in this order; FEATURED_LAST sink to the end.
-   Everything else keeps its order in data.jsx. Edit these two lists to curate the gallery. */
+   Everything else keeps its order in data.jsx. Edit these two lists to curate the gallery.
+   Ranked 2026-11-02: reel-format ads and liked styles first, then similar film-look / editorial ads, then older approved ads, videos, and the weakest families last. */
 const FEATURED_TOP = [
-  "cr-pricegoesup", "cr-earlyaccess", "cr-whichone", "cr-freeshippingticket", "cr-cafevshome", "cr-costperwear",
-  "cr-nosalenocode", "cr-bestsellercandle", "cr-freetote", "cr-sneakerbeforeafter", "cr-foundernote", "cr-garlicpasta", "cr-biggerbag",
-  "cr-wooltiers", "cr-comfylooksgood", "cr-mugthread", "cr-leftbehind", "cr-boxofmugs", "cr-backinstock", "cr-zerostars", "cr-tallgirls",
-  "cr-myorder", "cr-breakingcandle", "cr-designerdoodle", "cr-cartoonbowls", "cr-breakingsweats", "cr-batteryboard", "cr-blanketnote", "cr-pricefreeze", "cr-giftguidestamp", "cr-bundlesposter", "cr-hairoilreview", "cr-almostgone", "cr-thankyou", "cr-searchresult", "cr-lockscreen",
-  "cr-chopchop", "cr-sockit", "cr-swimteam", "cr-curlup", "cr-bootspace",
-  "cr-brushup",
-  "cr-stayhydrated", "cr-keepitcosy", "cr-pieceofcake", "cr-naptime", "cr-overcoatseason",
-  "cr-snapit", "cr-getgrippy",
-  "cr-deepsleep", "cr-freshsqueezed", "cr-strapin", "cr-softlanding", "cr-sitpretty", "cr-sayyes",
-  "cr-bootseason", "cr-gobig", "cr-readytoroll",
-  "cr-freshkicks", "cr-toweloff", "cr-breathe",
-  "cr-clearclutter",
-  "cr-barefaced", "cr-fetch", "cr-drawon", "cr-cleancab", "cr-spiceitup",
-  "cr-boxofjoy", "cr-brightidea",
-  "cr-sizzle", "cr-staywarm", "cr-laceup", "cr-spinit", "cr-lightitup",
-  "cr-tuneout", "cr-sipslow",
-  "cr-loungemode", "cr-shadeson", "cr-campout", "cr-matchymatchy",
-  "cr-splashzone", "cr-catgameon", "cr-glowdaily", "cr-slamdunk",
-  "cr-sleepbetter", "cr-brewit", "cr-packit",
-  "cr-wrapitup", "cr-pressplay", "cr-sleeptight",
-  "cr-timewellspent", "cr-layerit", "cr-bfhoodies",
-  "cr-straightup", "cr-setthetable",
-  "cr-freshout", "cr-growsomething", "cr-buildit",
-  "cr-blowdry", "cr-longway", "cr-trickortreat",
-  "cr-stretchitout", "cr-walkies",
-  "cr-morningfuel", "cr-toastday",
-  "cr-spfup", "cr-shineon", "cr-stackthem",
-  "cr-bestseat", "cr-everydaytee",
-  "cr-sleepin", "cr-headfirst", "cr-freshground",
-  "cr-wakeupespresso", "cr-gameon", "cr-dinkit",
-  "cr-staycool",
-  "cr-cheerswine",
-  "cr-earntheview",
-  "cr-goeswitheverything",
-  "cr-keepitsimple", "cr-coldpaws", "cr-pourone", "cr-shadeup", "cr-zoomscooter",
-  "cr-riseandtoast",
-  "cr-redalert",
-  "cr-waterme",
-  "cr-mangia",
-  "cr-makeityours", "cr-onemorepage",
-  "cr-wakeupwell",
-  "cr-beseen", "cr-lunchoutside",
-  "cr-lookdown", "cr-rainorshine",
-  "cr-packedready",
-  "cr-dancenight", "cr-blendit",
-  "cr-lowkeycaps", "cr-spanight",
-  "cr-vibeson",
-  "cr-borntorun", "cr-worththecold",
-  "cr-lasttouch",
-  "cr-getplanting",
-  "cr-beardday", "cr-lunchsorted",
-  "cr-sofaupgrade", "cr-gobighoops",
-  "cr-goodboytreats",
-  "cr-latenightlamp",
-  "cr-puddleready", "cr-slowsunday",
-  "cr-goodhairday", "cr-unrollmat",
-  "cr-turnuproof", "cr-bringithome",
-  "cr-poolday",
-  "cr-dinnerin15", "cr-sleepsacks",
-  "cr-carryallyellow", "cr-everydaypearls",
-  "cr-bestpartwalk",
-  "cr-bareskin", "cr-earlymiles", "cr-coldnightfix",
-  "cr-raincheck",
-  "cr-thronecattree", "cr-seeyousunny",
-  "cr-taxiperfume", "cr-dailywin",
-  "cr-firstridebike",
-  "cr-garageleggings", "cr-floorrug",
-  "cr-departurescabin", "cr-showoffcarwash",
-  "cr-tramheadphones", "cr-skatesneakers",
-  "cr-naplord", "cr-firstdaybag", "cr-hearthcandle",
-  "cr-dinercoffee", "cr-glossmirror",
-  "cr-beachsunscreen",
-  "cr-sundayperfume", "cr-climbprotein", "cr-embersauce", "cr-yellowsuitcases",
-  "cr-doormats", "cr-campsleepingbags", "cr-kidsartsets", "cr-foamrollers", "cr-ceramicmugs",
-  "cr-coolerbags", "cr-pillowcases", "cr-hairclips", "cr-shakerbottles", "cr-kneeicepacks",
-  "cr-knityarn", "cr-jigsaws", "cr-warmfairylights", "cr-wallclocks", "cr-dogleashes",
-  "cr-adventcalendars", "cr-snowboots", "cr-boardgames", "cr-cookiecutters",
-  "cr-smoothieblenders", "cr-cosyhotwaterbottles", "cr-babybibs",
-  "cr-raindayumbrellas", "cr-toolboxes", "cr-kidsrainboots", "cr-chunkyscarves", "cr-bathtowels", "cr-alarmclocks",
-  "cr-bikelights", "cr-kitchenscales", "cr-desklamps", "cr-cozyslippers",
-  "cr-chefknives", "cr-dogballs", "cr-skigoggles", "cr-writenotebooks", "cr-carvacuums", "cr-gardengloves",
-  "cr-thermosflasks", "cr-kidsbikes", "cr-wintergloves", "cr-jumpropes", "cr-swaddles", "cr-lashmascara",
-  "cr-halloweencostumes", "cr-sleepmasks", "cr-herbkits", "cr-readingglasses", "cr-cattrees",
-  "cr-beachspeakers", "cr-honeyjars", "cr-balloonarches", "cr-xmasjumpers", "cr-packingcubes", "cr-powerbanks",
-  "cr-woodenblocks", "cr-moisturiserjar", "cr-carwashkits",
-  "cr-dogtoys", "cr-standmixers", "cr-skincareflat",
-  "cr-babycarriers", "cr-bbqtools",
-  "cr-balconypots", "cr-lunchboxes", "cr-trailbottles", "cr-gymsets",
-  "cr-dogbeds", "cr-totebags", "cr-throwblankets", "cr-cabinbags",
-  "cr-fh-sweatpants", "cr-kidsraincoats", "cr-dogcoats", "cr-coffeebags", "cr-yogamats",
-  "cr-fh-flannel", "cr-fh-puffer", "cr-fh-slides", "cr-fh-swimsuits", "cr-fh-denimshorts",
-  "cr-fh-beanies", "cr-fh-backpacks", "cr-fh-crossbody", "cr-fh-linenshirts",
-  "cr-fh-resort", "cr-fh-whitetees", "cr-fh-caps", "cr-fh-leatherjacket", "cr-fh-knitwear",
-  "cr-fh-tailoring", "cr-fh-velvetsuit", "cr-fh-luggage", "cr-fh-runner", "cr-fh-greysneaker", "cr-fh-hoodie", "cr-fh-graphictee", "cr-fh-reddress",
-  "cr-beachumbrella", "cr-tiedye", "cr-spraypaint", "cr-fruitbowl", "cr-disposablecamera", "cr-ironpatches", "cr-matchboxes", "cr-saladservers", "cr-tarotdeck",
-  "cr-barstool", "cr-fedora", "cr-irons", "cr-kitchentimer", "cr-markers",
-  "cr-escooter", "cr-alarmclock", "cr-coupes", "cr-foldingbike", "cr-enamelpins", "cr-scissors", "cr-vinylrecords",
-  "cr-bodyglitter", "cr-phonecharms", "cr-cassetteplayer", "cr-macrame", "cr-icecreammaker",
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  "cr-baby", "cr-blackfriday-denim", "cr-boots", "cr-bridesmaid",
-  "cr-clawclip", "cr-massagegun", "cr-matcha", "cr-mugs", "cr-xmaspjs", 
-  "cr-hoteltowels",
-  "cr-carvac", "cr-icedtea", "cr-lipbalm", "cr-mothersday", "cr-mouse", 
-  "cr-carkit", "cr-cattoy", "cr-fizz", "cr-freshener", "cr-hoops", "cr-kidsunglasses", "cr-necklace", "cr-perfume-y2k", "cr-trainers", "cr-yogamat",
-  "cr-bottle", "cr-carrier", "cr-headphones", "cr-honey", "cr-jeans", "cr-sunscreen", "cr-sweater",
-  "cr-backpack", "cr-cape", "cr-cologne", "cr-pan", "cr-phonemount", "cr-protein", "cr-ring", "cr-sheets", "cr-suitcase", "cr-tracksuit", "cr-watch",
-  "cr-coat", "cr-dogtreats", "cr-hairoil", "cr-hoodies", "cr-petbed", "cr-powerbank", "cr-puffer", "cr-runshoe",
-  "cr-coldbrew", "cr-sunglasses", "cr-serum", "cr-socks", "cr-earbuds", "cr-gummies", "cr-lipstick", "cr-armchair", "cr-chilicrisp", "cr-perfume", "cr-rainboots", "cr-towels", "cr-denim-car", "cr-suit",
-  "ec9-bag-bf", "ec9-bag-cyber", "ec9-bag-xmas", "ec9-bag-halloween", "ec9-bag-valentine", "ec9-bag-summer", "ec9-bag-sneaker", "ec9-bag-beauty", "ec9-bag-newyear", "ec9-bag-easter",
-  "ec8-creatine", "ec8-collagen", "ec8-bands", "ec8-runshoes", "ec8-preworkout", "ec8-dumbbells", "ec8-earrings", "ec8-mensrwatch", "ec8-pearls", "ec8-coffeebag", "ec8-hotsauce", "ec8-tea", "ec8-chocolate", "ec8-dogtreats", "ec8-catfountain", "ec8-vacuum", "ec8-airfryer", "ec8-cleaner", "ec8-baby", "ec8-thanksgiving", "ec8-y2kmegasale", "ec8-laborday", "ec8-grooming", "ec8-christmastech",
-  "ec7-leggings", "ec7-hoodie", "ec7-boots", "ec7-teepack", "ec7-y2kcargo", "ec7-y2kdenim", "ec7-suit", "ec7-handbag", "ec7-socks", "ec7-nyedress", "ec7-mascara", "ec7-foundation", "ec7-hairdryer", "ec7-nightroutine", "ec7-pressnails", "ec7-y2kperfume", "ec7-bodylotion", "ec7-hairclay", "ec7-easterpalette", "ec7-speaker", "ec7-keyboard", "ec7-powerbank", "ec7-headset", "ec7-phonecase", "ec7-laptop",
-  "ec4-sneakers", "ec4-hairoil", "ec4-matcha", "ec4-lipstick", "ec4-jeans", "ec4-gummies", "ec4-petbed", "ec4-weekender", "ec4-beardoil",
-  "ec5-halloween", "ec5-blackfriday-audio", "ec5-cybermonday", "ec5-christmas-knit", "ec5-christmas-gold", "ec5-valentines", "ec5-easter", "ec5-flash", "ec5-newyear", "ec5-mothersday", "ec5-summer", "ec5-backtoschool", "ec5-clearance", "ec5-bogo", "ec5-blackfriday-fashion", "ec5-y2k-blackfriday", "ec5-y2k-valentines", "ec5-y2k-flash",
-  "ec6-gym", "ec6-jewelry", "ec6-skincare", "ec6-pets", "ec6-earbuds", "ec6-halloween-fashion", "ec6-christmas-pjs",
-  "ec3-coffee", "ec3-knife", "ec3-sunglasses", "ec3-watch", "ec3-backpack", "ec3-yoga", "ec3-protein", "ec3-phone", "ec3-toys", "ec3-plant", "ec3-perfume", "ec3-sunscreen",
-  "ec2-serum", "ec2-earbuds", "ec2-puffer", "ec2-candle", "ec2-water-bottle", "ec2-duvet", "ec2-dog", "ec2-routine", "ec2-ring", "ec2-blackfriday", "ec2-cardigan", "ec2-sisters",
-  "review-cards-cream", "breaking-news-shoes", "dont-buy-another-candle", "side-effects-stamp-tote",
-  "two-receipts-boots", "chat-insoles-shift", "selfie-captions-serum", "four-reasons-candle",
-  "strikethrough-bottle", "compare-old-vs-new-bag", "timeline-7-14-30-nights", "notes-list-topper", "chat-espresso-group",
+  "cr-pricefreeze", "cr-almostgone", "cr-fh-hoodie", "cr-giftguidestamp", "cr-cafevshome", "cr-yellowsuitcases",
+  "cr-nosalenocode", "cr-bestsellercandle", "breaking-news-shoes", "cr-boxofmugs", "cr-backinstock", "dont-buy-another-candle",
+  "cr-myorder", "cr-breakingcandle", "two-receipts-boots", "cr-comfylooksgood", "cr-earlyaccess", "side-effects-stamp-tote",
+  "cr-bundlesposter", "cr-costperwear", "chat-insoles-shift", "cr-freeshippingticket", "cr-foundernote", "review-cards-cream",
+  "cr-designerdoodle", "cr-blanketnote", "selfie-captions-serum", "cr-breakingsweats", "cr-hairoilreview", "four-reasons-candle",
+  "cr-thankyou", "cr-searchresult", "strikethrough-bottle", "cr-garlicpasta", "cr-whichone", "compare-old-vs-new-bag",
+  "cr-pricegoesup", "cr-freetote", "timeline-7-14-30-nights", "cr-sneakerbeforeafter", "cr-biggerbag", "notes-list-topper",
+  "cr-wooltiers", "cr-mugthread", "chat-espresso-group", "cr-leftbehind", "cr-zerostars", "cr-tallgirls",
+  "cr-lockscreen", "cr-cartoonbowls", "cr-batteryboard", "cr-bootspace", "cr-curlup", "ad-breaking-news",
+  "cr-swimteam", "cr-fh-leatherjacket", "cr-sockit", "cr-chopchop", "ad-review-cards", "cr-brushup",
+  "cr-overcoatseason", "ec9-bag-easter", "cr-naptime", "cr-pieceofcake", "ad-offer-socks", "cr-keepitcosy",
+  "cr-fh-puffer", "cr-stayhydrated", "cr-getgrippy", "ad-script-sheet", "cr-snapit", "cr-sayyes",
+  "cr-sitpretty", "cr-softlanding", "ad-whiteboard-routine", "cr-strapin", "cr-fh-runner", "cr-freshsqueezed",
+  "cr-deepsleep", "cr-beachsunscreen", "ad-us-vs-them", "cr-readytoroll", "cr-gobig", "cr-bootseason",
+  "ec9-bag-newyear", "cr-breathe", "ad-podcast-episode", "cr-toweloff", "cr-fh-velvetsuit", "cr-freshkicks",
+  "cr-clearclutter", "ad-doodle-dryer", "cr-spiceitup", "cr-cleancab", "cr-drawon", "cr-fetch",
+  "ad-low-stock", "cr-fh-luggage", "cr-barefaced", "cr-brightidea", "cr-boxofjoy", "ad-myth-vs-fact",
+  "cr-lightitup", "cr-spinit", "cr-laceup", "cr-staywarm", "cr-fh-reddress", "ad-notes-list",
+  "ec9-bag-beauty", "cr-sizzle", "cr-sipslow", "cr-tuneout", "cr-matchymatchy", "ad-before-after-bench",
+  "cr-campout", "cr-shadeson", "cr-loungemode", "cr-fh-flannel", "ad-zero-stars", "cr-slamdunk",
+  "cr-glowdaily", "cr-catgameon", "cr-splashzone", "ad-search-chair", "cr-packit", "cr-brewit",
+  "cr-fh-graphictee", "cr-sleepbetter", "ad-bundle-three", "cr-sleeptight", "ec9-bag-sneaker", "cr-pressplay",
+  "cr-wrapitup", "cr-bfhoodies", "ad-dont-skip-sunscreen", "cr-layerit", "cr-embersauce", "cr-timewellspent",
+  "cr-fh-caps", "cr-setthetable", "ad-forum-post", "cr-straightup", "cr-buildit", "cr-growsomething",
+  "cr-freshout", "ad-side-effects", "cr-trickortreat", "cr-longway", "cr-fh-slides", "cr-blowdry",
+  "ad-were-sorry", "cr-walkies", "cr-stretchitout", "ec9-bag-summer", "cr-toastday", "cr-morningfuel",
+  "ad-tier-list", "cr-stackthem", "cr-shineon", "cr-fh-backpacks", "cr-spfup", "ad-story-poll",
+  "cr-everydaytee", "cr-bestseat", "cr-freshground", "cr-headfirst", "ad-x-signs", "cr-sleepin",
+  "cr-fh-swimsuits", "cr-dinkit", "cr-gameon", "ad-problem-solution", "cr-wakeupespresso", "cr-staycool",
+  "ec9-bag-valentine", "cr-cheerswine", "cr-earntheview", "ad-warning-bottle", "cr-goeswitheverything", "cr-fh-denimshorts",
+  "cr-zoomscooter", "cr-shadeup", "ad-claymation", "cr-pourone", "cr-coldpaws", "cr-keepitsimple",
+  "cr-riseandtoast", "ad-you-can-avoid", "cr-redalert", "cr-fh-linenshirts", "cr-waterme", "cr-mangia",
+  "cr-climbprotein", "ad-reasons-why", "cr-onemorepage", "cr-makeityours", "cr-wakeupwell", "ec9-bag-halloween",
+  "cr-lunchoutside", "ad-email-beanie", "cr-beseen", "cr-fh-greysneaker", "cr-rainorshine", "cr-lookdown",
+  "ad-text-candle", "cr-packedready", "cr-blendit", "cr-dancenight", "cr-spanight", "ad-problems-balm",
+  "cr-fh-sweatpants", "cr-lowkeycaps", "cr-vibeson", "cr-worththecold", "ad-native-raincoat", "cr-borntorun",
+  "cr-lasttouch", "cr-getplanting", "cr-lunchsorted", "cr-fh-beanies", "ad-hack-towel", "ec9-bag-xmas",
+  "cr-beardday", "cr-gobighoops", "cr-sofaupgrade", "cr-goodboytreats", "ad-emergency-nuts", "cr-latenightlamp",
+  "cr-slowsunday", "cr-puddleready", "cr-fh-whitetees", "ad-testimonial-jess", "cr-unrollmat", "cr-goodhairday",
+  "cr-bringithome", "cr-turnuproof", "ad-greenscreen-yoga", "cr-poolday", "cr-sleepsacks", "cr-fh-crossbody",
+  "cr-dinnerin15", "ad-dont-buy-stand", "cr-everydaypearls", "ec9-bag-cyber", "cr-carryallyellow", "cr-bestpartwalk",
+  "cr-coldnightfix", "ad-stat-reorder", "cr-earlymiles", "cr-sundayperfume", "cr-bareskin", "cr-fh-resort",
+  "cr-raincheck", "ad-meme-socks", "cr-seeyousunny", "cr-thronecattree", "cr-dailywin", "cr-taxiperfume",
+  "ad-new-vs-old-mug", "cr-firstridebike", "cr-floorrug", "cr-fh-knitwear", "cr-garageleggings", "ad-text-on-skin",
+  "cr-showoffcarwash", "cr-departurescabin", "ec9-bag-bf", "cr-skatesneakers", "cr-tramheadphones", "ad-v1-v2-fan",
+  "cr-hearthcandle", "cr-firstdaybag", "cr-fh-tailoring", "cr-naplord", "ad-venn-tote", "cr-glossmirror",
+  "cr-dinercoffee", "cr-yogamats", "cr-coffeebags", "candle-bedside-dusk", "cr-dogcoats", "cr-kidsraincoats",
+  "cr-tarotdeck", "watch-light-sweep", "cr-saladservers", "cr-matchboxes", "cr-ironpatches", "alpine-lake-push",
+  "cr-disposablecamera", "cr-fruitbowl", "cr-spraypaint", "beach-bar-spritz", "cr-tiedye", "cr-beachumbrella",
+  "cr-markers", "cr-kitchentimer", "faith-blue-hour", "cr-irons", "cr-fedora", "cr-barstool",
+  "sunglasses-island-ledge", "cr-vinylrecords", "cr-scissors", "cr-enamelpins", "car-wax-beads", "cr-foldingbike",
+  "cr-coupes", "cr-alarmclock", "fragrance-light-sweep", "cr-escooter", "cr-icecreammaker", "cr-macrame",
+  "cr-cassetteplayer", "activewear-rooftop-pose", "cr-phonecharms", "cr-bodyglitter", "cr-bridesmaid", "sneaker-side-profile",
+  "cr-boots", "cr-blackfriday-denim", "cr-baby", "hotel-room-sea-breeze", "cr-xmaspjs", "cr-mugs",
+  "cr-matcha", "olive-oil-grove", "cr-massagegun", "cr-clawclip", "cr-hoteltowels", "cr-mouse",
+  "wooden-toys-nursery", "cr-mothersday", "cr-lipbalm", "cr-icedtea", "bakery-counter-box", "cr-carvac",
+  "cr-yogamat", "cr-trainers", "necklace-collarbone", "cr-perfume-y2k", "cr-necklace", "cr-kidsunglasses",
+  "apartment-walkthrough", "cr-hoops", "cr-freshener", "cr-fizz", "florist-bouquet-wrap", "cr-cattoy",
+  "cr-carkit", "cr-sweater", "cr-sunscreen", "kettlebell-swing-gym", "cr-jeans", "cr-honey",
+  "cr-carrier", "dog-bowl-kitchen", "cr-bottle", "cr-watch", "cr-tracksuit", "plaza-walk-men",
+  "cr-suitcase", "cr-sheets", "cr-ring", "supplement-swirl", "cr-protein", "cr-phonemount",
+  "cr-pan", "cr-cologne", "mug-rainy-window", "cr-cape", "cr-backpack", "cr-runshoe",
+  "serum-still-light", "cr-puffer", "cr-powerbank", "cr-petbed", "streetwear-duo", "cr-hoodies",
+  "cr-hairoil", "cr-dogtreats", "perfume-leaf-shadows", "cr-coat", "cr-suit", "cr-denim-car",
+  "cr-towels", "tennis-court-walk", "cr-rainboots", "cr-perfume", "cr-chilicrisp", "studio-lookbook-turn",
+  "cr-armchair", "cr-lipstick", "cr-gummies", "hidden-bay-drone", "cr-earbuds", "cr-socks",
+  "cr-serum", "summit-bottle-orbit", "cr-sunglasses", "cr-coldbrew", "ec8-christmastech", "cr-ceramicmugs",
+  "ec8-grooming", "cr-foamrollers", "ec8-laborday", "ec8-y2kmegasale", "cr-kidsartsets", "ec8-thanksgiving",
+  "cr-campsleepingbags", "ec8-baby", "ec8-cleaner", "cr-doormats", "ec8-airfryer", "cr-kneeicepacks",
+  "ec8-vacuum", "ec8-catfountain", "cr-shakerbottles", "ec8-dogtreats", "cr-hairclips", "ec8-chocolate",
+  "ec8-tea", "cr-pillowcases", "ec8-hotsauce", "cr-coolerbags", "ec8-coffeebag", "ec8-pearls",
+  "cr-dogleashes", "ec8-mensrwatch", "cr-wallclocks", "ec8-earrings", "ec8-dumbbells", "cr-warmfairylights",
+  "ec8-preworkout", "cr-jigsaws", "ec8-runshoes", "ec8-bands", "cr-knityarn", "ec8-collagen",
+  "cr-cookiecutters", "ec8-creatine", "ec7-laptop", "cr-boardgames", "ec7-phonecase", "cr-snowboots",
+  "ec7-headset", "ec7-powerbank", "cr-adventcalendars", "ec7-keyboard", "cr-babybibs", "ec7-speaker",
+  "ec7-easterpalette", "cr-cosyhotwaterbottles", "ec7-hairclay", "cr-smoothieblenders", "ec7-bodylotion", "berry-splash",
+  "ec7-y2kperfume", "fragrance-portrait", "cr-alarmclocks", "ec7-pressnails", "hotel-pool", "cr-bathtowels",
+  "ec7-nightroutine", "linen-hanger", "ec7-hairdryer", "cr-chunkyscarves", "ec7-foundation", "trench-rain",
+  "cr-kidsrainboots", "ec7-mascara", "hoodie-street", "ec7-nyedress", "tote-market", "cr-toolboxes",
+  "ec7-socks", "rooftop-friends-tees", "cr-raindayumbrellas", "ec7-handbag", "snow-bench-knits", "ec7-suit",
+  "cr-cozyslippers", "ec7-y2kdenim", "editorial-headline", "cr-desklamps", "ec7-y2kcargo", "door-hanger",
+  "ec7-teepack", "suitcase-stickers", "cr-kitchenscales", "ec7-boots", "beach-bag", "cr-bikelights",
+  "ec7-hoodie", "pizza-lid", "ec7-leggings", "cr-gardengloves", "ec4-beardoil", "cup-sleeve",
+  "cr-carvacuums", "ec4-weekender", "ingredient-dissection", "ec4-petbed", "fragrance-front-solo", "cr-writenotebooks",
+  "ec4-gummies", "discovery-set-five", "cr-skigoggles", "ec4-jeans", "ingredient-callouts", "ec4-lipstick",
+  "cr-dogballs", "ec4-matcha", "myth-fact", "ec4-hairoil", "cr-chefknives", "controller-demo",
+  "ec4-sneakers", "texture-asmr", "cr-lashmascara", "ec5-y2k-flash", "tryon-haul", "ec5-y2k-valentines",
+  "cr-swaddles", "us-vs-them", "ec5-y2k-blackfriday", "cr-jumpropes", "ec5-blackfriday-fashion", "founder-note",
+  "ec5-bogo", "cr-wintergloves", "clinic-trust", "ec5-clearance", "review-stack", "cr-kidsbikes",
+  "ec5-backtoschool", "ugly-marker", "ec5-summer", "cr-thermosflasks", "price-receipt", "ec5-mothersday",
+  "cr-cattrees", "ec5-newyear", "tweet-reaction", "ec5-flash", "cr-readingglasses", "stoplight-matrix",
+  "ec5-easter", "customer-dm", "cr-herbkits", "ec5-valentines", "press-quote", "ec5-christmas-gold",
+  "cr-sleepmasks", "before-after-split", "ec5-christmas-knit", "cr-halloweencostumes", "ec5-cybermonday", "trend-chart",
+  "ec5-blackfriday-audio", "cr-powerbanks", "review-static", "ec5-halloween", "text-message-static", "cr-packingcubes",
+  "ec6-christmas-pjs", "old-me-new-me", "ec6-halloween-fashion", "cr-xmasjumpers", "comment-thread-ad", "ec6-earbuds",
+  "cr-balloonarches", "ec6-pets", "habit-wall", "ec6-skincare", "cr-honeyjars", "luggage-tag",
+  "ec6-jewelry", "lock-screen", "cr-beachspeakers", "ec6-gym", "pharmacy-label", "ec3-coffee",
+  "cr-carwashkits", "snow-globe", "ec3-knife", "cr-moisturiserjar", "ec3-sunglasses", "pantry-swap",
+  "ec3-watch", "cr-woodenblocks", "sunrise-sill", "ec3-backpack", "mirror-notes", "cr-skincareflat",
+  "ec3-yoga", "photo-booth", "ec3-protein", "cr-standmixers", "carry-on-kit", "ec3-phone",
+  "cr-dogtoys", "ec3-toys", "swing-tag", "ec3-plant", "cr-bbqtools", "fitting-room",
+  "ec3-perfume", "empty-closet", "cr-babycarriers", "ec3-sunscreen", "sunday-drop", "ec2-serum",
+  "cr-gymsets", "one-pad", "ec2-earbuds", "cr-trailbottles", "ec2-puffer", "fridge-booking",
+  "ec2-candle", "cr-lunchboxes", "van-clipboard", "ec2-water-bottle", "barber-receipt", "cr-balconypots",
+  "ec2-duvet", "alarm-tub", "ec2-dog", "cr-cabinbags", "foggy-window", "ec2-routine",
+  "cr-throwblankets", "ec2-ring", "plain-hoodie", "ec2-blackfriday", "cr-totebags", "athos-peg",
+  "ec2-cardigan", "quiet-hour", "cr-dogbeds", "ec2-sisters", "replacement-promise", "street-poster",
+  "gift-tag", "everyday-tee", "bakery-window", "chrome-type-stage", "yes-maybe-hoodie", "toggle-card",
+  "order-alert-stack", "progress-ring", "mirror-note", "search-bar-flight", "gift-chat-hoodie", "desk-vitamin",
+  "track-sneaker", "ac-summer", "pc-studio", "scandi-chair", "loft-sweatshirt", "lavender-scent",
+  "knit-stack", "capsule-flatlay", "denim-crate", "caps-wall", "skin", "gym",
+  "apparel", "cr-glowserum", "cr-headphones",
 ];
 const FEATURED_LAST = ["hero-product", "masthead-behind", "sand-message", "split-proof"];
 export { FEATURED_TOP, FEATURED_LAST };
