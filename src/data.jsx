@@ -3313,9 +3313,9 @@ const TEMPLATES = [
     category: "Kids & Baby", label: "Kids & Baby", title: "Puddles Approved",
     format: "4:5 · Static · Joyful product action", framework: "Offer",
     art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "PUDDLES APPROVED.", text: "Puddles Approved", sign: "SPLASHY", tag: "Kids & Baby" },
-    why: ["Yellow boots mid-splash show the use instantly.","Navy type on pastel blue stays legible and friendly."],
+    why: ["Bright yellow boots standing in a puddle show the use instantly.","Navy type on pastel blue stays legible and friendly."],
     headline: "PUDDLES APPROVED.",
-    primary: "Kids' yellow rain boots splashing in a puddle on a pale-blue ground. The brand shown is a made-up placeholder: your name and logo replace it.",
+    primary: "Kids' yellow rain boots standing side by side on wet concrete in front of a puddle, against a pale-blue wall. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "cr-perfume", type: "static", trending: true, isNew: true, brandName: "DOMINA",
