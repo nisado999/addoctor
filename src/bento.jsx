@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { TEMPLATES } from "./data";
 import { Icon, TemplateImage } from "./ui";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
+import { FEATURED_TOP } from "./featuredOrder.js";
 import SplitText from "./components/bits/SplitText/SplitText.jsx";
 
 /* The Home screen, on pure white: a headline, one composer that does four jobs, a stream of real ad presets
@@ -11,7 +12,9 @@ import SplitText from "./components/bits/SplitText/SplitText.jsx";
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 const COUNT = TEMPLATES.length;
 const NICHES = new Set(TEMPLATES.map((t) => t.category)).size;
-const STREAM = TEMPLATES.filter((t) => t.type !== "video" && TEMPLATE_IMGS[t.id]).slice(0, 16);
+const RANK = new Map(FEATURED_TOP.map((id, i) => [id, i]));
+const STREAM = TEMPLATES.filter((t) => t.type !== "video" && TEMPLATE_IMGS[t.id])
+  .sort((a, b) => (RANK.get(a.id) ?? 1e9) - (RANK.get(b.id) ?? 1e9)).slice(0, 16);
 const ring = "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
 const isCreative = (f) => !!f && /^(image|video)\//.test(f.type);
 
