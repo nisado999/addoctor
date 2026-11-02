@@ -10,9 +10,9 @@ const TEMPLATES = [
     category: "Fashion", label: "Fashion", title: "Cost Per Wear",
     format: "4:5 · Static · Product concept", framework: "Offer",
     art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "$120 BOOTS. WORN 300 TIMES. THAT IS $0.40 A WEAR", text: "Cost Per Wear", sign: "STEPWORKS", tag: "Fashion" },
-    why: ["Working out the cost per wear makes a pair of boots look like the cheap choice and the worn leather proves they last.","White handwritten style text with a soft shadow runs across the top of the photo."],
-    headline: "$120 BOOTS. WORN 300 TIMES. THAT IS $0.40 A WEAR",
-    primary: "A pair of well worn tan leather lace up STEPWORKS boots on a wooden porch step in soft afternoon light. The brand shown is a made-up placeholder: your name and logo replace it.",
+    why: ["Working out the cost per wear makes a pair of boots look like the cheap choice, and the styled outfit shows them worn well.","Huge black condensed lettering is painted on a plaster wall in three lines, clear of the model, who stands in the right third in an overcoat and wheat boots."],
+    headline: "$120 BOOTS. 300 WEARS. $0.40 A WEAR.",
+    primary: "A stylish woman in an oversized charcoal overcoat, cream knit and wide-leg jeans stands full-length in front of a plaster wall, wearing clean wheat nubuck work boots. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "cr-cafevshome", type: "static", trending: true, isNew: true, brandName: "BREWHOUSE",
