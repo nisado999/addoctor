@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback, use
 import { CATEGORIES, TEMPLATES } from "./data";
 import { ADDED } from "./addedDates.js";
 import { FEATURED_TOP, FEATURED_LAST } from "./featuredOrder.js";
+import { STOP, stem, hits, styleOf, STYLE_LABELS } from "./searchTags.js";
 import { Icon, TemplateCard, TemplateGrid, Sidebar, BottomNav, holdClips } from "./ui";
 import { Bento } from "./bento.jsx";
 import SplitText from "./components/bits/SplitText/SplitText.jsx";
@@ -163,11 +164,20 @@ const featuredOrder = (arr) => {
   const top = arr.filter((t) => TOP_RANK.has(t.id)).sort((a, b) => TOP_RANK.get(a.id) - TOP_RANK.get(b.id));
   return [...top, ...arr.filter((t) => !TOP_RANK.has(t.id) && !LAST_SET.has(t.id)), ...arr.filter((t) => LAST_SET.has(t.id))];
 };
+// Ad style (tier list, phone screen, model photoshoot...), the second way to filter besides niche.
+const STYLE_OF = new Map(TEMPLATES.map((t) => [t.id, styleOf(t)]));
+const STYLE_NAME = new Map(STYLE_LABELS);
+const STYLE_COUNT = TEMPLATES.reduce((m, t) => { const k = STYLE_OF.get(t.id); m[k] = (m[k] || 0) + 1; return m; }, {});
 // The words each template can be found by, worked out once rather than on every keystroke.
 const HAY = new Map(TEMPLATES.map((t) => [t.id, [
+  STYLE_NAME.get(STYLE_OF.get(t.id)),
   t.title, t.label, t.category, t.niche, t.framework, t.format, t.headline, t.desc,
+  // what the picture shows: the line about the image, minus the sentence every template ends with
+  (t.primary || "").replace(/The brand shown is a made-up placeholder.*$/, ""), ...(Array.isArray(t.why) ? t.why : []),
   ...(Array.isArray(t.tags) ? t.tags : []), t.type === "video" ? "video" : "static",
 ].filter((x) => typeof x === "string").join(" ").toLowerCase()]));
+// Title, headline and niche only: a match here ranks a result above one that merely mentions the word.
+const HEAD = new Map(TEMPLATES.map((t) => [t.id, [t.title, t.headline, t.category].filter((x) => typeof x === "string").join(" ").toLowerCase()]));
 
 // index.html paints a static copy of the first screen; React takes over from it.
 const FROM_SHELL = typeof document !== "undefined" && !!document.querySelector("[data-shell]");
@@ -280,6 +290,7 @@ function App() {
   const [sort, setSort] = useState("featured");
   const [quick, setQuick] = useState(null); // null | "new" | "trending" | "video" | "favs"
   const [toTop, setToTop] = useState(false);
+  const [style, setStyle] = useState("All"); // "All" or an ad style id from searchTags.js
   const searchRef = useRef(null);
   const [searchOn, setSearchOn] = useState(false); // the search box has focus
   const [shown, setShown] = useState(PAGE);
@@ -650,25 +661,24 @@ function App() {
 
   const dq = useDeferredValue(q); // typing stays instant while the grid catches up
   const s = dq.trim().toLowerCase();
-  const words = useMemo(() => s.split(/\s+/).filter(Boolean), [s]);
+  const words = useMemo(() => s.split(/\s+/).filter((w) => w && !STOP.has(w)).map(stem), [s]);
   const passQuick = useCallback(
     (t) => !quick || (quick === "new" ? RECENT_IDS.has(t.id) : quick === "trending" ? !!t.trending : quick === "video" ? t.type === "video" : favs.includes(t.id)),
     [quick, favs]
   );
   const list = useMemo(() => {
-    const out = TEMPLATES.filter((t) => {
-      if (view !== "explore" && t.type !== view) return false;
-      if (cat !== "All" && t.category !== cat) return false;
-      if (!passQuick(t)) return false;
-      if (!words.length) return true;
-      const hay = HAY.get(t.id) || "";
-      return words.every((w) => hay.includes(w));
-    });
+    const pre = TEMPLATES.filter((t) => (view === "explore" || t.type === view) && (cat === "All" || t.category === cat) && (style === "All" || STYLE_OF.get(t.id) === style) && passQuick(t));
+    // Ads matching every word come first; when fewer than 8 do ("sneaker tier list"), ads matching some of the words follow.
+    const every = words.length ? pre.filter((t) => words.every((w) => hits(HAY.get(t.id) || "", w))) : pre;
+    const out = every.length >= 8 || words.length < 2 ? every : pre.filter((t) => words.some((w) => hits(HAY.get(t.id) || "", w)));
     if (sort === "az") return [...out].sort((x, y) => x.title.localeCompare(y.title));
     if (sort === "trending") return [...out].sort((x, y) => (y.trending ? 1 : 0) - (x.trending ? 1 : 0));
     if (sort === "recent") return [...out].sort((x, y) => addedAt(y) - addedAt(x));
-    return featuredOrder(out);
-  }, [view, cat, words, sort, passQuick]);
+    const ranked = featuredOrder(out);
+    if (!words.length) return ranked;
+    const rel = (t) => words.reduce((n, w) => n + (hits(HEAD.get(t.id) || "", w) ? 2 : 0) + (hits(HAY.get(t.id) || "", w) ? 1 : 0), 0);
+    return [...ranked].sort((a, b) => rel(b) - rel(a)); // stable: ties keep the Featured order
+  }, [view, cat, style, words, sort, passQuick]);
   const catCounts = useMemo(() => {
     const m = { All: 0 };
     TEMPLATES.forEach((t) => {
@@ -686,7 +696,7 @@ function App() {
     return CATEGORIES.filter((c) => c !== "All" && c !== cat && m[c]).sort((x, y) => m[y] - m[x]).slice(0, 4);
   }, [view, cat]);
   /* The gallery is drawn a page at a time: more cards are added shortly before the end scrolls into view. */
-  useEffect(() => { setShown(PAGE); }, [view, cat, quick, s, sort]);
+  useEffect(() => { setShown(PAGE); }, [view, cat, style, quick, s, sort]);
   const more = shown < list.length;
   useEffect(() => {
     const el = moreRef.current;
@@ -695,8 +705,8 @@ function App() {
     io.observe(el);
     return () => io.disconnect();
   }, [shown, more, view]);
-  const filtered = cat !== "All" || !!quick || !!s;
-  const clearFilters = () => { setQ(""); setCat("All"); setQuick(null); };
+  const filtered = cat !== "All" || style !== "All" || !!quick || !!s;
+  const clearFilters = () => { setQ(""); setCat("All"); setStyle("All"); setQuick(null); };
   const pickNiche = (c) => { setQ(""); setQuick(null); setCat(c); };
   const vaultList = useMemo(
     () => vault.filter((v) => !s || [v.brand, v.headline, v.copy, v.status].join(" ").toLowerCase().includes(s)),
@@ -899,6 +909,16 @@ function App() {
                 <select
                   value={sort} onChange={(e) => setSort(e.target.value)}
                   className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition [@media(pointer:coarse)]:h-10 hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                Style
+                <select
+                  value={style} onChange={(e) => setStyle(e.target.value)} aria-label="Ad style"
+                  className="h-8 rounded-full border border-slate-200 bg-white pl-3 pr-7 text-xs font-semibold text-slate-700 transition [@media(pointer:coarse)]:h-10 hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
+                >
+                  <option value="All">All styles</option>
+                  {STYLE_LABELS.filter(([id]) => STYLE_COUNT[id]).map(([id, label]) => <option key={id} value={id}>{label} ({STYLE_COUNT[id]})</option>)}
+                </select>
+              </label>
                 >
                   {SORTS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
                 </select>
