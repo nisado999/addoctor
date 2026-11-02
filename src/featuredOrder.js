@@ -3,11 +3,11 @@
    Ranked 2026-11-02 by looking at every ad: scored 1-5 on how good it looks and how well it follows the creative brief
    (reel-format ads first, then the strongest, then everything ok, with ugly, off-brief and non-ecommerce ads at the bottom). */
 const FEATURED_TOP = [
-  "cr-pricefreeze", "cr-almostgone", "cr-fh-hoodie", "cr-giftguidestamp", "cr-cafevshome", "cr-yellowsuitcases",
-  "cr-nosalenocode", "cr-bestsellercandle", "cr-backinstock", "cr-earlyaccess", "side-effects-stamp-tote", "cr-tallgirls",
-  "cr-costperwear", "cr-fh-leatherjacket", "cr-overcoatseason", "cr-fh-puffer", "cr-fh-velvetsuit", "cr-bfhoodies",
-  "cr-embersauce", "cr-fh-caps", "cr-straightup", "cr-everydaytee", "cr-goeswitheverything", "cr-fh-greysneaker",
-  "cr-lookdown", "cr-lowkeycaps", "cr-trainers", "ec8-tea", "ec8-hotsauce", "ec8-pearls",
+  "cr-bfhoodies", "cr-fh-hoodie", "cr-tallgirls", "cr-overcoatseason", "cr-everydaytee", "cr-goeswitheverything",
+  "cr-costperwear", "cr-fh-leatherjacket", "cr-fh-puffer", "cr-fh-velvetsuit", "cr-pricefreeze", "cr-almostgone",
+  "cr-straightup", "cr-giftguidestamp", "cr-cafevshome", "cr-fh-caps", "cr-nosalenocode", "cr-bestsellercandle",
+  "cr-fh-greysneaker", "cr-backinstock", "cr-earlyaccess", "cr-lookdown", "side-effects-stamp-tote", "cr-embersauce",
+  "cr-lowkeycaps", "cr-trainers", "ec8-tea", "cr-yellowsuitcases", "ec8-hotsauce", "ec8-pearls",
   "ec7-y2kdenim", "ec7-y2kcargo", "ec7-teepack", "ec7-hoodie", "ec4-sneakers", "breaking-news-shoes",
   "cr-boxofmugs", "dont-buy-another-candle", "cr-myorder", "cr-breakingcandle", "two-receipts-boots", "cr-comfylooksgood",
   "cr-bundlesposter", "chat-insoles-shift", "cr-freeshippingticket", "cr-foundernote", "review-cards-cream", "cr-designerdoodle",
