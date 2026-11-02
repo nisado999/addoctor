@@ -141,13 +141,13 @@ const TEMPLATES = [
     primary: "A phone screen with a large photo of fluffy beige CLOUDFEET slippers above a one star joke review card. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
-    id: "cr-backinstock", type: "static", trending: true, isNew: true, brandName: "INDIGO CO",
+    id: "cr-backinstock", type: "static", trending: true, isNew: true, brandName: "MARLOW",
     category: "Fashion", label: "Fashion", title: "Back In Stock",
     format: "4:5 · Static · Product concept", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BACK IN STOCK. SOLD OUT IN 2 DAYS LAST TIME", text: "Back In Stock", sign: "INDIGO CO", tag: "Fashion" },
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BACK IN STOCK. SOLD OUT IN 2 DAYS LAST TIME", text: "Back In Stock", sign: "MARLOW", tag: "Fashion" },
     why: ["A huge rubber stamp over a jacket says the thing shoppers waited for is back and that it sells fast.","A huge tilted red rubber stamp reads back in stock over the jacket with a small handwritten line under it."],
     headline: "BACK IN STOCK. SOLD OUT IN 2 DAYS LAST TIME",
-    primary: "A pale blue denim jacket on a wooden hanger against a terracotta wall with a small INDIGO CO label at the collar. The brand shown is a made-up placeholder: your name and logo replace it.",
+    primary: "An oversized chocolate-brown suede trucker jacket with a cream shearling collar on a wooden hanger against a warm cream plaster wall, with a small MARLOW label at the collar. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "cr-boxofmugs", type: "static", trending: true, isNew: true, brandName: "CLAYHOUSE",
