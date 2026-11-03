@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-skincarem-1", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Pure Gentle Sustainable Hand Duo",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Pure Gentle Sustainable Hand Duo", text: "Pure Gentle Sustainable Hand Duo", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Pure Gentle Sustainable Hand Duo",
+    primary: "A beauty & skincare static ad: Pure Gentle Sustainable Hand Duo. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-jeansm-2", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Fashion", label: "Fashion", title: "Finally Jeans That Fit Red Studio",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Finally Jeans That Fit Red Studio", text: "Finally Jeans That Fit Red Studio", sign: "YOUR BRAND", tag: "Fashion" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Finally Jeans That Fit Red Studio",
+    primary: "A fashion static ad: Finally Jeans That Fit Red Studio. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-jeansm-1", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Fashion", label: "Fashion", title: "Finally Jeans That Fit Wall",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Finally Jeans That Fit Wall", text: "Finally Jeans That Fit Wall", sign: "YOUR BRAND", tag: "Fashion" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Finally Jeans That Fit Wall",
+    primary: "A fashion static ad: Finally Jeans That Fit Wall. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-collagem-219", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "All Hair Patterns And Skin Textures Grooming Kit",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
@@ -13,15 +40,6 @@ const TEMPLATES = [
     why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
     headline: "All Hair Patterns And Skin Textures Grooming Kit",
     primary: "A beauty & skincare static ad: All Hair Patterns And Skin Textures Grooming Kit. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
-    id: "tp-dealsdiscountsm-436", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
-    category: "Fashion", label: "Fashion", title: "Everyday Crew Neck 3 Pack Bundle",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Everyday Crew Neck 3 Pack Bundle", text: "Everyday Crew Neck 3 Pack Bundle", sign: "YOUR BRAND", tag: "Fashion" },
-    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
-    headline: "Everyday Crew Neck 3 Pack Bundle",
-    primary: "A fashion static ad: Everyday Crew Neck 3 Pack Bundle. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "tp-nichesm-735", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
@@ -49,15 +67,6 @@ const TEMPLATES = [
     why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
     headline: "Last Chance Items Up To 60 Off Bags And Loafers",
     primary: "A fashion static ad: Last Chance Items Up To 60 Off Bags And Loafers. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
-    id: "tp-featuresbenefitsm-499", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
-    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Conscious Effective Lasting Bottle Duo",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Conscious Effective Lasting Bottle Duo", text: "Conscious Effective Lasting Bottle Duo", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
-    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
-    headline: "Conscious Effective Lasting Bottle Duo",
-    primary: "A beauty & skincare static ad: Conscious Effective Lasting Bottle Duo. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "tp-productshowcasem-158", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
@@ -10752,15 +10761,6 @@ const TEMPLATES = [
     primary: "A sunscreen tube standing on a sand dune under a blue sky. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
-    id: "cr-jeans", type: "static", trending: true, isNew: true, brandName: "DENIMARC",
-    category: "Fashion", label: "Fashion", title: "Jeans That Fit",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FINALLY. JEANS THAT FIT. JEANS 2 FOR $80.", text: "Jeans That Fit", sign: "DENIMARC", tag: "Fashion" },
-    why: ["Full-length shots show the fit from waist to hem, which is what a jeans buyer checks first.","Cream serif lettering on the backdrop sits above both heads."],
-    headline: "FINALLY. JEANS THAT FIT. JEANS 2 FOR $80.",
-    primary: "A man and a woman in white tees and straight blue jeans stand side by side on a mustard backdrop, with the offer in cream serif above their heads. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
     id: "cr-honey", type: "static", trending: true, isNew: true, brandName: "HIVEHAUS",
     category: "Food & Bev", label: "Food & Bev", title: "Slow Down Honey",
     format: "4:5 · Static · Product concept", framework: "Offer",
@@ -11659,15 +11659,6 @@ const TEMPLATES = [
     why: ["Naming the afternoon slump hits a feeling everyone has.","A real desk scene feels like a recommendation."],
     headline: "3PM, SORTED.",
     primary: "A tired office worker at a desk with a gummy tub, with huge type for the slump. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
-    id: "ec4-jeans", type: "static", trending: true, isNew: true, brandName: "DENIMARK",
-    category: "Fashion", label: "Fashion", title: "Finally Jeans That Fit",
-    format: "4:5 · Static · UGC fitting-room mirror selfie", framework: "Authentic",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FINALLY. JEANS THAT FIT.", text: "Finally Jeans That Fit", sign: "DENIMARK", tag: "Fashion" },
-    why: ["A handwritten note on the mirror looks like a real customer.","The relief in the face does the selling."],
-    headline: "FINALLY. JEANS THAT FIT.",
-    primary: "A fitting-room mirror selfie with marker writing on the mirror. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "ec4-lipstick", type: "static", trending: true, isNew: true, brandName: "VELOUR",
