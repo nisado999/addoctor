@@ -6,6 +6,15 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-fooddrinkm-853", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Food & Bev", label: "Food & Bev", title: "We Got This Harvest Joy Mint Cacao Smoothie",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "We Got This Harvest Joy Mint Cacao Smoothie", text: "We Got This Harvest Joy Mint Cacao Smoothie", sign: "YOUR BRAND", tag: "Food & Bev" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "We Got This Harvest Joy Mint Cacao Smoothie",
+    primary: "A food & bev static ad: We Got This Harvest Joy Mint Cacao Smoothie. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-collagem-672", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Food & Bev", label: "Food & Bev", title: "Meal Prep Box Plan Customization On First Order",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
