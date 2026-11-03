@@ -1,5 +1,18 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "tp-homegardenm-1244": B + "templates/tp-homegardenm-1244.jpg",
+  "tp-healthwellnessm-1183": B + "templates/tp-healthwellnessm-1183.jpg",
+  "tp-strongcopym-266": B + "templates/tp-strongcopym-266.jpg",
+  "tp-minimalisticm-1473": B + "templates/tp-minimalisticm-1473.jpg",
+  "tp-offerm-831": B + "templates/tp-offerm-831.jpg",
+  "tp-bundlesm-160": B + "templates/tp-bundlesm-160.jpg",
+  "tp-homegardenm-749": B + "templates/tp-homegardenm-749.jpg",
+  "tp-minimalisticm-1478": B + "templates/tp-minimalisticm-1478.jpg",
+  "tp-healthwellnessm-878": B + "templates/tp-healthwellnessm-878.jpg",
+  "tp-usvsthemm-1435": B + "templates/tp-usvsthemm-1435.jpg",
+  "tp-nichesm-358": B + "templates/tp-nichesm-358.jpg",
+  "tp-homegardenm-1234": B + "templates/tp-homegardenm-1234.jpg",
+  "tp-comparisonm-180": B + "templates/tp-comparisonm-180.jpg",
   "tp-usvsthem-1441": B + "templates/tp-usvsthem-1441.jpg",
   "tp-strongcopy-1228": B + "templates/tp-strongcopy-1228.jpg",
   "tp-sale-1458": B + "templates/tp-sale-1458.jpg",
