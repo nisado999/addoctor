@@ -1,5 +1,17 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "tp-simplelayoutm-1370": 1793731277,
+  "tp-salem-918": 1793731276,
+  "tp-strongcopym-1228": 1793731275,
+  "tp-fashionm-1359": 1793731274,
+  "tp-productfocusedm-426": 1793731273,
+  "tp-productfocusedm-913": 1793731272,
+  "tp-bundlesm-748": 1793731271,
+  "tp-simplelayoutm-1058": 1793731270,
+  "tp-homegardenm-1237": 1793731269,
+  "tp-comparisonm-939": 1793731268,
+  "tp-productfocusedm-893": 1793731267,
+  "tp-bundlesm-1462": 1793731266,
   "tp-homegardenm-1244": 1793730587,
   "tp-healthwellnessm-1183": 1793730586,
   "tp-strongcopym-266": 1793730585,
