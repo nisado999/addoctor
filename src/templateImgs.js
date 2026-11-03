@@ -1,5 +1,14 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "tp-fashiontxtm-9": B + "templates/tp-fashiontxtm-9.jpg",
+  "tp-fashiontxtm-8": B + "templates/tp-fashiontxtm-8.jpg",
+  "tp-fashiontxtm-7": B + "templates/tp-fashiontxtm-7.jpg",
+  "tp-fashiontxtm-6": B + "templates/tp-fashiontxtm-6.jpg",
+  "tp-fashiontxtm-5": B + "templates/tp-fashiontxtm-5.jpg",
+  "tp-fashiontxtm-4": B + "templates/tp-fashiontxtm-4.jpg",
+  "tp-fashiontxtm-3": B + "templates/tp-fashiontxtm-3.jpg",
+  "tp-fashiontxtm-2": B + "templates/tp-fashiontxtm-2.jpg",
+  "tp-fashiontxtm-1": B + "templates/tp-fashiontxtm-1.jpg",
   "tp-skincarem-1": B + "templates/tp-skincarem-1.jpg",
   "tp-jeansm-2": B + "templates/tp-jeansm-2.jpg",
   "tp-jeansm-1": B + "templates/tp-jeansm-1.jpg",
@@ -1471,7 +1480,6 @@ const TEMPLATE_IMGS = {
   "photo-booth": B + "templates/photo-booth.jpg",
   "carry-on-kit": B + "templates/carry-on-kit.jpg",
   "swing-tag": B + "templates/swing-tag.jpg",
-  "fitting-room": B + "templates/fitting-room.jpg",
   "empty-closet": B + "templates/empty-closet.jpg",
   "sunday-drop": B + "templates/sunday-drop.jpg",
   "one-pad": B + "templates/one-pad.jpg",
@@ -1508,16 +1516,8 @@ const TEMPLATE_IMGS = {
   "berry-splash": B + "templates/berry-splash.jpg",
   "fragrance-portrait": B + "templates/fragrance-portrait.jpg",
   "hotel-pool": B + "templates/hotel-pool.jpg",
-  "knit-stack": B + "templates/knit-stack.jpg",
-  "hoodie-street": B + "templates/hoodie-street.jpg",
   "capsule-flatlay": B + "templates/capsule-flatlay.jpg",
-  "linen-hanger": B + "templates/linen-hanger.jpg",
-  "denim-crate": B + "templates/denim-crate.jpg",
-  "trench-rain": B + "templates/trench-rain.jpg",
   "caps-wall": B + "templates/caps-wall.jpg",
-  "tote-market": B + "templates/tote-market.jpg",
-  "snow-bench-knits": B + "templates/snow-bench-knits.jpg",
-  "rooftop-friends-tees": B + "templates/rooftop-friends-tees.jpg",
 };
 /* Video templates: a short silent loop per id. The matching image above is its first frame, shown until the video loads. */
 const TEMPLATE_VIDS = {
