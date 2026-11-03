@@ -1,5 +1,15 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "ps-notebookstack": 1793670340,
+  "ps-candleseries": 1793670339,
+  "ps-umbrellapage": 1793670338,
+  "ps-lipsonmoody": 1793670337,
+  "ps-pillowtype": 1793670336,
+  "ps-speakerhud": 1793670335,
+  "ps-hairoilframe": 1793670334,
+  "ps-giftwallet": 1793670333,
+  "ps-hotsaucechilli": 1793670332,
+  "ps-lifttrophy": 1793670331,
   "pn-crayon": 1793669314,
   "pn-scratch": 1793669313,
   "pn-chalkboard": 1793669312,
