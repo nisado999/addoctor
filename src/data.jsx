@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-skincare-1108", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Botanical Oils Rejuvenate Skin Tone",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Botanical Oils Rejuvenate Skin Tone", text: "Botanical Oils Rejuvenate Skin Tone", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Botanical Oils Rejuvenate Skin Tone",
+    primary: "A beauty & skincare static ad: Botanical Oils Rejuvenate Skin Tone. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-skincare-1106", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Buy Any Get Refill Free",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Buy Any Get Refill Free", text: "Buy Any Get Refill Free", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Buy Any Get Refill Free",
+    primary: "A beauty & skincare static ad: Buy Any Get Refill Free. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-skincare-1104", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Ninety Seven Percent Firmer",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Ninety Seven Percent Firmer", text: "Ninety Seven Percent Firmer", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Ninety Seven Percent Firmer",
+    primary: "A beauty & skincare static ad: Ninety Seven Percent Firmer. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-skincare-1103", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Mud Mask Callouts",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Mud Mask Callouts", text: "Mud Mask Callouts", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Mud Mask Callouts",
+    primary: "A beauty & skincare static ad: Mud Mask Callouts. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-skincare-1101", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Facial Polish Five Star Quote",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
