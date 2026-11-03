@@ -1,5 +1,15 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "pn-nowplaying": B + "templates/pn-nowplaying.jpg",
+  "pn-donotdisturb": B + "templates/pn-donotdisturb.jpg",
+  "pn-swatches": B + "templates/pn-swatches.jpg",
+  "pn-missing": B + "templates/pn-missing.jpg",
+  "pn-incomingcall": B + "templates/pn-incomingcall.jpg",
+  "pn-museum": B + "templates/pn-museum.jpg",
+  "pn-dictionary": B + "templates/pn-dictionary.jpg",
+  "pn-warninglabel": B + "templates/pn-warninglabel.jpg",
+  "pn-clockknits": B + "templates/pn-clockknits.jpg",
+  "pn-serumreverse": B + "templates/pn-serumreverse.jpg",
   "pn-catbox": B + "templates/pn-catbox.jpg",
   "pn-dognose": B + "templates/pn-dognose.jpg",
   "pn-elevator": B + "templates/pn-elevator.jpg",
