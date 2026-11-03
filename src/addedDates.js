@@ -1,5 +1,17 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "pn-springedit": 1793668571,
+  "pn-wardrobe": 1793668570,
+  "pn-juiceknife": 1793668569,
+  "pn-sunglassreflect": 1793668568,
+  "pn-toggleoff": 1793668567,
+  "pn-candleshadow": 1793668566,
+  "pn-bottlesky": 1793668565,
+  "pn-lollicrop": 1793668564,
+  "pn-lemonbottle": 1793668563,
+  "pn-hotsauceext": 1793668562,
+  "pn-totefour": 1793668561,
+  "pn-boxburst": 1793668560,
   "cr3-cookiedough": 1793667306,
   "cr2-lightexit": 1793659910,
   "cr2-sawitall": 1793659909,
