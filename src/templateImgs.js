@@ -1,5 +1,13 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "tp-collagev2-1044": B + "templates/tp-collagev2-1044.jpg",
+  "tp-blackfridayv2-1548": B + "templates/tp-blackfridayv2-1548.jpg",
+  "tp-blackfridayv2-1547": B + "templates/tp-blackfridayv2-1547.jpg",
+  "tp-blackfridayv2-02": B + "templates/tp-blackfridayv2-02.jpg",
+  "tp-productshowcasev2-847": B + "templates/tp-productshowcasev2-847.jpg",
+  "tp-techv2-789": B + "templates/tp-techv2-789.jpg",
+  "tp-socialproofv2-45": B + "templates/tp-socialproofv2-45.jpg",
+  "tp-skincarev2-1093": B + "templates/tp-skincarev2-1093.jpg",
   "tp-niches-1280": B + "templates/tp-niches-1280.jpg",
   "tp-niches-1279": B + "templates/tp-niches-1279.jpg",
   "tp-niches-1278": B + "templates/tp-niches-1278.jpg",
