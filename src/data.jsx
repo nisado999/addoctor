@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-homegarden-866", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Food & Bev", label: "Food & Bev", title: "Back In Stock Mini Artist Series Olive Oil",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Back In Stock Mini Artist Series Olive Oil", text: "Back In Stock Mini Artist Series Olive Oil", sign: "YOUR BRAND", tag: "Food & Bev" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Back In Stock Mini Artist Series Olive Oil",
+    primary: "A food & bev static ad: Back In Stock Mini Artist Series Olive Oil. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-homegarden-749", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Home & Decor", label: "Home & Decor", title: "Matte And Polished Gold Cutlery Set",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Matte And Polished Gold Cutlery Set", text: "Matte And Polished Gold Cutlery Set", sign: "YOUR BRAND", tag: "Home & Decor" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Matte And Polished Gold Cutlery Set",
+    primary: "A home & decor static ad: Matte And Polished Gold Cutlery Set. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-homegarden-543", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Home & Decor", label: "Home & Decor", title: "Ready For Comfy Duvet Hug",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Ready For Comfy Duvet Hug", text: "Ready For Comfy Duvet Hug", sign: "YOUR BRAND", tag: "Home & Decor" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Ready For Comfy Duvet Hug",
+    primary: "A home & decor static ad: Ready For Comfy Duvet Hug. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-homegarden-208", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Home & Decor", label: "Home & Decor", title: "Fibre Core Window Strength Breaking News",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
