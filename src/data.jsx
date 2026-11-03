@@ -11868,15 +11868,6 @@ const TEMPLATES = [
     primary: "A chef's knife buried in a stone like a legendary sword. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
-    id: "ec3-sunglasses", type: "static", trending: true, isNew: true, brandName: "LUMEN",
-    category: "Fashion", label: "Fashion", title: "Suns Out Finally",
-    format: "4:5 · Static · UGC golden-hour car candid", framework: "Authentic",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "SUN'S OUT. FINALLY.", text: "Suns Out Finally", sign: "LUMEN", tag: "Fashion" },
-    why: ["Golden light and a real laugh sell the mood.","Coral type matches the sunset."],
-    headline: "SUN'S OUT. FINALLY.",
-    primary: "A laughing passenger in sunglasses at golden hour with coral type. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
     id: "ec3-watch", type: "static", trending: true, isNew: true, brandName: "TRAILPULSE",
     category: "Sport & Fitness", label: "Sport & Fitness", title: "Earn The Sunrise",
     format: "4:5 · Static · Concept poster, watch as the sun", framework: "Concept",
@@ -12046,15 +12037,6 @@ const TEMPLATES = [
     why: ["The offer is the hero, set huge and impossible to miss.","The eruption makes a discount feel like an event."],
     headline: "40% OFF ALL WEEKEND",
     primary: "A stack of sneaker boxes erupting with light in a warehouse for a Black Friday offer. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
-    id: "ec2-cardigan", type: "static", trending: true, isNew: true, brandName: "KNITTA",
-    category: "Fashion", label: "Fashion", title: "Fits Finally",
-    format: "4:5 · Static · UGC changing-room selfie, huge type", framework: "Authentic",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "FITS. FINALLY.", text: "Fits Finally", sign: "KNITTA", tag: "Fashion" },
-    why: ["A genuine reaction is more believable than a posed model.","Burnt-orange type sits in the scene like a sign."],
-    headline: "FITS. FINALLY.",
-    primary: "A delighted changing-room mirror selfie in a chunky cardigan under a warm bulb. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "ec2-sisters", type: "static", trending: true, isNew: true, brandName: "KILNWELL",
@@ -12508,18 +12490,6 @@ const TEMPLATES = [
     ],
     headline: "70% reorder within 60 days",
     primary: "A stainless steel water bottle. Only use the stat if you can verify the reorder rate.",
-  },
-  {
-    id: "ad-meme-socks", type: "static", trending: true, isNew: true,
-    category: "Fashion", label: "Fashion", title: "Soaked Socks Meme",
-    format: "4:5 · Static · Top and bottom caption", framework: "Humour",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#27272a 0%,#09090b 100%)", hl: "#fafafa", hook: "WHEN YOUR SOCKS GET SOAKED", text: "AGAIN.", sign: "Rain jacket", tag: "Meme" },
-    why: [
-      "A relatable caption makes the problem feel familiar.",
-      "A simple photo keeps the joke quick to read.",
-    ],
-    headline: "Soaked socks, again",
-    primary: "A rain jacket for wet days. Keep the joke about the problem, not the brand.",
   },
   {
     id: "ad-new-vs-old-mug", type: "static", trending: true, isNew: true,
