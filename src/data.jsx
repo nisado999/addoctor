@@ -6,15 +6,6 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
-    id: "mc-serum", type: "static", trending: true, isNew: true, brandName: "LUMA",
-    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Care You Can Reach: Serum",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Care you can reach.", text: "Care You Can Reach: Serum", sign: "LUMA", tag: "Beauty & Skincare" },
-    why: ["An older model shows serum is for every age.","A single peach on the floor as a skin-glow hint."],
-    headline: "Care you can reach.",
-    primary: "A silver-haired woman in a cream dress reaches out of a phone toward an amber glass serum bottle. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
     id: "mc-sunscreen", type: "static", trending: true, isNew: true, brandName: "SOLAR",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Care You Can Reach: Sunscreen",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
@@ -22,33 +13,6 @@ const TEMPLATES = [
     why: ["A yellow tube is the brightest thing in the scene.","A small seashell on the floor hints at the beach."],
     headline: "Care you can reach.",
     primary: "A woman in a pale blue shirt dress reaches out of a phone toward a yellow sunscreen tube. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
-    id: "mc-bodybutter", type: "static", trending: true, isNew: true, brandName: "COCOA",
-    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Care You Can Reach: Body Butter",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Care you can reach.", text: "Care You Can Reach: Body Butter", sign: "COCOA", tag: "Beauty & Skincare" },
-    why: ["A coral outfit and a gold-lidded jar share one warm palette.","Folded towel on the floor as a spa hint."],
-    headline: "Care you can reach.",
-    primary: "A blonde woman in a coral cardigan reaches out of a phone toward a jar of body butter. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
-    id: "mc-handcream", type: "static", trending: true, isNew: true, brandName: "VELA",
-    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Care You Can Reach: Hand Cream",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Care you can reach.", text: "Care You Can Reach: Hand Cream", sign: "VELA", tag: "Beauty & Skincare" },
-    why: ["A bold mint dress and a pink tube pop against the soft beige.","Same calm studio with dried flowers on the floor."],
-    headline: "Care you can reach.",
-    primary: "A woman with a dark bob and a mint dress reaches out of a phone screen toward a pink hand cream tube. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
-    id: "mc-bodylotion", type: "static", trending: true, isNew: true, brandName: "SOFTLY",
-    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Care You Can Reach: Body Lotion",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Care you can reach.", text: "Care You Can Reach: Body Lotion", sign: "SOFTLY", tag: "Beauty & Skincare" },
-    why: ["The reaching hand makes the lotion feel one gesture away.","Soft beige studio with a small plant for a new detail."],
-    headline: "Care you can reach.",
-    primary: "A woman in a lilac dress and sunglasses reaches out of a phone screen toward a body lotion pump bottle. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "ps-notebookstack", type: "static", trending: true, isNew: true, brandName: "SCRIBE",
