@@ -170,6 +170,7 @@ const FEATURED_TOP = [
   "tp-simplelayoutm-1385", "tp-featuresbenefitsm-12", "tp-salem-1454", "tp-minimalisticm-1479", "tp-makeaclaimm-465", "tp-bundlesm-1466",
   "tp-offerm-599", "tp-lifestylem-710", "tp-nichesm-1271", "tp-fashionm-935", "tp-simplelayoutm-381", "tp-fashionm-225",
   "tp-limitedtimesalem-687", "tp-productfocusedm-633", "tp-productfocusedm-48", "tp-nichesm-999", "tp-bundlesm-1463", "tp-strongcopym-480",
+  "tp-homegardenm-1250", "tp-productfocusedm-927", "tp-homegardenm-1236", "tp-productfocusedm-646", "tp-skincarem-1093", "tp-productfocusedm-59",
   "cr-embersauce", "cr-lowkeycaps", "ec8-hotsauce", "cr-yellowsuitcases", "ec4-sneakers", "ec7-y2kdenim",
   "breaking-news-shoes", "cr-bootspace", "cr-boxofmugs", "cr-curlup", "cr-breakingcandle", "cr-swimteam",
   "cr-bundlesposter", "cr-sockit", "cr-foundernote", "cr-chopchop", "review-cards-cream", "cr-brushup",
