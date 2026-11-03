@@ -865,7 +865,20 @@ function App() {
           )}
 
           {isGrid && (
-            <div ref={gridRef} className="-mx-4 mt-6 scroll-mt-20 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
+            /* The search bar sits right on top of the filters, big enough that nobody has to hunt for it. Same query as the top bar. */
+            <div className="relative mt-6 w-full max-w-2xl">
+              <Icon.Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <input
+                type="search" value={q} onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
+                placeholder={view === "vault" ? "Search your Vault..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search your Vault" : "Search templates, niches, formats"}
+                className="h-12 w-full rounded-full border-2 border-slate-900/20 bg-white pl-12 pr-4 text-base text-slate-900 shadow-[0_8px_24px_-12px_rgba(21,20,18,.35)] placeholder:text-slate-500 transition focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
+              />
+            </div>
+          )}
+
+          {isGrid && (
+            <div ref={gridRef} className="-mx-4 mt-4 scroll-mt-20 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden">
               <div className="flex w-max gap-2" role="group" aria-label="Filter by niche">
                 {CATEGORIES.map((c) => {
                   const on = cat === c;
@@ -885,16 +898,6 @@ function App() {
 
           {isGrid && (
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              {/* A second search box right beside the filters, so visitors see it where they browse. Same query as the top bar. */}
-              <div className="relative w-full sm:w-72">
-                <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="search" value={q} onChange={(e) => setQ(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
-                  placeholder={view === "vault" ? "Search your Vault..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search your Vault" : "Search templates, niches, formats"}
-                  className="h-9 w-full rounded-full border border-slate-900/[.12] bg-white pl-10 pr-4 text-base text-slate-900 shadow-[0_1px_2px_rgba(21,20,18,.05)] sm:text-sm placeholder:text-slate-400 transition [@media(pointer:coarse)]:h-10 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
-                />
-              </div>
               <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Quick filters">
                 {quickChips.map(([id, label]) => {
                   const on = quick === id;
