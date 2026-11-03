@@ -1,5 +1,10 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "mc-serum": 1793671046,
+  "mc-sunscreen": 1793671045,
+  "mc-bodybutter": 1793671044,
+  "mc-handcream": 1793671043,
+  "mc-bodylotion": 1793671042,
   "ps-notebookstack": 1793670340,
   "ps-candleseries": 1793670339,
   "ps-umbrellapage": 1793670338,
