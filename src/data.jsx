@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-collagev2-752", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Sport & Fitness", label: "Sport & Fitness", title: "Cycling Jersey Team Kit Grid",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Cycling Jersey Team Kit Grid", text: "Cycling Jersey Team Kit Grid", sign: "YOUR BRAND", tag: "Sport & Fitness" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Cycling Jersey Team Kit Grid",
+    primary: "A sport & fitness static ad: Cycling Jersey Team Kit Grid. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-collagev2-1051", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Free Essential Oils With Facial Steamer",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Free Essential Oils With Facial Steamer", text: "Free Essential Oils With Facial Steamer", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Free Essential Oils With Facial Steamer",
+    primary: "A beauty & skincare static ad: Free Essential Oils With Facial Steamer. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-backinstockv2-1536", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Pets", label: "Pets", title: "Picky Eaters Dog Meal Plan Box",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Picky Eaters Dog Meal Plan Box", text: "Picky Eaters Dog Meal Plan Box", sign: "YOUR BRAND", tag: "Pets" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Picky Eaters Dog Meal Plan Box",
+    primary: "A pets static ad: Picky Eaters Dog Meal Plan Box. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-nichesv2-1272", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Supplements", label: "Supplements", title: "Apple Cider Vinegar Gummies Neon Sale",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Apple Cider Vinegar Gummies Neon Sale", text: "Apple Cider Vinegar Gummies Neon Sale", sign: "YOUR BRAND", tag: "Supplements" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Apple Cider Vinegar Gummies Neon Sale",
+    primary: "A supplements static ad: Apple Cider Vinegar Gummies Neon Sale. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-collagev2-1044", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Home & Decor", label: "Home & Decor", title: "Limited Edition Rug Collection",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
