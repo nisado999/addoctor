@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-fooddrinkm-1156", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Food & Bev", label: "Food & Bev", title: "Simple Quick Easy Coffee Concentrate With Mugs",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Simple Quick Easy Coffee Concentrate With Mugs", text: "Simple Quick Easy Coffee Concentrate With Mugs", sign: "YOUR BRAND", tag: "Food & Bev" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Simple Quick Easy Coffee Concentrate With Mugs",
+    primary: "A food & bev static ad: Simple Quick Easy Coffee Concentrate With Mugs. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-featuresbenefitsm-185", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Food & Bev", label: "Food & Bev", title: "Equal Amounts Of Fiber Noodle Cup Comparison",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Equal Amounts Of Fiber Noodle Cup Comparison", text: "Equal Amounts Of Fiber Noodle Cup Comparison", sign: "YOUR BRAND", tag: "Food & Bev" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Equal Amounts Of Fiber Noodle Cup Comparison",
+    primary: "A food & bev static ad: Equal Amounts Of Fiber Noodle Cup Comparison. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-fooddrinkm-379", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Food & Bev", label: "Food & Bev", title: "Best Home Cooking Meal Kit Value",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Best Home Cooking Meal Kit Value", text: "Best Home Cooking Meal Kit Value", sign: "YOUR BRAND", tag: "Food & Bev" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Best Home Cooking Meal Kit Value",
+    primary: "A food & bev static ad: Best Home Cooking Meal Kit Value. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-productshowcasem-737", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Fashion", label: "Fashion", title: "Hair Wrap Alert Lock Screen Restock",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Hair Wrap Alert Lock Screen Restock", text: "Hair Wrap Alert Lock Screen Restock", sign: "YOUR BRAND", tag: "Fashion" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Hair Wrap Alert Lock Screen Restock",
+    primary: "A fashion static ad: Hair Wrap Alert Lock Screen Restock. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-productshowcasem-1037", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Available Now Daily Defense Sunscreen Trio",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",

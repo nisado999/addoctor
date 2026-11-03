@@ -1,5 +1,9 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "tp-fooddrinkm-1156": 1793741283,
+  "tp-featuresbenefitsm-185": 1793741282,
+  "tp-fooddrinkm-379": 1793741281,
+  "tp-productshowcasem-737": 1793741280,
   "tp-productshowcasem-1037": 1793740196,
   "tp-productshowcasem-265": 1793740195,
   "tp-featuresbenefitsm-513": 1793740194,
