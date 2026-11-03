@@ -1,5 +1,18 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "tp-nichesv2-666": B + "templates/tp-nichesv2-666.jpg",
+  "tp-nichesv2-1008": B + "templates/tp-nichesv2-1008.jpg",
+  "tp-kidsbabyv2-731": B + "templates/tp-kidsbabyv2-731.jpg",
+  "tp-kidsbabyv2-536": B + "templates/tp-kidsbabyv2-536.jpg",
+  "tp-holidayv2-1413": B + "templates/tp-holidayv2-1413.jpg",
+  "tp-holidayv2-1410": B + "templates/tp-holidayv2-1410.jpg",
+  "tp-fooddrinkv2-853": B + "templates/tp-fooddrinkv2-853.jpg",
+  "tp-fooddrinkv2-637": B + "templates/tp-fooddrinkv2-637.jpg",
+  "tp-fooddrinkv2-517": B + "templates/tp-fooddrinkv2-517.jpg",
+  "tp-fooddrinkv2-340": B + "templates/tp-fooddrinkv2-340.jpg",
+  "tp-fooddrinkv2-1169": B + "templates/tp-fooddrinkv2-1169.jpg",
+  "tp-fooddrinkv2-1164": B + "templates/tp-fooddrinkv2-1164.jpg",
+  "tp-fooddrinkv2-1156": B + "templates/tp-fooddrinkv2-1156.jpg",
   "tp-fooddrinkv2-1153": B + "templates/tp-fooddrinkv2-1153.jpg",
   "tp-fooddrinkv2-1152": B + "templates/tp-fooddrinkv2-1152.jpg",
   "tp-featuresbenefitsv2-970": B + "templates/tp-featuresbenefitsv2-970.jpg",
