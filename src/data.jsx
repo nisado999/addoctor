@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-homegarden-1250", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Home & Decor", label: "Home & Decor", title: "Lower Your Fall Footprint Harvest Apple Cleaning",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Lower Your Fall Footprint Harvest Apple Cleaning", text: "Lower Your Fall Footprint Harvest Apple Cleaning", sign: "YOUR BRAND", tag: "Home & Decor" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Lower Your Fall Footprint Harvest Apple Cleaning",
+    primary: "A home & decor static ad: Lower Your Fall Footprint Harvest Apple Cleaning. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-healthwellness-1185", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Supplements", label: "Supplements", title: "Daily Greens Ninety One Vitamins One Serving",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Daily Greens Ninety One Vitamins One Serving", text: "Daily Greens Ninety One Vitamins One Serving", sign: "YOUR BRAND", tag: "Supplements" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Daily Greens Ninety One Vitamins One Serving",
+    primary: "A supplements static ad: Daily Greens Ninety One Vitamins One Serving. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-healthwellness-1183", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Supplements", label: "Supplements", title: "Not All Multivitamins Are Created Equal",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Not All Multivitamins Are Created Equal", text: "Not All Multivitamins Are Created Equal", sign: "YOUR BRAND", tag: "Supplements" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Not All Multivitamins Are Created Equal",
+    primary: "A supplements static ad: Not All Multivitamins Are Created Equal. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-fashion-1364", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Fashion", label: "Fashion", title: "Black Acetate Sunglasses Free Shipping And Returns",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Black Acetate Sunglasses Free Shipping And Returns", text: "Black Acetate Sunglasses Free Shipping And Returns", sign: "YOUR BRAND", tag: "Fashion" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Black Acetate Sunglasses Free Shipping And Returns",
+    primary: "A fashion static ad: Black Acetate Sunglasses Free Shipping And Returns. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-limitedtimesale-1480", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Holidays & Offers", label: "Holidays & Offers", title: "Top 10 Gifts Flat Lay",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
