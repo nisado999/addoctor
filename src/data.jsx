@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-niches-1271", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Fashion", label: "Fashion", title: "I Seriously Want A Million Bralettes Review",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "I Seriously Want A Million Bralettes Review", text: "I Seriously Want A Million Bralettes Review", sign: "YOUR BRAND", tag: "Fashion" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "I Seriously Want A Million Bralettes Review",
+    primary: "A fashion static ad: I Seriously Want A Million Bralettes Review. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-niches-999", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Fashion", label: "Fashion", title: "Things Every Grown Up Should Own Tee 6-Pack",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Things Every Grown Up Should Own Tee 6-Pack", text: "Things Every Grown Up Should Own Tee 6-Pack", sign: "YOUR BRAND", tag: "Fashion" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Things Every Grown Up Should Own Tee 6-Pack",
+    primary: "A fashion static ad: Things Every Grown Up Should Own Tee 6-Pack. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-niches-358", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Supplements", label: "Supplements", title: "Super Easy Transparent Vitamins Subscriber Review",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Super Easy Transparent Vitamins Subscriber Review", text: "Super Easy Transparent Vitamins Subscriber Review", sign: "YOUR BRAND", tag: "Supplements" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Super Easy Transparent Vitamins Subscriber Review",
+    primary: "A supplements static ad: Super Easy Transparent Vitamins Subscriber Review. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-homegarden-1250", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Home & Decor", label: "Home & Decor", title: "Lower Your Fall Footprint Harvest Apple Cleaning",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
