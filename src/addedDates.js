@@ -1,5 +1,14 @@
 /* When each template first appeared (unix seconds, from the git history of its image). Used by the Recently added sort and filter. */
 const ADDED = {
+  "pn-crayon": 1793669314,
+  "pn-scratch": 1793669313,
+  "pn-chalkboard": 1793669312,
+  "pn-roadsign": 1793669311,
+  "pn-tapemeasure": 1793669310,
+  "pn-goodboy": 1793669309,
+  "pn-spfthermo": 1793669308,
+  "pn-stampcard": 1793669307,
+  "pn-nutrition": 1793669306,
   "pn-nowplaying": 1793669189,
   "pn-donotdisturb": 1793669188,
   "pn-swatches": 1793669187,
