@@ -6,6 +6,42 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-productshowcasem-57", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Kids & Baby", label: "Kids & Baby", title: "Essential Robe Every Stage Of Motherhood",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Essential Robe Every Stage Of Motherhood", text: "Essential Robe Every Stage Of Motherhood", sign: "YOUR BRAND", tag: "Kids & Baby" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Essential Robe Every Stage Of Motherhood",
+    primary: "A kids & baby static ad: Essential Robe Every Stage Of Motherhood. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-productshowcasem-1032", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Six Bar Soap Bundle Subscription Save",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Six Bar Soap Bundle Subscription Save", text: "Six Bar Soap Bundle Subscription Save", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Six Bar Soap Bundle Subscription Save",
+    primary: "A beauty & skincare static ad: Six Bar Soap Bundle Subscription Save. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-testimonialm-523", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Perfect Routine Billboard Skincare Trio",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Perfect Routine Billboard Skincare Trio", text: "Perfect Routine Billboard Skincare Trio", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Perfect Routine Billboard Skincare Trio",
+    primary: "A beauty & skincare static ad: Perfect Routine Billboard Skincare Trio. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-featuresbenefitsm-339", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Home & Decor", label: "Home & Decor", title: "Urban Jungle Plant Collection Trio",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Urban Jungle Plant Collection Trio", text: "Urban Jungle Plant Collection Trio", sign: "YOUR BRAND", tag: "Home & Decor" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Urban Jungle Plant Collection Trio",
+    primary: "A home & decor static ad: Urban Jungle Plant Collection Trio. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-dealsdiscountsm-620", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Jewelry", label: "Jewelry", title: "Anniversary Watch Sale Rose Gold",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
