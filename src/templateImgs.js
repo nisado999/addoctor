@@ -1,5 +1,7 @@
 const B = import.meta.env.BASE_URL;
 const TEMPLATE_IMGS = {
+  "tp-featuresbenefitsm-2": B + "templates/tp-featuresbenefitsm-2.jpg",
+  "tp-dealsdiscountsm-1118": B + "templates/tp-dealsdiscountsm-1118.jpg",
   "tp-featuresbenefitsm-688": B + "templates/tp-featuresbenefitsm-688.jpg",
   "tp-petsm-606": B + "templates/tp-petsm-606.jpg",
   "tp-techm-1067": B + "templates/tp-techm-1067.jpg",
