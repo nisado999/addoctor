@@ -6,6 +6,33 @@ const CATEGORIES = ["All", "Beauty & Skincare", "Fashion", "Electronics", "Local
 /* Each template carries its own CSS-built ad creative (art). No external media. */
 const TEMPLATES = [
   {
+    id: "tp-blackfridaym-1547", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Food & Bev", label: "Food & Bev", title: "Seasonal Savings 40 Off Fuelcraft Meal Bowls",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Seasonal Savings 40 Off Fuelcraft Meal Bowls", text: "Seasonal Savings 40 Off Fuelcraft Meal Bowls", sign: "YOUR BRAND", tag: "Food & Bev" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Seasonal Savings 40 Off Fuelcraft Meal Bowls",
+    primary: "A food & bev static ad: Seasonal Savings 40 Off Fuelcraft Meal Bowls. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-featuresbenefitsm-4", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Travel", label: "Travel", title: "Premium Memory Foam Travel Neck Pillow Sale",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Premium Memory Foam Travel Neck Pillow Sale", text: "Premium Memory Foam Travel Neck Pillow Sale", sign: "YOUR BRAND", tag: "Travel" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Premium Memory Foam Travel Neck Pillow Sale",
+    primary: "A travel static ad: Premium Memory Foam Travel Neck Pillow Sale. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
+    id: "tp-beautym-1401", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
+    category: "Beauty & Skincare", label: "Beauty & Skincare", title: "Your Impurity-Focused Five Step Ritual",
+    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Your Impurity-Focused Five Step Ritual", text: "Your Impurity-Focused Five Step Ritual", sign: "YOUR BRAND", tag: "Beauty & Skincare" },
+    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
+    headline: "Your Impurity-Focused Five Step Ritual",
+    primary: "A beauty & skincare static ad: Your Impurity-Focused Five Step Ritual. The brand shown is a made-up placeholder: your name and logo replace it.",
+  },
+  {
     id: "tp-featuresbenefitsm-2", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Fashion", label: "Fashion", title: "Conquer Every Rainy Day Waterproof Sneakers",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
