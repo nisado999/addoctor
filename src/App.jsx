@@ -129,7 +129,6 @@ function VaultView({ items, total, query, onClearSearch, onOpen, onRemove, onExa
 
 /* --------------------------------- App --------------------------------- */
 
-const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 
 const VIEWS = {
   home: { title: "Home" },
@@ -292,7 +291,6 @@ function App() {
   const [toTop, setToTop] = useState(false);
   const [style, setStyle] = useState("All"); // "All" or an ad style id from searchTags.js
   const searchRef = useRef(null);
-  const [searchOn, setSearchOn] = useState(false); // the search box has focus
   const [shown, setShown] = useState(PAGE);
   const moreRef = useRef(null);
   const gridRef = useRef(null);
@@ -772,31 +770,9 @@ function App() {
             </button>
             {/* Below lg the sidebar (and its logo) is off-screen, so the name goes here. On a phone it makes room
                 while the visitor is typing a search. */}
-            <button onClick={() => goto("home")} aria-label="AdDoctor: Home" className={`-ml-1 shrink-0 rounded-lg p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 lg:hidden ${searchOn ? "max-sm:hidden" : ""}`}>
+            <button onClick={() => goto("home")} aria-label="AdDoctor: Home" className={`-ml-1 shrink-0 rounded-lg p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 lg:hidden`}>
               <img src="./logo.png" alt="AdDoctor" width={98} height={18} className="block h-[18px] w-auto select-none sm:h-5" draggable={false} />
             </button>
-            <div className={`relative min-w-0 flex-1 md:max-w-md ${isGrid || view === "vault" || view === "home" ? "" : "invisible"}`}>
-              <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                id="search" ref={searchRef} type="search" value={q}
-                // Searching from Home takes you to the gallery, where the results are.
-                onChange={(e) => { setQ(e.target.value); if (view === "home" && e.target.value.trim()) goto("explore"); }}
-                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
-                onFocus={() => setSearchOn(true)} onBlur={() => setSearchOn(false)}
-                placeholder={view === "vault" ? "Search your Vault..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search your Vault" : "Search templates, niches, formats"}
-                className="h-10 w-full rounded-full border border-slate-900/[.08] bg-white/75 pl-10 pr-4 md:pr-24 shadow-[inset_0_1px_2px_rgba(21,20,18,.05)] text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-slate-900 focus:bg-white focus:outline-none focus:ring-4 focus:ring-slate-900/10"
-              />
-              {/* The shortcut lives in the search bar: a click opens the jump palette, Ctrl/⌘ K does the same from anywhere. */}
-              {!q && (
-                <button
-                  type="button" onClick={() => setPalette(true)} aria-label="Jump to a page, action or template" aria-keyshortcuts="Control+K Meta+K"
-                  className="absolute right-2 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-full p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 md:flex"
-                >
-                  <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-semibold text-slate-500">{IS_MAC ? "⌘" : "Ctrl"}</kbd>
-                  <kbd className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-semibold text-slate-500">K</kbd>
-                </button>
-              )}
-            </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <ThemeToggle />
               {user ? (
@@ -866,13 +842,13 @@ function App() {
 
           {isGrid && (
             /* The search bar sits right on top of the filters, big enough that nobody has to hunt for it. Same query as the top bar. */
-            <div className="relative mt-6 w-full max-w-2xl">
-              <Icon.Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+            <div className="relative mt-5 w-full max-w-sm">
+              <Icon.Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
-                type="search" value={q} onChange={(e) => setQ(e.target.value)}
+                id="search" ref={searchRef} type="search" value={q} onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); e.currentTarget.blur(); } }}
                 placeholder={view === "vault" ? "Search your Vault..." : "Search templates, niches, formats..."} aria-label={view === "vault" ? "Search your Vault" : "Search templates, niches, formats"}
-                className="h-12 w-full rounded-full border-2 border-slate-900/20 bg-white pl-12 pr-4 text-base text-slate-900 shadow-[0_8px_24px_-12px_rgba(21,20,18,.35)] placeholder:text-slate-500 transition focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
+                className="h-10 w-full rounded-full border border-slate-900/[.12] bg-white pl-10 pr-4 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10"
               />
             </div>
           )}

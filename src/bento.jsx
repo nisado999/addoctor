@@ -3,6 +3,7 @@ import { TEMPLATES } from "./data";
 import { Icon, TemplateImage } from "./ui";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
 import { FEATURED_TOP } from "./featuredOrder.js";
+import { STOP, stem, hits } from "./searchTags.js";
 import SplitText from "./components/bits/SplitText/SplitText.jsx";
 
 /* The Home screen, on pure white: a headline, one composer that does four jobs, a stream of real ad presets
@@ -13,13 +14,31 @@ const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(naviga
 const COUNT = TEMPLATES.length;
 const NICHES = new Set(TEMPLATES.map((t) => t.category)).size;
 const RANK = new Map(FEATURED_TOP.map((id, i) => [id, i]));
-const STREAM = TEMPLATES.filter((t) => t.type !== "video" && TEMPLATE_IMGS[t.id])
-  .sort((a, b) => (RANK.get(a.id) ?? 1e9) - (RANK.get(b.id) ?? 1e9)).slice(0, 16);
+// Hand-picked best of the gallery: the loved film-look shoots plus the strongest new ads, spread so no look repeats back to back.
+const STREAM_IDS = [
+  "cr-tallgirls", "tp-dealsdiscountsm-1127", "cr-overcoatseason", "tp-fashiontxtm-7",
+  "cr-everydaytee", "tp-skincarem-1093", "tp-fashiontxtm-4", "cr-goeswitheverything",
+  "tp-dealsdiscountsm-07", "tp-fashiontxtm-1", "cr-costperwear", "tp-jeansm-2",
+  "tp-collagem-745", "tp-fashiontxtm-2", "tp-strongcopym-480", "tp-fashiontxtm-5",
+];
+const BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
+const STREAM = STREAM_IDS.map((id) => BY_ID.get(id)).filter((t) => t && TEMPLATE_IMGS[t.id]);
+
+// Search-as-you-type: the same words the gallery search uses, ranked title hits first, then the Featured order.
+const FIND = new Map(TEMPLATES.map((t) => [t.id, [t.title, t.label, t.category, t.headline, ...(Array.isArray(t.tags) ? t.tags : [])].filter((x) => typeof x === "string").join(" ").toLowerCase()]));
+const suggest = (q) => {
+  const ws = q.toLowerCase().split(/\s+/).filter((w) => w && !STOP.has(w)).map(stem);
+  if (!ws.length) return [];
+  const title = (t) => ws.reduce((n, w) => n + ((t.title || "").toLowerCase().includes(w) ? 1 : 0), 0);
+  return TEMPLATES.filter((t) => t.type !== "video" && TEMPLATE_IMGS[t.id] && ws.every((w) => hits(FIND.get(t.id), w)))
+    .sort((a, b) => title(b) - title(a) || (RANK.get(a.id) ?? 1e9) - (RANK.get(b.id) ?? 1e9)).slice(0, 6);
+};
 const ring = "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
 const isCreative = (f) => !!f && /^(image|video)\//.test(f.type);
 
 // What each mode asks for (typed out as the placeholder) and what its button says.
 const MODES = [
+  { id: "search", label: "Search templates", go: "Search", hints: [`Search ${COUNT} templates...`, "sneaker sale poster", "skincare, before and after", "black friday offer", "pet food"] },
   { id: "examine", label: "Examine Ad", go: "Run Diagnosis", hints: ["Paste your ad's headline or copy, or drop the creative to examine...", "Paste a screenshot of your ad...", "Upload an image or a video thumbnail..."] },
   { id: "spy", label: "Competitor Analysis", go: "Spy on Brand", hints: ["Enter a competitor domain, e.g. gymshark.com", "glossier.com", "Or just a brand name..."] },
   { id: "drop", label: "30-Day Drop", go: "Build My Drop", hints: ["Paste a store URL to plan 30 days of posts...", "https://yourstore.com"] },
@@ -54,16 +73,22 @@ function useTyped(lines, on) {
   return out || " ";
 }
 
-/* The composer: type or drop, pick what it should do in the tray, press Enter. */
-function Composer({ onExamine, onSpy, onPack, onBrowse }) {
-  const [mode, setMode] = useState("examine");
+/* The composer, built like a search engine: one pill, type, pick what it should do in the chips under it, press Enter.
+   In "Search templates" mode the matching ads drop down as you type. */
+function Composer({ onExamine, onSpy, onPack, onBrowse, onPick }) {
+  const [mode, setMode] = useState("search");
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
   const [over, setOver] = useState(false);
   const [err, setErr] = useState("");
+  const [open, setOpen] = useState(false);
+  const [act, setAct] = useState(-1);
   const input = useRef(null);
+  const field = useRef(null);
   const m = MODES.find((x) => x.id === mode);
   const typed = useTyped(m.hints, !text);
+  const found = mode === "search" ? suggest(text) : [];
+  const showList = open && !!text.trim();
 
   const attach = (f) => {
     if (!f) return;
@@ -72,9 +97,16 @@ function Composer({ onExamine, onSpy, onPack, onBrowse }) {
   };
   const submit = () => {
     const t = text.trim();
-    if (mode === "examine") { if (!file && looksLikeSite(t)) onSpy(t); else onExamine(file || undefined, t); }
+    if (mode === "search") { if (found[act]) onPick(found[act]); else onBrowse(t); }
+    else if (mode === "examine") { if (!file && looksLikeSite(t)) onSpy(t); else onExamine(file || undefined, t); }
     else if (mode === "spy") onSpy(t);
-    else onPack(text.trim());
+    else onPack(t);
+  };
+  const onKey = (e) => {
+    if (e.key === "ArrowDown" && found.length) { e.preventDefault(); setOpen(true); setAct((a) => (a + 1) % found.length); }
+    else if (e.key === "ArrowUp" && found.length) { e.preventDefault(); setAct((a) => (a <= 0 ? found.length - 1 : a - 1)); }
+    else if (e.key === "Escape") { if (open) setOpen(false); else setText(""); }
+    else if (e.key === "Enter") { e.preventDefault(); submit(); }
   };
   // Paste an image anywhere on Home (outside a text field) to attach it.
   useEffect(() => {
@@ -89,63 +121,82 @@ function Composer({ onExamine, onSpy, onPack, onBrowse }) {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-[660px]">
-      <div className="composer">
+    <div className="mx-auto w-full max-w-[720px]">
+      <div className="composer relative" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}>
         <div
           onDragOver={(e) => { e.preventDefault(); setOver(true); }}
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }}
           onDrop={(e) => { e.preventDefault(); setOver(false); attach(e.dataTransfer.files && e.dataTransfer.files[0]); }}
-          className={`overflow-hidden rounded-2xl border bg-white text-left shadow-[0_10px_30px_rgba(0,0,0,0.04)] transition-colors ${over ? "border-blue-500" : "border-[#E4E4E7]"}`}
+          className={`flex h-14 items-center gap-2 border bg-white pl-5 pr-2 text-left shadow-[0_6px_24px_rgba(0,0,0,0.07)] transition focus-within:shadow-[0_8px_30px_rgba(0,0,0,0.12)] ${showList && found.length ? "rounded-t-[28px] border-b-transparent" : "rounded-full"} ${over ? "border-blue-500" : "border-[#DADCE0] focus-within:border-[#111]"}`}
         >
-          <div className="flex min-h-[88px] flex-col justify-between px-5 py-[18px]">
-            <textarea
-              value={text} rows={2} onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
-              placeholder={typed} aria-label={m.label}
-              className="w-full resize-none bg-transparent text-base leading-snug text-[#111] placeholder:text-[#999] focus:outline-none sm:text-[15px]"
-            />
-            <div className="mt-3 flex items-center gap-2">
-              {mode === "examine" && (
-                <>
-                  <input ref={input} type="file" accept="image/*,video/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { attach(e.target.files && e.target.files[0]); e.target.value = ""; }} />
-                  <button type="button" onClick={() => input.current && input.current.click()} className={`inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium text-[#666] transition hover:bg-[#F4F4F4] hover:text-[#111] ${ring}`}>
-                    <Icon.Upload className="h-4 w-4" /> Upload creative
-                  </button>
-                  {file && (
-                    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[#F4F4F4] py-1 pl-2.5 pr-1 text-xs font-medium text-[#111]">
-                      <span className="max-w-[9rem] truncate">{file.name}</span>
-                      <button type="button" onClick={() => setFile(null)} aria-label="Remove file" className={`grid h-5 w-5 place-items-center rounded-full text-[#666] hover:bg-[#E5E5E5] ${ring}`}><Icon.Close className="h-3 w-3" /></button>
-                    </span>
-                  )}
-                </>
+          <Icon.Search className="h-5 w-5 shrink-0 text-[#888]" />
+          <input
+            ref={field} type="text" value={text} autoComplete="off" spellCheck="false"
+            onChange={(e) => { setText(e.target.value); setOpen(true); setAct(-1); }}
+            onFocus={() => setOpen(true)} onKeyDown={onKey}
+            placeholder={typed} aria-label={m.label}
+            role="combobox" aria-expanded={showList && found.length > 0} aria-controls="home-suggest" aria-autocomplete="list" aria-activedescendant={act >= 0 ? `home-suggest-${act}` : undefined}
+            className="h-full min-w-0 flex-1 bg-transparent text-base text-[#111] placeholder:text-[#999] focus:outline-none sm:text-[16px]"
+          />
+          {mode === "examine" && (
+            <>
+              <input ref={input} type="file" accept="image/*,video/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { attach(e.target.files && e.target.files[0]); e.target.value = ""; }} />
+              {file ? (
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-[#F4F4F4] py-1 pl-2.5 pr-1 text-xs font-medium text-[#111]">
+                  <span className="max-w-[7rem] truncate">{file.name}</span>
+                  <button type="button" onClick={() => setFile(null)} aria-label="Remove file" className={`grid h-5 w-5 place-items-center rounded-full text-[#666] hover:bg-[#E5E5E5] ${ring}`}><Icon.Close className="h-3 w-3" /></button>
+                </span>
+              ) : (
+                <button type="button" onClick={() => input.current && input.current.click()} className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium text-[#666] transition hover:bg-[#F4F4F4] hover:text-[#111] ${ring}`}>
+                  <Icon.Upload className="h-4 w-4" /><span className="hidden sm:inline">Upload creative</span>
+                </button>
               )}
-              <button type="button" onClick={submit} className={`ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#111] px-3.5 text-[13px] font-semibold text-white transition hover:bg-black active:scale-95 ${ring}`}>
-                {m.go} <span aria-hidden="true" className="opacity-70">↵</span>
-              </button>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-[#EEEEEE] bg-[#F8F8F8] px-4 py-2.5">
-            <div role="radiogroup" aria-label="What to do" className="flex flex-wrap gap-1.5">
-              {MODES.map((x) => (
-                <button
-                  key={x.id} type="button" role="radio" aria-checked={mode === x.id} onClick={() => setMode(x.id)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${mode === x.id ? "bg-[#111] text-white" : "bg-white text-[#666] ring-1 ring-[#E4E4E7] hover:text-[#111]"} ${ring}`}
-                >{x.label}</button>
-              ))}
-            </div>
-            <span className="hidden items-center gap-1 text-[11px] font-medium text-[#888] sm:inline-flex">
-              <kbd className="rounded border border-[#E4E4E7] bg-white px-1.5 py-px font-sans">{IS_MAC ? "⌘" : "Ctrl"}</kbd>
-              <kbd className="rounded border border-[#E4E4E7] bg-white px-1.5 py-px font-sans">K</kbd>
-            </span>
-          </div>
+            </>
+          )}
+          {text && (
+            <button type="button" onClick={() => { setText(""); setAct(-1); field.current && field.current.focus(); }} aria-label="Clear" className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#888] hover:bg-[#F4F4F4] hover:text-[#111] ${ring}`}><Icon.Close className="h-4 w-4" /></button>
+          )}
+          <button type="button" onClick={submit} className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#111] px-4 text-[13px] font-semibold text-white transition hover:bg-black active:scale-95 ${ring}`}>
+            {m.go} <span aria-hidden="true" className="hidden opacity-70 sm:inline">↵</span>
+          </button>
         </div>
-      </div>
-      {err && <p role="alert" className="mt-3 text-center text-xs font-medium text-rose-700">{err}</p>}
 
-      <div className="hero-up mt-4 flex flex-wrap items-center justify-center gap-3" style={{ "--d": "300ms" }}>
-        <button type="button" onClick={() => onBrowse("")} className={`inline-flex h-11 items-center rounded-full border border-[#E4E4E7] bg-white px-5 text-sm font-semibold text-[#111] transition hover:border-[#111] ${ring}`}>Explore {COUNT} Presets</button>
-        <button type="button" onClick={() => onExamine()} className={`inline-flex h-11 items-center rounded-full bg-[#111] px-5 text-sm font-semibold text-white transition hover:bg-black ${ring}`}>Examine an Ad Free</button>
+        {showList && found.length > 0 && (
+          <ul id="home-suggest" role="listbox" aria-label="Matching templates" className="absolute inset-x-0 top-full z-30 overflow-hidden rounded-b-[28px] border border-t-0 border-[#111] bg-white pb-2 text-left shadow-[0_18px_40px_rgba(0,0,0,0.14)]">
+            <li aria-hidden="true" className="mx-5 mb-1 border-t border-[#EEEEEE]" />
+            {found.map((t, i) => (
+              <li key={t.id} id={`home-suggest-${i}`} role="option" aria-selected={act === i}>
+                <button
+                  type="button" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onMouseEnter={() => setAct(i)} onClick={() => onPick(t)}
+                  className={`flex w-full items-center gap-3 px-5 py-2 text-left ${act === i ? "bg-[#F4F4F5]" : ""}`}
+                >
+                  <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-11 w-9 shrink-0 rounded-md bg-[#F6F6F6] object-cover" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-[#111]">{t.title}</span>
+                    <span className="block truncate text-xs text-[#888]">{t.label}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-xs font-semibold text-[#888]">Use →</span>
+                </button>
+              </li>
+            ))}
+            <li>
+              <button type="button" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onClick={() => onBrowse(text.trim())} className="flex w-full items-center gap-3 px-5 py-2 text-left text-sm font-medium text-[#444] hover:bg-[#F4F4F5]">
+                <Icon.Search className="h-4 w-4 text-[#888]" /> See all results for “{text.trim()}”
+              </button>
+            </li>
+          </ul>
+        )}
+
       </div>
+        <div role="radiogroup" aria-label="What to do" className="mt-4 flex flex-wrap justify-center gap-1.5">
+          {MODES.map((x) => (
+            <button
+              key={x.id} type="button" role="radio" aria-checked={mode === x.id} onClick={() => { setMode(x.id); setAct(-1); field.current && field.current.focus(); }}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${mode === x.id ? "bg-[#111] text-white" : "bg-white text-[#666] ring-1 ring-[#E4E4E7] hover:text-[#111]"} ${ring}`}
+            >{x.label}</button>
+          ))}
+        </div>
+      {err && <p role="alert" className="mt-3 text-center text-xs font-medium text-rose-700">{err}</p>}
     </div>
   );
 }
@@ -214,7 +265,7 @@ export function Bento({ onExamine, onSpy, onPack, onBrowse, onPick }) {
           className="font-display mx-auto mt-5 max-w-[22ch] text-[28px] font-extrabold leading-[1.12] tracking-[-0.035em] text-[#111] sm:max-w-none sm:text-[36px]"
         />
         <p className="hero-up mx-auto mt-2 max-w-xl text-[15px] text-[#666]" style={{ "--d": "200ms" }}>Drop a store URL or creative. No prompt, no brief—just proven direct-response ads and instant diagnostics.</p>
-        <div className="mt-7"><Composer onExamine={onExamine} onSpy={onSpy} onPack={onPack} onBrowse={onBrowse} /></div>
+        <div className="mt-7"><Composer onExamine={onExamine} onSpy={onSpy} onPack={onPack} onBrowse={onBrowse} onPick={onPick} /></div>
       </div>
 
       <Stream onPick={onPick} />
