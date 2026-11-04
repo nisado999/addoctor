@@ -1717,12 +1717,12 @@ const TEMPLATES = [
   },
   {
     id: "tp-fashionm-225", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
-    category: "Fashion", label: "Fashion", title: "Retro Trainer Sneaker Editorial",
+    category: "Fashion", label: "Fashion", title: "Terrace Trainer Sneaker Editorial",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Retro Trainer Sneaker Editorial", text: "Retro Trainer Sneaker Editorial", sign: "YOUR BRAND", tag: "Fashion" },
+    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "Terrace Trainer Sneaker Editorial", text: "Terrace Trainer Sneaker Editorial", sign: "YOUR BRAND", tag: "Fashion" },
     why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
-    headline: "Retro Trainer Sneaker Editorial",
-    primary: "A fashion static ad: Retro Trainer Sneaker Editorial. The brand shown is a made-up placeholder: your name and logo replace it.",
+    headline: "Terrace Trainer Sneaker Editorial",
+    primary: "A fashion static ad: Terrace Trainer Sneaker Editorial. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
     id: "tp-simplelayoutm-381", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
