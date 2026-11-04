@@ -14,15 +14,9 @@ const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(naviga
 const COUNT = TEMPLATES.length;
 const NICHES = new Set(TEMPLATES.map((t) => t.category)).size;
 const RANK = new Map(FEATURED_TOP.map((id, i) => [id, i]));
-// Hand-picked best of the gallery: the loved film-look shoots plus the strongest new ads, spread so no look repeats back to back.
-const STREAM_IDS = [
-  "cr-tallgirls", "tp-dealsdiscountsm-1127", "cr-overcoatseason", "tp-fashiontxtm-7",
-  "cr-everydaytee", "tp-skincarem-1093", "tp-fashiontxtm-4", "cr-goeswitheverything",
-  "tp-dealsdiscountsm-07", "tp-fashiontxtm-1", "cr-costperwear", "tp-jeansm-2",
-  "tp-collagem-745", "tp-fashiontxtm-2", "tp-strongcopym-480", "tp-fashiontxtm-5",
-];
+// The carousel is the top of the Featured order: my best generated ads (see featuredOrder.js).
 const BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
-const STREAM = STREAM_IDS.map((id) => BY_ID.get(id)).filter((t) => t && TEMPLATE_IMGS[t.id]);
+const STREAM = FEATURED_TOP.slice(0, 16).map((id) => BY_ID.get(id)).filter((t) => t && TEMPLATE_IMGS[t.id]);
 
 // Search-as-you-type: the same words the gallery search uses, ranked title hits first, then the Featured order.
 const FIND = new Map(TEMPLATES.map((t) => [t.id, [t.title, t.label, t.category, t.headline, ...(Array.isArray(t.tags) ? t.tags : [])].filter((x) => typeof x === "string").join(" ").toLowerCase()]));
