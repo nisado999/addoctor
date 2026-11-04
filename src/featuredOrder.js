@@ -2,8 +2,8 @@
    Everything else keeps its order in data.jsx. Edit these two lists to curate the gallery.
    Re-ordered 2026-11-04: the newer generated ads (tp-*) come first, my best 55 hand-picked at the very top, the rest of them spread by niche, then the older ads in their previous order. */
 const FEATURED_TOP = [
-  "tp-fashiontxtm-7", "tp-dealsdiscountsm-1127", "tp-fashiontxtm-1", "tp-dealsdiscountsm-07", "tp-fashiontxtm-4", "tp-productshowcasem-1019",
-  "tp-jeansm-2", "tp-skincarem-1093", "tp-fashiontxtm-2", "tp-collagem-745", "tp-fashiontxtm-5", "tp-dealsdiscountsm-1118",
+   "tp-dealsdiscountsm-1127",  "tp-dealsdiscountsm-07",  "tp-productshowcasem-1019",
+  "tp-jeansm-2", "tp-skincarem-1093",  "tp-collagem-745",  "tp-dealsdiscountsm-1118",
   "tp-fashiontxtm-6", "tp-strongcopym-480", "tp-holidaym-1416", "tp-productshowcasem-828", "tp-productshowcasem-574", "tp-featuresbenefitsm-584",
   "tp-dealsdiscountsm-883", "tp-fashionm-747", "tp-blackfridaym-1543", "tp-fashionm-935", "tp-skincarev2-1093", "tp-nichesm-124",
   "tp-productshowcasem-787", "tp-fooddrinkm-853", "tp-featuresbenefitsm-53", "tp-featuresbenefitsm-402", "tp-techm-1067", "tp-dealsdiscountsm-1135",
