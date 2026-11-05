@@ -45,6 +45,7 @@ const Icon = {
   Heart: (p) => (<svg {...svgBase} strokeWidth="2" {...p}><path d="M12 20.3s-7.5-4.4-7.5-10a4.3 4.3 0 0 1 7.5-2.9 4.3 4.3 0 0 1 7.5 2.9c0 5.6-7.5 10-7.5 10z" /></svg>),
   Home: (p) => (<svg {...svgBase} {...p}><path d="M3.5 10.5 12 3.5l8.5 7" /><path d="M5.5 9v10a1.5 1.5 0 0 0 1.5 1.5h3.5v-6h3v6H17a1.5 1.5 0 0 0 1.5-1.5V9" /></svg>),
   Layout: (p) => (<svg {...svgBase} {...p}><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M3.5 9.5h17M10 9.5v11" /></svg>),
+  Route: (p) => (<svg {...svgBase} {...p}><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="6" r="2.5" /><path d="M8.5 18H16a3.5 3.5 0 0 0 0-7H8a3.5 3.5 0 0 1 0-7h7.5" /></svg>),
 };
 
 /* -------------------------------- Media -------------------------------- */
@@ -294,6 +295,7 @@ const NAV = [
     { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope },
     { id: "rivals", label: "Find Competitors", icon: Icon.Target, note: "New" },
     { id: "spy", label: "Competitor Analysis", icon: Icon.Eye },
+    { id: "plan", label: "Meta Ads Plan", icon: Icon.Route, note: "New" },
   ] },
   { head: "Library", items: [
     { id: "inspiration", label: "Idea Engine", icon: Icon.Sparkle, note: "New" },

@@ -110,4 +110,12 @@ async function deleteAccount() {
 // Paid server calls send the visitor's token when they are signed in (see api.js).
 import("./api.js").then((m) => m.setTokenProvider(accessToken)).catch(() => {});
 
-export { authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, sendReset, setNewPassword, signOut, accessToken, authOptions, deleteAccount };
+/* A "work with me" request from the Meta Ads Plan. Goes into the agency_leads table (supabase/leads.sql), which
+   visitors can add to but never read. Throws when the insert fails, so the page can fall back to email. */
+async function saveLead(row) {
+  const c = await supa();
+  const { error } = await c.from("agency_leads").insert(row);
+  if (error) throw new Error(error.message || "Could not send");
+}
+
+export { saveLead, authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, sendReset, setNewPassword, signOut, accessToken, authOptions, deleteAccount };

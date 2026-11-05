@@ -41,6 +41,7 @@ const GuidedView = lazyRetry(() => import("./guided"), (m) => m.GuidedView);
 const LabView = lazyRetry(() => import("./lab"), (m) => m.LabView);
 const IdeasView = lazyRetry(() => import("./ideas"), (m) => m.IdeasView);
 const RivalsView = lazyRetry(() => import("./rivals"), (m) => m.RivalsView);
+const PlanView = lazyRetry(() => import("./planner"), (m) => m.PlanView);
 
 const scrollTop = () => {
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -139,12 +140,13 @@ const VIEWS = {
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Analysis", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
   rivals: { title: "Find Competitors", sub: "Enter your brand and we research who you are really up against." },
+  plan: { title: "Meta Ads Plan", sub: "Answer a few questions about your brand and numbers. Get the campaigns, ad sets, ads, targeting and budget split to run on Meta. Free." },
   inspiration: { title: "Idea Engine", sub: "Say what you sell and get a hand of ready ad ideas: hooks written for your product, the shot to take, and a real long-running ad that proves the pattern works." },
   vault: { title: "Saved Vault", sub: "Reports you saved, ads you made, and competitor ads you kept." },
   plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
-const KEEP = ["spy", "pack", "lab", "rivals", "inspiration", "static", "video"];
+const KEEP = ["spy", "pack", "lab", "rivals", "inspiration", "static", "video", "plan"];
 
 const VAULT_KEY = "addoctor.vault.v1";
 const FAVS_KEY = "addoctor.favs.v1";
@@ -744,6 +746,7 @@ function App() {
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
     : id === "static" || id === "video" ? <GuidedView kind={id} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
     : id === "rivals" ? <RivalsView onSpy={toSpy} />
+    : id === "plan" ? <PlanView notify={notify} onGo={goto} user={user} />
     : id === "inspiration" ? <IdeasView notify={notify} onMake={rebuild} active={view === "inspiration"} />
     : <SpyView notify={notify} onRebuild={rebuild} onExamine={(file) => openExam({ file })} active={view === "spy"} seed={spySeed} />
   );
