@@ -15151,15 +15151,6 @@ const TEMPLATES = [
     primary: "A hand holding a stone dad cap embroidered with a small cross and FAITH against a sage-green wall, with cream and rust bubbly lettering reading Black Friday Caps 2 for $40. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
-    id: "faith-rooftop", type: "static", trending: true, isNew: true, brandName: "REDEEMED",
-    category: "Fashion", label: "Fashion", title: "Walk By Faith Matching Tees",
-    format: "4:5 · Static · Two models, painted brick lettering", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "BLACK FRIDAY. TEES 3 FOR $60", text: "Walk By Faith Matching Tees", sign: "REDEEMED", tag: "Fashion" },
-    why: ["Two friends in matching WALK BY FAITH tees at golden hour show the print and the sense of community.","Black painted lettering across a white brick parapet is clear of both heads."],
-    headline: "BLACK FRIDAY. TEES 3 FOR $60",
-    primary: "A man and a woman in matching white WALK BY FAITH tees on a rooftop at golden hour, with black painted lettering on the brick parapet reading Black Friday Tees 3 for $60. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
     id: "faith-meadow", type: "static", trending: true, isNew: true, brandName: "GRACEWORN",
     category: "Kids & Baby", label: "Kids & Baby", title: "Jesus Loves Me Kids Tee",
     format: "4:5 · Static · Toddler in a meadow, painted fence", framework: "Offer",

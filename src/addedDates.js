@@ -16,7 +16,6 @@ const ADDED = {
   "bf-luggage": 1794008097,
   "faith-pew": 1794008096,
   "faith-cap": 1794008095,
-  "faith-rooftop": 1794008094,
   "faith-meadow": 1794008093,
   "faith-night": 1794008092,
   "faith-flatlay": 1794008091,

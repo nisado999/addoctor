@@ -16,7 +16,6 @@ const TEMPLATE_IMGS = {
   "bf-luggage": B + "templates/bf-luggage.jpg",
   "faith-pew": B + "templates/faith-pew.jpg",
   "faith-cap": B + "templates/faith-cap.jpg",
-  "faith-rooftop": B + "templates/faith-rooftop.jpg",
   "faith-meadow": B + "templates/faith-meadow.jpg",
   "faith-night": B + "templates/faith-night.jpg",
   "faith-flatlay": B + "templates/faith-flatlay.jpg",

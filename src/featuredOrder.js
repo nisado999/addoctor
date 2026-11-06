@@ -4,7 +4,7 @@
 const FEATURED_TOP = [
   "bf-garage", "faith-steps", "bf-neonshoe", "bf-perfume", "faith-wheat", "bf-coffee",
   "bf-track", "faith-back", "bf-y2k", "bf-necklace", "faith-pew", "bf-dogbed",
-  "bf-pinkjar", "faith-cap", "bf-puffer", "bf-luggage", "faith-rooftop", "bf-handbag",
+  "bf-pinkjar", "faith-cap", "bf-puffer", "bf-luggage", "bf-handbag",
   "bf-yoga", "faith-meadow", "bf-bedding", "bf-kidscoat", "faith-night", "bf-watch",
   "bf-speaker", "faith-flatlay", "bf-carcare", "bf-chocolate", "faith-beanie", "bf-tumbler",
   "bf-lipstick", "bf-backpack", "bf-kettlebell", "tp-dealsdiscountsm-1127", "tp-dealsdiscountsm-07", "tp-productshowcasem-1019",
