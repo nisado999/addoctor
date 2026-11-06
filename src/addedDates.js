@@ -6,8 +6,6 @@ const ADDED = {
   "bf-coffee": 1794008107,
   "bf-track": 1794008106,
   "bf-y2k": 1794008105,
-  "faith-steps": 1794008104,
-  "faith-wheat": 1794008103,
   "faith-back": 1794008102,
   "bf-necklace": 1794008101,
   "bf-dogbed": 1794008100,

@@ -2,7 +2,7 @@
    Everything else keeps its order in data.jsx. Edit these two lists to curate the gallery.
    Re-ordered 2026-11-04: the newer generated ads (tp-*) come first, my best 55 hand-picked at the very top, the rest of them spread by niche, then the older ads in their previous order. */
 const FEATURED_TOP = [
-  "bf-garage", "faith-steps", "bf-neonshoe", "bf-perfume", "faith-wheat", "bf-coffee",
+  "bf-garage", "bf-neonshoe", "bf-perfume", "bf-coffee",
   "bf-track", "faith-back", "bf-y2k", "bf-necklace", "faith-pew", "bf-dogbed",
   "bf-pinkjar", "faith-cap", "bf-puffer", "bf-luggage", "bf-handbag",
   "bf-yoga", "faith-meadow", "bf-bedding", "bf-kidscoat", "faith-night", "bf-watch",

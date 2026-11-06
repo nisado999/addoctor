@@ -6,8 +6,6 @@ const TEMPLATE_IMGS = {
   "bf-coffee": B + "templates/bf-coffee.jpg",
   "bf-track": B + "templates/bf-track.jpg",
   "bf-y2k": B + "templates/bf-y2k.jpg",
-  "faith-steps": B + "templates/faith-steps.jpg",
-  "faith-wheat": B + "templates/faith-wheat.jpg",
   "faith-back": B + "templates/faith-back.jpg",
   "bf-necklace": B + "templates/bf-necklace.jpg",
   "bf-dogbed": B + "templates/bf-dogbed.jpg",
