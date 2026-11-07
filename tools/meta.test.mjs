@@ -2,6 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { metaTest as m } from "../api/worker.js";
+import { suggest, recommend } from "../src/adBudget.js";
 
 const KEY = Buffer.alloc(32, 7).toString("base64");
 const env = { META_APP_ID: "1", META_APP_SECRET: "sek", META_TOKEN_KEY: KEY, META_GRAPH_VERSION: "v99.0", META_REDIRECT_URI: "https://w.example/meta/callback", SITE_URL: "https://site.example/app", SUPABASE_SERVICE_ROLE: "svc", SUPABASE_URL: "https://sb.example" };
@@ -254,4 +255,34 @@ test("Read my website reads the whole site, even from a pasted product link", as
     assert.ok(!asked.some((u) => /evil\.test|sitemap_products|\/cart/.test(u)), "read a page it should skip");
     assert.equal(r.pages.length, 5);
   } finally { globalThis.fetch = real; }
+});
+
+test("budget: with no profit margin it keeps the old rule of thumb for the shop type", () => {
+  const s = suggest({ goal: "sales", product: "fashion", aov: 80 });
+  assert.deepEqual([s.cpa, s.daily, s.breakEven], [24, 120, 0]);
+});
+test("budget: a known margin sets the cost per sale, break-even and the daily budget", () => {
+  const s = suggest({ goal: "sales", product: "fashion", aov: 80, margin: "high", repeat: "once" });
+  assert.equal(Math.round(s.breakEven), 48); // 80 x 60%
+  assert.equal(Math.round(s.cpa * 10) / 10, 33.6); // 70% of break-even
+  assert.equal(s.daily, 170);
+  assert.ok(suggest({ goal: "sales", product: "tech", aov: 80, margin: "thin" }).cpa < 8); // thin margin: little room for ads
+});
+test("budget: customers who come back allow a higher cost, capped at 80% of an order", () => {
+  const once = suggest({ goal: "sales", aov: 100, margin: "mid", repeat: "once" }).cpa;
+  assert.ok(suggest({ goal: "sales", aov: 100, margin: "mid", repeat: "often" }).cpa > once);
+  assert.equal(suggest({ goal: "sales", aov: 100, margin: "high", repeat: "often" }).share <= 0.8, true);
+});
+test("budget: for leads the cost is per enquiry, after the share that become customers", () => {
+  const s = suggest({ goal: "leads", aov: 500, margin: "mid", close: "some", repeat: "once" });
+  assert.equal(s.breakEven, 50); // 500 x 40% x 25%
+  assert.equal(Math.round(s.cpa * 100) / 100, 35); // 70% of break-even
+});
+test("budget: the plan says how many visitors and what a click may cost, and flags too little volume", () => {
+  const r = recommend({ goal: "sales", aov: 80, margin: "high", repeat: "once", conv: "mid", budget: 170 });
+  assert.equal(Math.round(r.visitors), 337); // 170 / 33.6 sales a day / 1.5%
+  assert.equal(Math.round(r.maxCpc * 100) / 100, 0.5); // 33.6 x 1.5%
+  assert.equal(r.lowVolume, false);
+  assert.equal(recommend({ goal: "sales", aov: 80, margin: "high", budget: 10 }).lowVolume, true); // 0.3 sales a day
+  assert.equal(suggest({ goal: "traffic" }).daily, 15); // nothing to price
 });

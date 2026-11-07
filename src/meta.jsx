@@ -7,6 +7,7 @@ import { track } from "./track.js";
 import { metaAds, useMetaAds } from "./metaQueue.js";
 import { useMyAds } from "./myads.jsx";
 import { MetaPublish } from "./metaPublish.jsx";
+import { GOALS, CATS, MARGIN, REPEAT, CONV, CLOSE, EXP, HAVE, SEASON, SALES_A_DAY, PER_AD, GUESS_CONV, nice, suggest, recommend } from "./adBudget.js";
 
 /* Create an ad, the guided way to run an ad on Meta. One flow, as automatic as it can be:
    1. Quiz: paste the website and we read the brand, then only the few things we cannot know (goal, order value, tracking,
@@ -16,26 +17,6 @@ import { MetaPublish } from "./metaPublish.jsx";
    It guides; it does not connect to Meta. Answers are kept in this browser, the ads only in this tab. */
 
 const KEY = "addoctor.meta.v1";
-const GOALS = {
-  sales: { label: "Sell products online", sub: "Orders on my website or shop", objective: "Sales", note: "Pick the Sales objective. For a shop, Advantage+ sales campaign is the simplest set-up.", cta: "Shop now" },
-  leads: { label: "Get enquiries or bookings", sub: "Messages, calls, forms, appointments", objective: "Leads", note: "Pick Leads and use an Instant form, or send people to a booking page.", cta: "Book now" },
-  traffic: { label: "Send people to my site", sub: "Visits, when I have no tracking yet", objective: "Traffic", note: "Pick Traffic with Landing page views. Use it only when you have no tracking set up yet.", cta: "Learn more" },
-  aware: { label: "Get known locally", sub: "Be seen by people nearby", objective: "Awareness", note: "Pick Awareness. It is the cheapest way to be seen, but it does not drive sales by itself.", cta: "Learn more" },
-};
-
-/* What they sell. The share is roughly how much of one sale can go to ads before it stops paying (thin-margin
-   products like electronics get less). Rules of thumb, not data about this particular shop. */
-const CATS = {
-  fashion: ["Clothing and fashion", 0.3],
-  beauty: ["Beauty and skincare", 0.35],
-  home: ["Home and decor", 0.3],
-  food: ["Food and drink", 0.25],
-  tech: ["Electronics and gadgets", 0.15],
-  health: ["Health and fitness", 0.3],
-  jewel: ["Jewellery and accessories", 0.3],
-  service: ["A local service", 0.35],
-  other: ["Something else", 0.3],
-};
 const HOOKS = {
   fashion: "Clothes that feel as good as they look.",
   beauty: "Skincare that fits your routine.",
@@ -49,8 +30,6 @@ const HOOKS = {
 };
 const ITEMS = [["one", "Just one product"], ["few", "A few (2 to 10)"], ["many", "A whole shop (more than 10)"]];
 const TRACK = [["yes", "Yes, it is set up"], ["no", "No, not yet"], ["unsure", "I'm not sure"]];
-const SALES_A_DAY = 5; // sales a day Meta should get at the target cost, so it has enough to learn from
-const PER_AD = 5; // a day, about what each ad needs to get a fair test
 
 // Every country (ISO 3166 codes), less the places nobody lives. Names come from the browser, sorted for the list.
 const CODES = "AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW".split(" ");
@@ -106,33 +85,7 @@ function TrackHelp({ kind, onFixed }) {
   );
 }
 
-const clampBudget = (b) => Math.max(1, Math.min(10000, Math.round(Number(b)) || 20));
-const nice = (n) => (n >= 20 ? Math.round(n / 5) * 5 : Math.round(n));
 
-/* What we advise before asking what they can spend. For a sale or a lead: the most a sale may cost in ads (a share of
-   the order value), times the sales a day Meta needs to learn. Traffic and awareness have no sale to price, so a flat start. */
-function suggest(s) {
-  const aov = Math.max(0, Number(s.aov) || 0);
-  const share = (CATS[s.product] || CATS.other)[1];
-  if ((s.goal === "sales" || s.goal === "leads") && aov > 0) {
-    const cpa = aov * share;
-    return { aov, share, cpa, daily: Math.max(10, Math.min(1000, nice(cpa * SALES_A_DAY))) };
-  }
-  return { aov, share, cpa: 0, daily: s.goal === "traffic" ? 15 : 10 };
-}
-
-/* The structure. Rule of thumb, not a promise: each ad needs about PER_AD a day to get a fair test, and more than ten
-   ads in one ad set splits the money too thin. Bigger budgets get more ad sets so each one still has enough. */
-function recommend(s) {
-  const sug = suggest(s);
-  const budget = clampBudget(s.budget || sug.daily);
-  const adsets = budget < 100 ? 1 : budget < 300 ? 2 : 3;
-  const ads = Math.max(3, Math.min(10, Math.round(budget / adsets / PER_AD)));
-  const short = budget < sug.daily * 0.8; // they can spend clearly less than we advise
-  const tooLow = sug.cpa > 0 && budget < sug.cpa * 2; // under two sales' worth of ad cost a day
-  const days = tooLow ? 10 : short ? 7 : 4; // a smaller budget needs longer before the results mean anything
-  return { budget, adsets, ads, days, short, tooLow, sug, total: budget * days, salesDay: sug.cpa ? budget / sug.cpa : 0, objective: (GOALS[s.goal] || GOALS.sales).objective };
-}
 
 /* Which kind of ad to run. AdDoctor makes static ads today, so the others say how to get there from them. */
 const AD_TYPES = {
@@ -191,16 +144,19 @@ function buildSteps(s, r) {
       "In Ads Manager press Create, then choose the objective in the title above.",
       g.note,
       `Your set-up: 1 campaign, ${r.adsets} ad set${r.adsets > 1 ? "s" : ""}, ${r.ads} ads in each.`,
+      ...(r.lowVolume ? ["At this budget you will get under one sale a day in each ad set. In the ad set, set the conversion event to Add to cart for now, and move to Purchase once the budget grows."] : []),
     ], links: [["Open Ads Manager", links.manager]] },
     { id: "budget", title: `Set your budget: ${r.budget} a day`, time: "2 min", body: [
       `Use a daily budget of ${r.budget}${r.adsets > 1 ? `, split over ${r.adsets} ad sets` : ""}. Over the ${r.days} days Meta needs to settle, that is about ${r.total} in total.`,
       "Leave the start date as today and do not set an end date. You can pause the campaign yourself.",
       r.budget < 10 ? "Under about 10 a day teaches Meta very little. If you can, raise it, or run fewer ads and keep the audience wide." : "Do not change the budget in the first few days.",
+      ...(s.exp === "never" ? ["New ad accounts start with a low daily spending limit. If your budget is above it, Meta pauses delivery until the limit rises. You can see it in Billing."] : []),
     ] },
     { id: "audience", title: `Choose who sees it: ${country || "your country"}`, time: "3 min", body: [
       `Location: ${country || "the country you sell in"}. Add only places you can deliver to.`,
       "Age and gender: leave them wide open unless the product really needs it. Meta finds buyers better than a guess does.",
       "Leave Advantage+ audience switched on and do not stack lots of interests. Add your customer list under Excluded audiences so you do not pay to reach people who already bought.",
+      ...(s.have === "lots" ? ["You have a good number of people to reach, so add a second ad set: a Lookalike audience (1%) built from your customer list, and a retargeting ad set for site visitors from the last 30 days that did not buy. Give retargeting about 20% of the budget."] : []),
     ] },
     { id: "placements", title: "Choose where it shows", time: "1 min", body: [
       "Leave Advantage+ placements on. Meta puts the ad on Facebook, Instagram and Messenger wherever it costs least.",
@@ -224,6 +180,7 @@ function buildSteps(s, r) {
       "Then look at three numbers per ad: cost per result, click-through rate (aim for over 1%) and spend. Turn off ads that spent twice your target cost per result with no result.",
       "To scale a winner, raise the budget by about 20% every few days. A big jump unsettles delivery.",
       "Make new ads every week or two. People get tired of the same picture, and this is the part that keeps ads working.",
+      ...(s.season === "yes" ? ["For a sale, publish 2 to 3 days before it starts and expect higher costs while others compete. Plan to turn the ads off or swap the offer the day it ends."] : []),
     ] },
   ];
 }
@@ -236,10 +193,29 @@ const QUESTIONS = [
   { id: "product", title: "What do you sell?", when: (s) => moneyGoal(s) && !s.fromSite },
   { id: "items", title: "How many products will the ads show?", when: (s) => (s.goal === "sales" || !s.goal) && !s.fromSite },
   { id: "value", title: (s) => (s.goal === "leads" ? "What is one new customer or booking worth to you?" : "What is the average order value?"), when: moneyGoal },
+  { id: "margin", title: (s) => (s.goal === "leads" ? "How much of that is profit?" : "How much of each sale is profit?"), when: moneyGoal },
+  { id: "repeat", title: "Do customers buy from you again?", when: moneyGoal },
+  { id: "conv", title: (s) => (s.goal === "leads" ? "Out of 100 people who visit your site, how many contact you?" : "Out of 100 people who visit your site, how many buy?"), when: moneyGoal },
+  { id: "close", title: "Out of 10 enquiries, how many become paying customers?", when: (s) => s.goal === "leads" },
   { id: "track", title: "Is Meta tracking your sales?", when: moneyGoal },
+  { id: "exp", title: "Have you run ads on Meta before?" },
+  { id: "have", title: "Do you already have people to reach?" },
+  { id: "season", title: "Is this ad for a sale or a special season?" },
   { id: "budget", title: "How much can you spend each day?" },
   { id: "country", title: "Where do you sell?" },
 ];
+
+/* The questions that are a plain pick-one list: the choices, and the line under the question. */
+const OPTIONS = { margin: MARGIN, repeat: REPEAT, conv: CONV, close: CLOSE, exp: EXP, have: HAVE, season: SEASON };
+const HELP = {
+  margin: "What is left after what the product costs you, shipping and payment fees, but before you pay for ads. A rough range is fine.",
+  repeat: "Over a year, do the same people order again? Repeat buyers let you pay a little more to win the first sale.",
+  conv: (s) => `Your shop's stats call this the conversion rate. Not sure? Pick that and we'll assume about ${Math.round(GUESS_CONV * 1000) / 10}.${s.goal === "leads" ? "" : " Under 1 usually means the product page needs work before you spend on ads."}`,
+  close: "Of the people who get in touch, how many end up paying you.",
+  exp: "A new ad account starts with a low daily spending limit that Meta raises over time, so it changes how we start you off.",
+  have: "A customer email list, past buyers, or people who visit your site every month. These let us add a second, cheaper audience.",
+  season: "Black Friday, Christmas and big sales cost more to advertise in, and need to start earlier.",
+};
 
 const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600";
 const labelCls = "mb-1.5 block text-xs font-semibold text-slate-600";
@@ -295,7 +271,7 @@ export function MetaView({ user, notify, onNav, onExamine }) {
     const v = readJSON(KEY, null);
     const o = v && typeof v === "object" ? v : {};
     const stage = ["quiz", "plan", "creative", "ready"].includes(o.stage) ? o.stage : (o.finished ? "plan" : "quiz");
-    return { goal: "", product: "", items: "", aov: "", budget: "", track: "", countryCode: "", site: "", name: "", sells: "", offer: "", fromSite: false, ...o, stage, step: Number.isInteger(o.step) ? o.step : 0, done: Array.isArray(o.done) ? o.done : [], usps: Array.isArray(o.usps) ? o.usps : [] };
+    return { goal: "", product: "", items: "", aov: "", margin: "", repeat: "", conv: "", close: "", exp: "", have: "", season: "", budget: "", track: "", countryCode: "", site: "", name: "", sells: "", offer: "", fromSite: false, ...o, stage, step: Number.isInteger(o.step) ? o.step : 0, done: Array.isArray(o.done) ? o.done : [], usps: Array.isArray(o.usps) ? o.usps : [] };
   });
   const [reading, setReading] = useState(false);
   const [err, setErr] = useState("");
@@ -328,7 +304,7 @@ export function MetaView({ user, notify, onNav, onExamine }) {
   const qs = QUESTIONS.filter((q) => !q.when || q.when(s));
   const at = Math.min(s.step, qs.length - 1);
   const q = qs[at];
-  const ready = { site: s.fromSite, goal: !!s.goal, product: !!s.product, items: !!s.items, value: Number(s.aov) > 0, track: !!s.track, budget: Number(s.budget) >= 1, country: !!s.countryCode }[q.id];
+  const ready = { site: s.fromSite, goal: !!s.goal, product: !!s.product, items: !!s.items, value: Number(s.aov) > 0, margin: !!s.margin, repeat: !!s.repeat, conv: !!s.conv, close: !!s.close, exp: !!s.exp, have: !!s.have, season: !!s.season, track: !!s.track, budget: Number(s.budget) >= 1, country: !!s.countryCode }[q.id];
   const sug = suggest(s);
   const next = () => { if (at === qs.length - 1) { track("meta_finish", { goal: s.goal }); go("plan"); } else set({ step: at + 1 }); };
   const pick = (patch) => set(patch);
@@ -531,6 +507,8 @@ export function MetaView({ user, notify, onNav, onExamine }) {
     const g = GOALS[s.goal];
     const adv = adAdvice(s);
     const main = AD_TYPES[adv.main];
+    const unit = s.goal === "leads" ? "enquiry" : "sale";
+    const f = (n) => (n >= 100 ? Math.round(n) : Math.round(n * 100) / 100); // 2 decimals for small amounts
     const line = `${g.objective} campaign, ${r.adsets} ad set${r.adsets > 1 ? "s" : ""}, ${r.ads} ads each, ${r.budget} a day for ${r.days} days.`;
     const rows = [
       ["Campaign objective", g.objective],
@@ -571,8 +549,19 @@ export function MetaView({ user, notify, onNav, onExamine }) {
           <div className="mt-4 rounded-xl bg-blue-50 p-4 text-[13px] leading-relaxed text-slate-800 ring-1 ring-blue-200">
             <p className="font-semibold text-slate-900">Why {r.budget} a day</p>
             <ul className="mt-1.5 list-disc space-y-1 pl-5">
-              {r.sug.cpa > 0 && <li>Your average {s.goal === "leads" ? "customer" : "order"} is worth {r.sug.aov}. At about {Math.round(r.sug.share * 100)}% going to ads, a {s.goal === "leads" ? "customer" : "sale"} can cost around {Math.round(r.sug.cpa * 100) / 100} in ads and still pay.</li>}
-              {r.sug.cpa > 0 && <li>We suggest {r.sug.daily} a day, enough for Meta to see about {SALES_A_DAY} {s.goal === "leads" ? "customers" : "sales"} a day while it learns.</li>}
+              {r.sug.cpa > 0 && <li>{s.goal === "leads" ? "One new customer" : "An average order"} brings in {r.sug.aov}.{r.sug.margin ? ` About ${Math.round(r.sug.margin * 100)}% is profit, so ${f(r.sug.aov * r.sug.margin)} each.` : ` You were not sure of your profit, so we used a typical ${Math.round(r.sug.share * 100)}% for a ${(CATS[s.product] || CATS.other)[0].toLowerCase()} business. Tell us the real figure (Change my answers) to sharpen this.`}{r.sug.back > 1 ? ` Customers who come back make each one worth about ${Math.round((r.sug.back - 1) * 100)}% more over time.` : ""}</li>}
+              {r.sug.cpa > 0 && s.goal === "leads" && <li>About {Math.round(r.sug.close * 100)} in 100 enquiries become customers, so one enquiry is worth about {f(r.sug.aov * (r.sug.margin || r.sug.share) * r.sug.back * r.sug.close)}.</li>}
+              {r.sug.breakEven > 0 && <li>The most you could pay in ads for one {unit} before you lose money is about <b>{f(r.sug.breakEven)}</b> (break-even). We aim for <b>{f(r.sug.cpa)}</b>, which keeps about 30% of that as profit.</li>}
+              {r.sug.cpa > 0 && !r.sug.breakEven && <li>So a {unit} can cost around {f(r.sug.cpa)} in ads and still pay.</li>}
+              {r.sug.cpa > 0 && <li>We suggest {r.sug.daily} a day, enough for Meta to see about {SALES_A_DAY} {unit === "enquiry" ? "enquiries" : "sales"} a day while it learns.</li>}
+              {r.sug.cpa > 0 && <li>At {r.sug.conv ? "your" : "an assumed"} {Math.round((r.sug.conv || GUESS_CONV) * 1000) / 10} in 100 visitors {s.goal === "leads" ? "contacting you" : "buying"}, {r.budget} a day needs about <b>{Math.max(1, Math.round(r.visitors))} visitors a day</b>, and each click has to cost under about <b>{f(r.maxCpc)}</b> for it to pay. Check this in Ads Manager after a few days: it is the number that tells you whether the ad works.</li>}
+              {r.lowVolume && <li>That is under one {unit} a day in each ad set, too few for Meta to learn from. Ask it to optimise for <b>Add to cart</b> (a step before buying) at first, or use fewer ad sets.</li>}
+              {r.sug.margin > 0 && r.sug.margin < 0.15 && <li>Your margin is thin, so a first sale may not cover its ad cost. Raising prices, selling bundles or getting repeat buyers helps more than any ad.</li>}
+              {s.conv === "low" && s.goal !== "leads" && <li>Fewer than 1 in 100 visitors buying is low. Improve the product page first (photos, price, delivery) or ads will bring people who leave.</li>}
+              {s.exp === "never" && <li>This looks like a new ad account. Meta starts these on a low daily spending limit and raises it as you pay your bills. If delivery stops, check the limit in Billing.</li>}
+              {s.season === "yes" && <li>Sale seasons are crowded, so the same budget buys fewer {unit === "enquiry" ? "enquiries" : "sales"} than usual. Start the ads 2 to 3 days before the sale, so Meta has finished learning when the crowd arrives.</li>}
+              {s.have === "lots" && <li>You already have 1,000 or more people to reach: use your customer list to build a lookalike audience and to exclude past buyers, and retarget your site visitors with part of the budget.</li>}
+              {s.have === "some" && <li>Add your customer list under Excluded audiences so you do not pay to reach people who already bought. It is too small for a lookalike audience yet.</li>}
               {r.sug.cpa === 0 && <li>There is no sale to price for this goal, so {r.sug.daily} a day is a small, safe start.</li>}
               {r.short && !r.tooLow && <li>You chose {r.budget}, less than we suggest. It still works, but Meta learns more slowly, so give it {r.days} days before you judge it.{r.salesDay > 0 && ` If it reaches the cost above, expect about ${r.salesDay.toFixed(1)} a day.`}</li>}
               {r.tooLow && <li>{r.budget} a day is less than the cost of two {s.goal === "leads" ? "customers" : "sales"} in ads, so results will be slow and uneven. If you can, raise the budget. If you cannot, keep to the {r.ads} ads here and give it {r.days} days.</li>}
@@ -663,6 +652,15 @@ export function MetaView({ user, notify, onNav, onExamine }) {
           </div>
         )}
 
+        {OPTIONS[q.id] && (
+          <div className="mt-4">
+            <p className="mb-3 text-[13px] text-slate-500">{typeof HELP[q.id] === "function" ? HELP[q.id](s) : HELP[q.id]}</p>
+            <div className="grid gap-2.5">
+              {OPTIONS[q.id].map(([k, t]) => <button key={k} type="button" aria-pressed={s[q.id] === k} onClick={() => pick({ [q.id]: k })} className={chip(s[q.id] === k)}>{t}</button>)}
+            </div>
+          </div>
+        )}
+
         {q.id === "track" && (
           <div className="mt-4">
             <p className="mb-3 text-[13px] text-slate-500">That means the Meta Pixel is on your website, or your shop is connected to Meta.</p>
@@ -677,7 +675,7 @@ export function MetaView({ user, notify, onNav, onExamine }) {
           <div className="mt-4">
             <div className="rounded-xl bg-blue-50 p-4 text-[13px] leading-relaxed text-slate-800 ring-1 ring-blue-200">
               {sug.cpa > 0
-                ? <>Your average {s.goal === "leads" ? "customer" : "order"} is worth {sug.aov}. At about {Math.round(sug.share * 100)}% of that going to ads, a sale can cost around {Math.round(sug.cpa * 100) / 100} in ads and still pay. To give Meta about {SALES_A_DAY} sales a day to learn from, we suggest about <b>{sug.daily} a day</b>.</>
+                ? <>Your average {s.goal === "leads" ? "customer" : "order"} is worth {sug.aov}{sug.margin ? `, and about ${Math.round(sug.margin * 100)}% of it is profit` : ""}. {s.goal === "leads" ? "An enquiry" : "A sale"} can cost around {Math.round(sug.cpa * 100) / 100} in ads and still pay. To give Meta about {SALES_A_DAY} {s.goal === "leads" ? "enquiries" : "sales"} a day to learn from, we suggest about <b>{sug.daily} a day</b>.</>
                 : <>For this goal we suggest starting at about <b>{sug.daily} a day</b>. There is no sale to price, so a small start is enough.</>}
             </div>
             <p className="mb-2 mt-5 text-sm font-semibold text-slate-900">How much are you willing to spend each day?</p>
