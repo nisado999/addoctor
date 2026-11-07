@@ -475,9 +475,9 @@ const metaOf = (html, key) => {
 const GOOD_IMG = /\.(jpe?g|png|webp)(\?|#|$)/i;
 const BAD_IMG = /(logo|icon|sprite|avatar|badge|payment|flag|favicon|placeholder|pixel|spinner|star|rating|trust)/i;
 function absImg(src, base) { try { return new URL(String(src).trim().replace(/&amp;/g, "&"), base).href; } catch (e) { return ""; } }
-function pushImg(list, src, base, label) {
+function pushImg(list, src, base, label, trusted) {
   const u = absImg(src, base);
-  if (!u || !/^https?:/.test(u) || BAD_IMG.test(u) || !(GOOD_IMG.test(u) || /cdn|image|media|upload/i.test(u))) return;
+  if (!u || !/^https?:/.test(u) || (!trusted && BAD_IMG.test(u)) || !(trusted || GOOD_IMG.test(u) || /cdn|image|media|upload/i.test(u))) return;
   const key = u.replace(/[?#].*$/, "").replace(/_(\d+x\d*|\d*x\d+)(?=\.)/, "");
   if (list.some((i) => i.key === key)) return;
   list.push({ url: u, label: clip(label, 80), key });
@@ -488,15 +488,15 @@ async function readStore(u) {
   // Shopify stores expose clean product data; try it first
   try {
     const m = u.pathname.match(/^\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?products\/([^\/?#]+)/i);
-    const j = JSON.parse(await getText(m ? `${origin}/products/${m[1]}.js` : `${origin}/products.json?limit=120`, 4000000));
+    const j = JSON.parse(await getText(m ? `${origin}/products/${m[1]}.js` : `${origin}/products.json?limit=250`, 6000000));
     const all = j.products ? j.products : j.title ? [j] : [];
     // A shop lists its newest products first, so the first few can all be one kind (all tees). Take one product per kind in turn.
     const kinds = new Map();
     all.forEach((p) => { const k = String(p.product_type || p.type || String(p.title || "").trim().split(/\s+/).pop() || "").toLowerCase(); kinds.set(k, [...(kinds.get(k) || []), p]); });
     const items = [];
-    for (let round = 0; items.length < Math.min(all.length, 24); round++) {
+    for (let round = 0; items.length < Math.min(all.length, 250); round++) {
       const before = items.length;
-      kinds.forEach((list) => { if (list[round] && items.length < 24) items.push(list[round]); });
+      kinds.forEach((list) => { if (list[round] && items.length < 250) items.push(list[round]); });
       if (items.length === before) break;
     }
     if (items.length) {
@@ -505,8 +505,8 @@ async function readStore(u) {
       out.text = items.slice(0, 8).map((p) => `${p.title}${p.type || p.product_type ? " (" + (p.type || p.product_type) + ")" : ""}: ${plain(p.description || p.body_html).slice(0, 220)}`).join("\n");
       items.forEach((p) => {
         const imgs = (p.images || []).map((x) => (typeof x === "string" ? x : x.src)).filter(Boolean);
-        (items.length === 1 ? imgs : imgs.slice(0, 1)).forEach((src) => pushImg(out.images, src, origin, p.title));
-        if (!p.images && p.featured_image) pushImg(out.images, p.featured_image, origin, p.title);
+        (items.length === 1 ? imgs : imgs.slice(0, 1)).forEach((src) => pushImg(out.images, src, origin, p.title, true));
+        if (!p.images && p.featured_image) pushImg(out.images, p.featured_image, origin, p.title, true);
       });
       if (out.images.length) return out;
     }
@@ -641,7 +641,7 @@ Return ONLY JSON: {"name":"brand name","sells":"1-2 plain sentences: what they s
     description: clip(o.sells || store.text.split("\n")[0], 600),
     niche: niches.includes(o.niche) ? o.niche : "", audience: clip(o.audience, 160), tone: tones.includes(o.tone) ? o.tone : "",
     offer: clip(o.offer, 80), usps: arr(o.usps, 4, 120), products: arr(o.products, 6, 60), voice: clip(o.voice, 60), palette: clip(o.palette, 100), look: clip(o.look, 300), language: clip(o.language, 30),
-    hexes, images: store.images.slice(0, 12).map((i) => ({ url: i.url, label: i.label })), source: store.source,
+    hexes, images: store.images.slice(0, 250).map((i) => ({ url: i.url, label: i.label })), source: store.source,
     pages: [{ url: u.href, title: clip(store.name, 90) || u.hostname }, ...more.map((p) => ({ url: p.url, title: p.title }))],
   };
 }

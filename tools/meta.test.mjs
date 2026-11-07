@@ -286,3 +286,14 @@ test("budget: the plan says how many visitors and what a click may cost, and fla
   assert.equal(recommend({ goal: "sales", aov: 80, margin: "high", budget: 10 }).lowVolume, true); // 0.3 sales a day
   assert.equal(suggest({ goal: "traffic" }).daily, 15); // nothing to price
 });
+
+test("Read my website returns every product photo of a shop, flags included", async () => {
+  const products = Array.from({ length: 40 }, (_, i) => ({ title: "P" + i, product_type: i % 2 ? "Flag" : "Tee", vendor: "Sermons", body_html: "x", images: [{ src: `https://cdn.shop.test/files/${i % 2 ? "saint-flag-front" : "tee-" + i}-${i}.jpg` }] }));
+  const real = globalThis.fetch;
+  globalThis.fetch = async (u) => (String(u).startsWith("https://shop.test/products.json") ? new Response(JSON.stringify({ products }), { status: 200 }) : new Response("no", { status: 404 }));
+  try {
+    const r = await m.readBrand({}, { url: "shop.test" });
+    assert.equal(r.images.length, 40);
+    assert.ok(r.images.some((i) => /flag/.test(i.url)));
+  } finally { globalThis.fetch = real; }
+});

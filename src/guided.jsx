@@ -383,7 +383,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
                       {profile.offer && <p className="mt-2 text-xs text-slate-600"><span className="font-semibold text-slate-400">Offer on your site </span>{profile.offer}</p>}
                     </div>
                   )}
-                  {(site.images || []).length > 0 && <p className="mt-3 text-xs font-semibold text-slate-700">Pick up to 3 photos to use in your ads</p>}
+                  {(site.images || []).length > 0 && <p className="mt-3 text-xs font-semibold text-slate-700">We found {site.images.length} product photo{site.images.length === 1 ? "" : "s"}. Pick up to 3 to use in your ads</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(site.images || []).map((im) => {
                       const on = picked.includes(im.url);
