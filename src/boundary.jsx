@@ -1,5 +1,5 @@
 import { Component, forwardRef, lazy, useId, useRef } from "react";
-import { Icon } from "./ui";
+import { Icon, Mascot } from "./ui";
 import { useDialog } from "./dialog.jsx";
 import { reportError } from "./report.js";
 
@@ -128,7 +128,7 @@ function Message({ error, onRetry, retryRef, titleId, textId }) {
   const chunk = isChunkError(error);
   return (
     <>
-      <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-50 text-rose-600"><Icon.Alert className="h-6 w-6" /></span>
+      <Mascot pose="shrug" className="mx-auto h-28" />
       <p id={titleId} className="mt-4 text-base font-semibold text-slate-900">{chunk ? "This part of AdDoctor didn't load." : "Something went wrong here."}</p>
       <p id={textId} className="mt-1 text-sm leading-relaxed text-slate-500">{chunk ? "Check your connection and try again." : "Your other work is safe."}</p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">

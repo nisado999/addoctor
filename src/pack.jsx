@@ -505,7 +505,7 @@ function PackView({ notify, credits, onSpend, seed = "" }) {
               return (
                 <button key={k} onClick={() => (locked ? askUpgrade("pro_only", "premium") : setQuality(k))} aria-pressed={quality === k}
                   className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold ${quality === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}>
-                  {l}{locked && <span className="inline-flex items-center gap-0.5 rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-pink-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}
+                  {l}{locked && <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-blue-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}
                 </button>
               );
             })}

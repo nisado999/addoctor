@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "color-expert": {
+      "source": "meodai/skill.color-expert",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "a1bc609b9fe499c521a8fc5e821f98d7d90923ef018d97625503f629882f9cb9"
+    },
     "gsap-core": {
       "source": "greensock/gsap-skills",
       "sourceType": "github",

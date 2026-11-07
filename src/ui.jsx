@@ -2,9 +2,16 @@ import { useEffect, useRef, useState, memo } from "react";
 import { TEMPLATES } from "./data";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
 import { useDialog } from "./dialog.jsx";
+import { useMetaAds } from "./metaQueue.js";
 import { PLAN_NAME, PLAN_CREDITS, PRO_PLANS, loadAccount } from "./billing.js";
 
 const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
+
+/* Doc, the AdDoctor mascot (public/mascot/*.webp: flat sticker art, blue, white and black only, so it can be recoloured). Decorative, so screen readers skip it. */
+const MASCOT_SIZE = { wave: [523, 640], look: [539, 640], clipboard: [500, 640], shrug: [669, 640] };
+const Mascot = ({ pose = "wave", className = "h-24" }) => (
+  <img src={`${import.meta.env.BASE_URL}mascot/${pose}.webp`} width={MASCOT_SIZE[pose][0]} height={MASCOT_SIZE[pose][1]} alt="" aria-hidden="true" draggable={false} className={`w-auto select-none ${className}`} />
+);
 
 /* ------------------------------- Icons --------------------------------- */
 
@@ -229,7 +236,7 @@ const TemplateCard = memo(function TemplateCard({ t, onInspect, action = "Use th
             {t.type === "video" && (
               <span className={pill}><Icon.Video className="h-3 w-3" /> VIDEO</span>
             )}
-            {t.isNew && <span className={`${pill} !bg-emerald-600/90`}>NEW</span>}
+            {t.isNew && <span className={`${pill} !bg-blue-600`}>NEW</span>}
             {showTrending(t) && (
               <span className={pill}><Icon.Flame className="h-3 w-3 text-blue-300" /> TRENDING</span>
             )}
@@ -285,14 +292,15 @@ function TemplateGrid({ className = "", label = "Templates", children }) {
 
 const NAV = [
   { head: "Create", items: [
-    { id: "explore", label: "Explore Templates", icon: Icon.Grid },
-    { id: "static", label: "Create Static Ads", icon: Icon.Layout },
+    { id: "static", label: "Create a static ad", icon: Icon.Wand },
+    { id: "explore", label: "Templates", icon: Icon.Grid },
     { id: "video", label: "Create Video Ads", icon: Icon.Video, note: "Soon", quiet: true },
     { id: "pack", label: "30-Day Drop", icon: Icon.Image, note: "New" },
   ] },
   { head: "Analyse", items: [
     { id: "examine", label: "Examine Ad", icon: Icon.Stethoscope },
     { id: "rivals", label: "Find Competitors", icon: Icon.Target, note: "New" },
+    { id: "angles", label: "Angle Finder", icon: Icon.Bolt, note: "New" },
     { id: "spy", label: "Competitor Analysis", icon: Icon.Eye },
   ] },
   { head: "Library", items: [
@@ -333,6 +341,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
   // Growing the window past lg while the menu is open: the sidebar is simply there now, so the menu is closed.
   useEffect(() => { if (open && wide) onClose(); }, [open, wide, onClose]);
   const left = Number.isFinite(credits) ? Math.max(0, credits) : null;
+  const metaCount = useMetaAds().length;
   return (
     <>
       {drawer && <DrawerBackdrop panelRef={asideRef} onClose={onClose} initialFocusRef={closeRef} />}
@@ -345,7 +354,7 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
       >
         <div className="flex h-16 shrink-0 items-center gap-2 pl-4 pr-3">
           <button onClick={() => { onNav("home"); onClose(); }} aria-label="AdDoctor: Home" className={`rounded-lg p-1 ${ring}`}>
-            <img src={LOGO_SRC} alt="" width="141" height="26" className="block h-[26px] w-auto select-none" draggable={false} />
+            <img src={LOGO_SRC} alt="" width="121" height="26" className="block h-[26px] w-auto select-none" draggable={false} />
           </button>
           <button ref={closeRef} onClick={onClose} aria-label="Close menu" className={`ml-auto rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden ${ring}`}>
             <Icon.Close className="h-5 w-5" />
@@ -353,13 +362,16 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
         </div>
 
         <div className="px-4 pt-1">
-          <button
-            onClick={() => { onExamine(); onClose(); }}
-            className={`btn-ink flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold active:scale-[.98] ${ring}`}
-          >
-            <Icon.Stethoscope className="h-4 w-4" />
-            Examine an ad
-          </button>
+          <div className="cta-orbit">
+            <button
+              onClick={() => { onNav("meta"); onClose(); }}
+              className={`btn-ink flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold active:scale-[.98] ${ring}`}
+            >
+              <Icon.Wand className="h-4 w-4" />
+              Create an ad
+              {metaCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-white px-1 text-[11px] font-bold text-slate-950" aria-label={`${metaCount} ads ready for Meta`}>{metaCount}</span>}
+            </button>
+          </div>
         </div>
 
         <div className="mt-5 flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-3">
@@ -434,7 +446,12 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
               <p className={`mt-2 text-[11px] font-medium ${left > 0 ? "text-slate-500" : "text-rose-700"}`}>{left > 0 ? "Kept on this device. Refills daily." : "Refills tomorrow."}</p>
             </>
           )}
-          <a href="./privacy.html" className={`mt-2 inline-block rounded text-[11px] font-medium text-slate-500 transition hover:text-slate-700 ${ring}`}>Privacy</a>
+          {/* Paddle and buyers expect the terms and refund policy one click from anywhere. */}
+          <p className="mt-2 flex gap-3">
+            {[["./privacy.html", "Privacy"], ["./terms/", "Terms"], ["./refunds/", "Refunds"]].map(([href, label]) => (
+              <a key={href} href={href} className={`inline-block rounded text-[11px] font-medium text-slate-500 transition hover:text-slate-700 ${ring}`}>{label}</a>
+            ))}
+          </p>
         </div>
       </aside>
     </>
@@ -443,8 +460,8 @@ function Sidebar({ active, onNav, open, onClose, onExamine, credits, creditsPerD
 
 /* Phones and tablets: the main screens within thumb reach. The full list stays in the menu. */
 const TABS = [
-  { id: "explore", label: "Explore", icon: Icon.Grid },
-  { id: "static", label: "Static", icon: Icon.Layout },
+  { id: "static", label: "Create", icon: Icon.Wand },
+  { id: "explore", label: "Templates", icon: Icon.Grid },
   { id: "examine", label: "Examine", icon: Icon.Stethoscope, main: true },
   { id: "spy", label: "Spy", icon: Icon.Eye },
   { id: "vault", label: "Vault", icon: Icon.Bookmark },
@@ -475,4 +492,4 @@ function BottomNav({ active, onNav, vaultCount }) {
   );
 }
 
-export { svgBase, Icon, Creative, TemplateImage, MediaFallback, cardWebp, pill, TemplateCard, TemplateGrid, NAV, Sidebar, BottomNav, tilt, holdClips };
+export { svgBase, Icon, Mascot, Creative, TemplateImage, MediaFallback, cardWebp, pill, TemplateCard, TemplateGrid, NAV, Sidebar, BottomNav, tilt, holdClips };

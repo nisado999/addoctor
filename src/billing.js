@@ -19,7 +19,7 @@ export const PLAN_CREDITS = Object.fromEntries(PLANS.map((p) => [p.id, p.credits
 export const TOPUP = { price: 15, credits: 200 };
 
 // What one action costs, in credits.
-export const COSTS = { breakdown: 1, ask: 3, organic: 3, rivals: 3, analyze: 15, review: 1, packText: 2, image: 5, imagePremium: 12 };
+export const COSTS = { breakdown: 1, ask: 3, organic: 3, rivals: 3, angles: 2, analyze: 15, review: 1, packText: 2, image: 5, imagePremium: 12 };
 
 // Pro and For Teams only. The server enforces this too (proOnly in api/worker.js); here it only shows the lock.
 export const PRO_PLANS = ["pro", "agency"];
@@ -95,6 +95,12 @@ export async function saveSegment(segment) {
   set({ account: state.account ? { ...state.account, segment } : state.account });
 }
 
+// Sends the visitor to Paddle's signed-in cancel page for their plan.
+export async function openCancel() {
+  const r = await apiFetch("/billing/portal", { body: {}, timeout: 20000 });
+  location.assign(r.cancel);
+}
+
 /* ---- Paddle checkout ---- */
 let paddleP = null;
 let onPaid = () => {};
@@ -141,7 +147,7 @@ export async function openCheckout(priceKey, user, notify) {
   // that keeps both billing. Upgrade by adding a Worker route that updates the subscription through Paddle's API.
   const a = state.account;
   if (/^(starter|pro|agency)_/.test(priceKey) && a && a.plan !== "free" && a.status !== "canceled") {
-    throw new Error(`You're on ${PLAN_NAME[a.plan] || a.plan} now. To switch, cancel it from the link in your Paddle receipt (it keeps working to the end of the period), then choose the new plan here.`);
+    throw new Error(`You're on ${PLAN_NAME[a.plan] || a.plan} now. To switch, cancel it with Cancel plan at the top of this page (it keeps working to the end of the period), then choose the new plan here.`);
   }
   const P = await loadPaddle(cfg);
   onPaid = () => watchPurchase(notify);

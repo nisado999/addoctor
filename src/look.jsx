@@ -9,7 +9,7 @@ const calm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
 /* "Use this template": the template shown large in soft light, what it is for, and the ways to use it.
    Same language as the product studio: one calm surface, hairlines, ink for the action. */
-function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
+function LookModal({ tpl, onClose, onInspire, onExamine, onProduct, onBrand }) {
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const refs = TEMPLATE_REFS[tpl.id] || [];
   const [shot, setShot] = useState(-1); // -1 = the video, else a reference frame
@@ -107,7 +107,16 @@ function LookModal({ tpl, onClose, onInspire, onExamine, onProduct }) {
 
           <div className="fx-in mt-auto pt-8">
             <div className="grid gap-2">
-              <button id="look-product" onClick={() => onProduct(tpl, "exact")} className="group flex items-center justify-between gap-4 rounded-xl bg-slate-950 px-5 py-4 text-left text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
+              {(tpl.brandName || tpl.logoReady) && (
+                <button id="look-brand" onClick={() => onBrand(tpl)} className="group flex items-center justify-between gap-4 rounded-xl bg-slate-950 px-5 py-4 text-left text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
+                  <span>
+                    <span className="block text-[15px] font-semibold">{isVideo ? "Add my logo" : "Put my brand on it"}</span>
+                    <span className="mt-0.5 block text-[12.5px] text-white/60">{isVideo ? "Your logo goes on top of this clip, nothing else changes." : `A finished ad. Your name and logo replace ${tpl.brandName}, nothing else changes.`}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-base transition group-hover:translate-x-0.5">→</span>
+                </button>
+              )}
+              <button id="look-product"onClick={() => onProduct(tpl, "exact")} className="group flex items-center justify-between gap-4 rounded-xl bg-slate-950 px-5 py-4 text-left text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25">
                 <span>
                   <span className="block text-[15px] font-semibold">Put my product in this ad</span>
                   <span className="mt-0.5 block text-[12.5px] text-white/60">The same ad, one to one, with your product swapped in.</span>

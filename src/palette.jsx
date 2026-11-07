@@ -8,11 +8,13 @@ import { useDialog } from "./dialog.jsx";
 
 const PAGES = [
   { id: "home", label: "Home", hint: "Start page", icon: Icon.Home, keys: "home start main" },
-  { id: "explore", label: "Explore Templates", hint: "Proven ad formats", icon: Icon.Grid, keys: "templates gallery browse" },
-  { id: "static", label: "Create Static Ads", hint: "Make an image ad", icon: Icon.Layout, keys: "image create make" },
+  { id: "meta", label: "Create an ad", hint: "Start here: plan, make and post on Meta", icon: Icon.Wand, keys: "meta facebook instagram advertising launch publish campaign budget guide start new ad" },
+  { id: "static", label: "Create a static ad", hint: "Answer a few questions", icon: Icon.Wand, keys: "make new ad guided questions niche image static" },
+  { id: "explore", label: "Templates", hint: "Proven ad formats", icon: Icon.Grid, keys: "templates gallery browse explore" },
   { id: "pack", label: "30-Day Drop", hint: "A month of organic posts", icon: Icon.Image, keys: "posts instagram organic month" },
   { id: "spy", label: "Competitor Analysis", hint: "See what a brand runs", icon: Icon.Eye, keys: "competitor ad library meta research" },
   { id: "rivals", label: "Find Competitors", hint: "Who you are up against", icon: Icon.Target, keys: "rivals competitors research brand" },
+  { id: "angles", label: "Angle Finder", hint: "Buyer types and the angle for each", icon: Icon.Bolt, keys: "angles avatars audience customers buyers personas hooks finder" },
   { id: "inspiration", label: "Idea Engine", hint: "Ad ideas for your product", icon: Icon.Sparkle, keys: "inspiration ideas hooks angles headlines" },
   { id: "vault", label: "Saved Vault", hint: "Reports and saved ads", icon: Icon.Bookmark, keys: "saved library reports" },
 ];

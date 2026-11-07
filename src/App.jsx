@@ -3,7 +3,7 @@ import { CATEGORIES, TEMPLATES } from "./data";
 import { ADDED } from "./addedDates.js";
 import { FEATURED_TOP, FEATURED_LAST } from "./featuredOrder.js";
 import { STOP, stem, hits, styleOf, STYLE_LABELS } from "./searchTags.js";
-import { Icon, TemplateCard, TemplateGrid, Sidebar, BottomNav, holdClips } from "./ui";
+import { Icon, Mascot, TemplateCard, TemplateGrid, Sidebar, BottomNav, holdClips } from "./ui";
 import { Bento } from "./bento.jsx";
 import SplitText from "./components/bits/SplitText/SplitText.jsx";
 import { TONE, inputKey } from "./shared.js";
@@ -41,6 +41,8 @@ const GuidedView = lazyRetry(() => import("./guided"), (m) => m.GuidedView);
 const LabView = lazyRetry(() => import("./lab"), (m) => m.LabView);
 const IdeasView = lazyRetry(() => import("./ideas"), (m) => m.IdeasView);
 const RivalsView = lazyRetry(() => import("./rivals"), (m) => m.RivalsView);
+const AngleView = lazyRetry(() => import("./angleFinder"), (m) => m.AngleView);
+const MetaView = lazyRetry(() => import("./meta"), (m) => m.MetaView);
 
 const scrollTop = () => {
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -92,7 +94,7 @@ function VaultView({ items, total, query, onClearSearch, onOpen, onRemove, onExa
   if (!items.length) {
     return (
       <div className="mx-auto mt-16 flex max-w-sm flex-col items-center text-center">
-        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Icon.Bookmark className="h-6 w-6" /></span>
+        <Mascot pose="clipboard" className="h-28" />
         <p className="mt-4 text-base font-semibold text-slate-900">Your vault is empty</p>
         <p className="mt-1 text-sm leading-relaxed text-slate-500">Examine an ad, then choose Save to Vault to keep the prescription here.</p>
         <button onClick={onExamine} className="mt-5 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800">
@@ -134,17 +136,19 @@ const VIEWS = {
   home: { title: "Home" },
   explore: { title: "Explore Templates", sub: "Proven direct-response formats. Pick one and put your product in it, or make a new ad in its style." },
   video: { title: "Create Video Ads", sub: "Answer a few questions and we build a brief made for your brand. Video creation is coming soon." },
-  static: { title: "Create Static Ads", sub: "Answer a few questions and we design ads from scratch, made for you. No templates." },
+  static: { title: "Create a static ad", sub: "Answer a few questions about what you sell. We design new ads for you, or find the templates that fit and put your product in the one you pick." },
   pack: { title: "30-Day Drop", sub: "A month of organic posts with photos, on-image text and captions. Check each one, fix it, download it." },
   lab: { title: "Template Lab", sub: "Owner tool: create the photographic template images once." },
   spy: { title: "Competitor Analysis", sub: "See what a competitor is really running: their main focus, top products, promotions and sales." },
   rivals: { title: "Find Competitors", sub: "Enter your brand and we research who you are really up against." },
+  angles: { title: "Angle Finder", sub: "Say what you sell and we find the different kinds of buyer you can win, then the angle, headline and shot that speaks to each one." },
   inspiration: { title: "Idea Engine", sub: "Say what you sell and get a hand of ready ad ideas: hooks written for your product, the shot to take, and a real long-running ad that proves the pattern works." },
+  meta: { title: "Create an ad", sub: "Start here. Paste your website, answer a few questions, and we work out the budget, the ad type and the copy. Then make or choose your ads and get them ready for Facebook and Instagram." },
   vault: { title: "Saved Vault", sub: "Reports you saved, ads you made, and competitor ads you kept." },
   plans: { title: "Plans & credits", sub: "Your balance, the plans, and what each action costs." },
 };
 // Screens that keep running work (a crawl, a pack being made): once opened they stay mounted, just hidden.
-const KEEP = ["spy", "pack", "lab", "rivals", "inspiration", "static", "video"];
+const KEEP = ["spy", "pack", "lab", "rivals", "angles", "inspiration", "static", "video", "meta"];
 
 const VAULT_KEY = "addoctor.vault.v1";
 const FAVS_KEY = "addoctor.favs.v1";
@@ -264,6 +268,7 @@ function App() {
   const [cat, setCat] = useState("All");
   const [q, setQ] = useState("");
   const [packSeed, setPackSeed] = useState(""); // a store link typed into the Home composer, handed to the 30-Day Drop
+  const [createSeed, setCreateSeed] = useState(""); // what the visitor typed into the Home composer, handed to Create an ad
   const [spySeed, setSpySeed] = useState(""); // a domain typed into the Home composer, handed to Competitor Analysis
   const [credits, spend] = useCredits();
   const [vault, setVault] = useState(() => loadVault(VAULT_KEY));
@@ -288,8 +293,8 @@ function App() {
   const [favs, setFavs] = useState(() => loadFavs(FAVS_KEY, TEMPLATE_IDS));
   const [sort, setSort] = useState("featured");
   const [quick, setQuick] = useState(null); // null | "new" | "trending" | "video" | "favs"
-  const [toTop, setToTop] = useState(false);
   const [style, setStyle] = useState("All"); // "All" or an ad style id from searchTags.js
+  const [toTop, setToTop] = useState(false);
   const searchRef = useRef(null);
   const [shown, setShown] = useState(PAGE);
   const moreRef = useRef(null);
@@ -739,11 +744,16 @@ function App() {
   const noFavs = quick === "favs" && !favs.length;
 
   const toSpy = (name) => { setSpySeed(name || ""); goto("spy"); };
+  // Create an ad can hand over a matching template and the product photos already added: the same "Put my product in this ad" path as the gallery.
+  const useMatch = (t, photos) => { track("template_use", { method: "create_flow", ...tplInfo(t) }); setProduct({ ...t, mode: "exact", photos }); };
+  const browseNiche = (c) => { if (goto("explore")) { setQuick(null); setQ(""); setCat(c || "All"); } };
   const screen = (id) => (
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
-    : id === "static" || id === "video" ? <GuidedView kind={id} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
+    : id === "static" || id === "video" ? <GuidedView key={createSeed} kind={id} seed={createSeed} onUseTemplate={useMatch} onBrowse={browseNiche} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
+    : id === "meta" ? <MetaView user={user} notify={notify} onNav={goto} onExamine={(file) => openExam({ file })} />
     : id === "rivals" ? <RivalsView onSpy={toSpy} />
+    : id === "angles" ? <AngleView notify={notify} onMake={rebuild} />
     : id === "inspiration" ? <IdeasView notify={notify} onMake={rebuild} active={view === "inspiration"} />
     : <SpyView notify={notify} onRebuild={rebuild} onExamine={(file) => openExam({ file })} active={view === "spy"} seed={spySeed} />
   );
@@ -771,7 +781,7 @@ function App() {
             {/* Below lg the sidebar (and its logo) is off-screen, so the name goes here. On a phone it makes room
                 while the visitor is typing a search. */}
             <button onClick={() => goto("home")} aria-label="AdDoctor: Home" className={`-ml-1 shrink-0 rounded-lg p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 lg:hidden`}>
-              <img src="./logo.png" alt="AdDoctor" width={98} height={18} className="block h-[18px] w-auto select-none sm:h-5" draggable={false} />
+              <img src="./logo.png" alt="AdDoctor" width={84} height={18} className="block h-[18px] w-auto select-none sm:h-5" draggable={false} />
             </button>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <ThemeToggle />
@@ -810,6 +820,7 @@ function App() {
           <div key={view} className={`mx-auto max-w-[1760px]${moved ? " view-in" : ""}`}>
           {view === "home" ? (
             <Bento
+              onCreate={(text) => { setCreateSeed(text || ""); goto("static"); }}
               onExamine={(file, copy) => openExam({ ...(file ? { file } : {}), ...(copy ? { copy } : {}) })} onSpy={(domain) => { setSpySeed(domain || ""); goto("spy"); }} onPack={(url) => { setPackSeed(url || ""); goto("pack"); }}
               onPick={inspect}
               onBrowse={(term) => { if (goto("explore") && typeof term === "string") { setQuick(null); setCat("All"); setQ(term); } }}
@@ -998,7 +1009,7 @@ function App() {
         </DialogSlot>
       )}
 
-      {brand && <DialogSlot key={brand.id} label="brand" onClose={closeBrand}><BrandModal tpl={brand} onClose={closeBrand} notify={notify} /></DialogSlot>}
+      {brand && <DialogSlot key={brand.id} label="brand" onClose={closeBrand}><BrandModal tpl={brand} onClose={closeBrand} notify={notify} onSpend={doSpend} /></DialogSlot>}
       {inspire && <DialogSlot key={inspire.id} label="inspire" onClose={closeInspire}><InspireModal tpl={inspire} onClose={closeInspire} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
       {product && <DialogSlot key={product.id} label="product" onClose={closeProduct}><ProductModal tpl={product} onClose={closeProduct} onBack={() => { const { mode, ...back } = product; setProduct(null); setLook(back); }} notify={notify} credits={shownCredits} onSpend={doSpend} /></DialogSlot>}
       {studio && <DialogSlot key={studio.id} label="studio" onClose={closeStudio}><StudioModal tpl={studio} onClose={closeStudio} notify={notify} /></DialogSlot>}

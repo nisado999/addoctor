@@ -130,6 +130,10 @@ button, [role="button"], a, select { touch-action: manipulation; }
 @keyframes shine { from { background-position: 150% 0; } to { background-position: -100% 0; } }
 
 .hero-up { animation: rise .7s var(--d, 0ms) var(--ease) backwards; }
+/* Doc bobs gently, as if breathing. */
+.mascot-bob { animation: bob 3.6s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
+@media (prefers-reduced-motion: reduce) { .mascot-bob { animation: none; } }
 .hero-dot { box-shadow: 0 0 0 4px rgba(16, 185, 129, .18); animation: pulse-dot 2.4s ease-in-out infinite; }
 @keyframes pulse-dot { 50% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); } }
 
@@ -381,6 +385,13 @@ div.fixed:has(> [role="dialog"]) { animation: fade-in .25s ease-out backwards; -
 .composer { position: relative; border-radius: 16px; }
 .composer::before { content: ""; position: absolute; inset: -1px; z-index: 1; pointer-events: none; border-radius: 17px; padding: 1.5px; background: conic-gradient(from var(--a), transparent 0 55%, #2b59ff 75%, #7c5cff 88%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity .4s var(--ease); animation: spin-a 3.5s linear infinite; }
 .composer:focus-within::before { opacity: 1; }
+
+/* The main "Create an ad" button: a light keeps travelling round its edge (same trick as the composer, always on). */
+.cta-orbit { position: relative; border-radius: 9999px; }
+.cta-orbit::before { content: ""; position: absolute; inset: -2px; z-index: 1; pointer-events: none; border-radius: 9999px; padding: 2px; background: conic-gradient(from var(--a), transparent 0 50%, #2b59ff 72%, #9db4ff 86%, transparent 100%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: spin-a 3s linear infinite; }
+.cta-orbit::after { content: ""; position: absolute; inset: -3px; z-index: 0; pointer-events: none; border-radius: 9999px; background: conic-gradient(from var(--a), transparent 0 55%, rgba(43, 89, 255, .55) 80%, transparent 100%); filter: blur(9px); opacity: .75; animation: spin-a 3s linear infinite; }
+.cta-orbit > button { position: relative; z-index: 2; }
+@media (prefers-reduced-motion: reduce) { .cta-orbit::before, .cta-orbit::after { animation: none; } }
 
 /* Hovering an ad in the stream x-rays it: a scan line crosses it and the three checks light up. */
 .ad-card .xray { opacity: 0; transition: opacity .3s var(--ease); }

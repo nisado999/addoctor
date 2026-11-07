@@ -4,6 +4,7 @@ import { useGSAP } from "@gsap/react";
 import { Icon } from "./ui";
 import { field, copyText, SPY_API } from "./shared.js";
 import { apiFetch } from "./api.js";
+import { metaAds } from "./metaQueue.js";
 import { makeCost, useProLock, askUpgrade } from "./billing.js";
 import { track } from "./track.js";
 import { TEMPLATE_IMGS, TEMPLATE_VIDS } from "./templateImgs.js";
@@ -386,7 +387,53 @@ function LogoDrop({ logo, onLogo, notify, quiet }) {
   );
 }
 
-function BrandModal({ tpl, onClose, notify }) {
+/* A finished ad that carries a made-up brand (tpl.brandName): the server swaps in the customer's name and logo and changes nothing else. */
+function BrandSwapModal({ tpl, onClose, notify, onSpend }) {
+  useModal(onClose);
+  const [name, setName] = useState("");
+  const [offer, setOffer] = useState("");
+  const [logo, setLogo] = useState("");
+  const [out, setOut] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const go = async () => {
+    if (busy) return;
+    if (!SPY_API) { setErr("This needs the AdDoctor server. Open the published page, not the preview."); return; }
+    setBusy(true); setErr("");
+    try {
+      const r = await makeCall("/make/ad", { mode: "brand", template: await shrinkPhoto(TEMPLATE_IMGS[tpl.id], 1400), refs: logo ? [logo] : [], from: tpl.brandName, to: name.trim(), offer: offer.trim(), quality: "standard", ratio: "4:5" });
+      setOut(`data:${r.mime};base64,${r.data}`);
+      track("ad_generated", { template_id: tpl.id, template_category: tpl.category, method: "brand_swap" });
+      if (onSpend) onSpend(makeCost(false));
+    } catch (e) { setErr(e.message || "Something went wrong. Try again."); }
+    setBusy(false);
+  };
+  return (
+    <Shell title="Put my brand on it" sub={`${tpl.title} · your name and logo replace ${tpl.brandName}.`} icon={<Icon.Image className="h-5 w-5" />} onClose={onClose}
+      footer={out
+        ? <button onClick={async () => saveBlob(await (await fetch(out)).blob(), `${tpl.id}-${name.trim().toLowerCase().replace(/\W+/g, "-") || "ad"}.png`)} className={primaryBtn}><Icon.Download className="h-4 w-4" /> Download</button>
+        : <button onClick={go} disabled={busy || (!name.trim() && !logo)} className={primaryBtn}>{busy ? "Branding your ad…" : "Make my ad"}</button>}>
+      <div className="grid gap-6 md:grid-cols-[minmax(0,260px)_1fr]">
+        <img src={out || TEMPLATE_IMGS[tpl.id]} alt={tpl.title} className="mx-auto w-full max-w-[260px] rounded-2xl border border-slate-200/80 shadow-sm" />
+        <div className="flex flex-col gap-4">
+          <div><label htmlFor="bs-name" className={lab}>Your brand name</label><input id="bs-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="e.g. Lumen Glow" className={field} /></div>
+          <div>
+            <span className={lab}>Your logo (optional)</span>
+            <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Your logo" onChange={async (e) => { const f = e.target.files[0]; if (f) try { setLogo(await shrinkPhoto(await readFile(f), 800)); } catch (x) { notify("That logo could not be read."); } }} className="text-sm" />
+          </div>
+          {tpl.offerText && <div><label htmlFor="bs-offer" className={lab}>Your offer (replaces "{tpl.offerText}")</label><input id="bs-offer" value={offer} onChange={(e) => setOffer(e.target.value)} maxLength={40} placeholder={tpl.offerText} className={field} /></div>}
+          {err && <p role="alert" className="text-sm font-medium text-rose-600">{err}</p>}
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+function BrandModal({ tpl, onClose, notify, onSpend }) {
+  if (tpl.brandName && !TEMPLATE_VIDS[tpl.id]) return <BrandSwapModal tpl={tpl} onClose={onClose} notify={notify} onSpend={onSpend} />;
+  return <BrandLogoModal tpl={tpl} onClose={onClose} notify={notify} />;
+}
+function BrandLogoModal({ tpl, onClose, notify }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const [logo, setLogo] = useState(null); // { src, img, ratio, name }
@@ -602,7 +649,7 @@ function InspireModal({ tpl, onClose, notify, credits = 0, onSpend }) {
             <ul className="space-y-2 text-sm">
               {GEN_STEPS.map((s, i) => (
                 <li key={s} className={`flex items-center gap-2 ${i < step ? "text-slate-400" : i === step ? "font-medium text-slate-900" : "text-slate-300"}`}>
-                  <span className={`grid h-4 w-4 place-items-center rounded-full ${i < step ? "bg-emerald-500 text-white" : i === step ? "bg-slate-950" : "bg-slate-200"}`}>{i < step && <Icon.Check className="h-2.5 w-2.5" />}</span>
+                  <span className={`grid h-4 w-4 place-items-center rounded-full ${i < step ? "bg-blue-600 text-white" : i === step ? "bg-slate-950" : "bg-slate-200"}`}>{i < step && <Icon.Check className="h-2.5 w-2.5" />}</span>
                   {s}
                 </li>
               ))}
@@ -693,7 +740,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
   const inspired = tpl.mode === "inspired";          // a new ad in this mood, not a one-to-one copy
-  const [photos, setPhotos] = useState([]);          // [{ src, name }]
+  const [photos, setPhotos] = useState(tpl.photos || []);          // [{ src, name }]; Create an ad hands over the ones already added
   const [headline, setHeadline] = useState(inspired ? "" : tpl.seedHeadline || tpl.headline || "");
   const [note, setNote] = useState("");
   const [premium, setPremium] = useState(false);
@@ -1137,6 +1184,13 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   };
   const showVersion = (u) => { if (busy || u === ad) return; setAd(u); setReview(reviews.current[u] || null); };
 
+  // The finished ad (with any text still in the panel) goes to the Create an ad flow.
+  const addToMeta = async () => {
+    let src = ad;
+    try { src = await commitText(); } catch (e) { notify("The text could not be added. Try again."); return; }
+    notify(metaAds.add({ src, name: tpl.title || "Ad" }) ? "Added. Open Create an ad (top of the menu) to continue." : "That ad is already added.", 3200);
+  };
+
   const download = async () => {
     let src = ad;
     try { src = await commitText(); } catch (e) { notify("The text could not be added. Try again."); return; }   // text still in the panel goes into the photo first
@@ -1163,6 +1217,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
           {ad && !busy && past.length > 0 && <button onClick={undo} className="mr-auto text-xs font-semibold text-slate-500 transition hover:text-slate-900">Undo last change</button>}
           {ad && (!editing || ad !== tpl.editImage) && ad !== savedAd && <button onClick={saveToVault} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50">Save to Vault</button>}
           {ad && <button onClick={download} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-slate-900 disabled:opacity-50"><Icon.Download className="h-4 w-4" /> Download</button>}
+          {ad && <button onClick={addToMeta} disabled={!!busy} className="sx-ghost inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-blue-700 disabled:opacity-50"><Icon.Arrow className="h-4 w-4" /> Add to my Meta ad</button>}
           {!editing && (
             <button id="make-go" ref={goRef} onClick={generate} disabled={!photos.length || !!busy} className={`${primaryBtn} !px-7 !py-3 !text-[15px]`}>
               {busy ? "Working…" : ad ? "Make another version" : inspired ? `Generate 3 options · ${VARIANTS * makeCost(premium)} credits` : `Generate my ad · ${makeCost(premium)} credit${makeCost(premium) === 1 ? "" : "s"}`}
@@ -1307,7 +1362,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                 </Step>
                 <div className="sx-step flex items-center gap-4">
                   <div className="min-w-0 flex-1 sm:pl-[34px]">
-                    <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-950">Best quality{proLock && <span className="inline-flex items-center gap-0.5 rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-pink-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}</p>
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-950">Best quality{proLock && <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-blue-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}</p>
                     <p className="mt-0.5 text-xs text-slate-400">Slower, and costs more to generate.</p>
                   </div>
                   <Switch on={premium && !proLock} onChange={(v) => (v && proLock ? askUpgrade("pro_only", "premium") : setPremium(v))} label="Best quality" />

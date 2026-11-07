@@ -25,6 +25,13 @@ if (import.meta.env.PROD && window.top !== window.self) {
   try { window.top.location.replace(window.location.href); } catch (e) { /* stays hidden */ }
 }
 
+// The Facebook login window lands here when it is done: tell the page that opened it, then close. BroadcastChannel is used
+// because Facebook's pages can cut window.opener.
+if (/[?&]meta(_error)?=/.test(window.location.search) && window.opener) {
+  try { const ch = new BroadcastChannel("addoctor-meta"); ch.postMessage({ error: new URLSearchParams(window.location.search).get("meta_error") || "" }); ch.close(); } catch (e) { /* no channel: the page checks again when it is focused */ }
+  window.close();
+}
+
 initTracking();
 installGlobalHandlers();
 

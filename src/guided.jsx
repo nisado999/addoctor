@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "./ui";
-import { SPY_API } from "./shared.js";
+import { SPY_API, hasFeature } from "./shared.js";
 import { apiFetch } from "./api.js";
+import { metaAds } from "./metaQueue.js";
 import { imageCost, billingOn, COSTS } from "./billing.js";
 import { packShrink, packB64, packExt, packSave, XRayLoader } from "./pack";
+import { Matches, NICHES, STATIC, rank } from "./matches.jsx";
+import { TEMPLATE_IMGS } from "./templateImgs.js";
 
 /* ---------------------- Guided builder: an interview, then an ad made for this customer ---------------------- */
 
@@ -23,6 +26,7 @@ const SHARED_START = [
   { id: "tone", label: "What should it feel like?", type: "choice", options: ["Clean and premium", "Bold and loud", "Warm and friendly", "Playful and fun"] },
 ];
 const STATIC_QUESTIONS = [
+  { id: "niche", label: "What's your niche?", hint: "It picks the templates we can show you.", type: "choice", options: NICHES, custom: "Or type yours" },
   ...SHARED_START,
   { id: "wording", label: "Words on the image?", type: "choice", options: ["Write a headline for me", "No text, picture only"], custom: "Or type your own headline" },
   { id: "ratio", label: "Where will it run?", type: "choice", options: ["Feed (4:5)", "Square (1:1)", "Story or Reel (9:16)"] },
@@ -34,6 +38,12 @@ const VIDEO_QUESTIONS = [
   { id: "length", label: "How long?", type: "choice", options: ["Around 6 seconds", "Around 15 seconds", "Around 30 seconds"] },
 ];
 const RATIO_OF = { "Feed (4:5)": "4:5", "Square (1:1)": "1:1", "Story or Reel (9:16)": "9:16" };
+const TONES = SHARED_START.find((x) => x.id === "tone").options;
+const TPL = new Map(STATIC.map((t) => [t.id, t]));
+const absUrl = (u) => { try { return new URL(u, window.location.href).href; } catch (e) { return u; } };
+const READ_STEPS = ["Reading your home page…", "Finding your products and photos…", "Reading your about and shop pages…", "Working out your audience and tone…", "Picking out your colours and style…"];
+// What a proven layout looks like to the planner: its name, niche, headline and what the picture shows.
+const candOf = (t) => ({ id: t.id, title: t.title, label: t.label, headline: t.headline || "", format: t.format || "", shows: (t.primary || "").replace(/The brand shown is a made-up placeholder.*$/, "").slice(0, 200) });
 
 const field = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/10";
 const btnDark = "rounded-full bg-slate-950 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40";
@@ -53,7 +63,7 @@ function CopyRow({ label, text, onCopy }) {
   );
 }
 
-function AdCard({ v, onDownload, onChange, onRetry, onCopy, unit, busy }) {
+function AdCard({ v, onDownload, onMeta, onChange, onRetry, onCopy, unit, busy }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const rv = v.review, cp = v.copy;
@@ -80,6 +90,7 @@ function AdCard({ v, onDownload, onChange, onRetry, onCopy, unit, busy }) {
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="text-sm font-semibold text-slate-900">{v.title}</p>
         <p className="text-xs text-slate-500">{v.angle}</p>
+        {v.tpl && <p className="text-[11px] font-semibold text-slate-400">Built on a proven layout: {v.tpl.title}</p>}
         {v.src && cp && (cp.primary || cp.headline) && (
           <div className="space-y-1.5 rounded-lg bg-slate-50 p-2.5">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ad copy</p>
@@ -102,6 +113,7 @@ function AdCard({ v, onDownload, onChange, onRetry, onCopy, unit, busy }) {
         {v.src && (
           <div className="mt-auto flex flex-wrap gap-2 pt-2">
             <button onClick={() => onDownload(v)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"><Icon.Download className="h-3.5 w-3.5" />Download</button>
+            <button onClick={() => onMeta(v)} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"><Icon.Arrow className="h-3.5 w-3.5" />Add to my Meta ad</button>
             <button disabled={busy} onClick={() => setOpen(!open)} className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50">{v.edits ? `Change again (${unit} credit${unit > 1 ? "s" : ""})` : "Change something (free)"}</button>
             <button disabled={busy} onClick={() => onRetry(v)} className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50">New version</button>
           </div>
@@ -111,17 +123,25 @@ function AdCard({ v, onDownload, onChange, onRetry, onCopy, unit, busy }) {
   );
 }
 
-export function GuidedView({ kind = "static", notify, credits, onSpend }) {
+export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "", onUseTemplate, onBrowse }) {
   const video = kind === "video";
   const questions = video ? VIDEO_QUESTIONS : STATIC_QUESTIONS;
-  const [phase, setPhase] = useState("source");   // source | questions | making | done | brief
-  const [source, setSource] = useState("");        // photo | site | none
+  const [phase, setPhase] = useState("source");   // source | questions | matches | making | done | brief
+  const [source, setSource] = useState("site");    // site | photo | none: the website is the main way in
   const [files, setFiles] = useState([]);          // [{id, src}]
   const [url, setUrl] = useState("");
-  const [site, setSite] = useState(null);          // {name, description, images}
+  const [site, setSite] = useState(null);          // {name, description, images, pages, niche, audience, tone, offer, usps, ...}
+  const [profile, setProfile] = useState(null);    // the same reading, when the server read the whole site
+  const [known, setKnown] = useState({});          // answers filled in from the site: {niche: "Fashion", ...}
   const [picked, setPicked] = useState([]);
   const [reading, setReading] = useState(false);
-  const [answers, setAnswers] = useState({});
+  const [readStep, setReadStep] = useState(0);
+  useEffect(() => {
+    if (!reading) { setReadStep(0); return; }
+    const t = setInterval(() => setReadStep((n) => Math.min(n + 1, READ_STEPS.length - 1)), 2600);
+    return () => clearInterval(t);
+  }, [reading]);
+  const [answers, setAnswers] = useState(() => (seed ? { sells: seed } : {}));   // seed: what was typed on Home
   const [step, setStep] = useState(0);
   const [err, setErr] = useState("");
   const [status, setStatus] = useState("");
@@ -157,9 +177,14 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
     if (url.trim().length < 4) { setErr("Paste your website link first."); return; }
     setErr(""); setReading(true);
     try {
-      const r = await call("/pack/store", { url: url.trim() });
-      setSite(r); setPicked((r.images || []).slice(0, 2).map((i) => i.url));
-      setAnswers((a) => ({ ...a, brand: r.name || a.brand || "", sells: r.description || a.sells || "" }));
+      // The whole site (several pages) when the server can do it; just the page's products on an older server.
+      const deep = await hasFeature("brandread");
+      const r = deep ? await call("/brand/read", { url: url.trim(), niches: NICHES, tones: TONES }) : await call("/pack/store", { url: url.trim() });
+      setSite(r); setProfile(deep ? r : null); setPicked((r.images || []).slice(0, 2).map((i) => i.url));
+      const fill = { brand: r.name, sells: r.description, ...(deep ? { niche: r.niche, audience: r.audience, tone: r.tone, offer: r.offer } : {}) };
+      const got = Object.fromEntries(Object.entries(fill).filter(([, v]) => v && String(v).trim()));
+      setAnswers((a) => ({ ...a, ...got }));
+      setKnown(got);
     } catch (e) { setErr((e && e.message) || "We could not read that site. You can answer the questions by hand instead."); }
     setReading(false);
   };
@@ -173,8 +198,20 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
 
   const refsNow = () => ({ refs: source === "photo" ? files.map((f) => f.src) : [], refUrls: source === "site" ? picked : [] });
 
+  // The product, the brand and the offer, in the few words the ad maker needs when it rebuilds a proven layout for this customer.
+  const noteFor = () => {
+    const a = ctxRef.current.answers || {};
+    return [a.sells, a.audience && `For ${a.audience}`, a.tone && `Tone: ${a.tone}`,
+      a.brand && `The brand is "${a.brand}": wherever the layout shows a brand name, write exactly "${a.brand}" as text, never a made-up logo`,
+      a.offer ? `Offer: ${a.offer}` : "No offer: show no price, discount or deadline"].filter(Boolean).join(". ");
+  };
+  // With a proven layout and a real product photo the ad is rebuilt on that layout; otherwise it is designed from the concept alone.
   const render = async (v, signal) => {
-    const r = await call("/make/ad", { mode: "scratch", concept: v.concept, answers: ctxRef.current.answers, ratio: v.ratio, quality: "standard", ...refsNow() }, signal);
+    const t = v.templateId && TPL.get(v.templateId), photos = refsNow();
+    const onLayout = t && TEMPLATE_IMGS[t.id] && (photos.refs.length || photos.refUrls.length) && !ctxRef.current.noText;
+    const r = onLayout
+      ? await call("/make/ad", { mode: "inspired", template: await packShrink(TEMPLATE_IMGS[t.id], 1000), about: t.desc || "", note: noteFor(), headline: v.concept.headline || "", ratio: v.ratio, quality: "standard", ...photos }, signal)
+      : await call("/make/ad", { mode: "scratch", concept: v.concept, answers: ctxRef.current.answers, ratio: v.ratio, quality: "standard", ...photos }, signal);
     return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, grant: r.grant || "" };
   };
   // The full analysis: the same rubric as Check score, run on every ad before the customer sees it.
@@ -193,14 +230,22 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
     const noText = a.wording === "No text, picture only";
     const typed = a.wording && a.wording !== "Write a headline for me" && !noText ? a.wording : "";
     const sent = { brand: a.brand, sells: a.sells, offer: a.offer, audience: a.audience, goal: a.goal, tone: a.tone, wording: noText ? "No text on the image" : typed };
-    ctxRef.current = { answers: sent };
+    ctxRef.current = { answers: sent, noText };
     setErr(""); setPhase("making"); setAds([]); adsRef.current = [];
     const c = new AbortController(); const onLife = () => c.abort(); life.current.signal.addEventListener("abort", onLife, { once: true });
     try {
       setStatus("Designing three different ads for you…");
-      const plan = await call("/make/plan", { answers: sent, site: site ? { name: site.name, description: site.description } : null, photos: source !== "none", ...refsNow() }, c.signal);
+      // The planner sees the best-fitting proven layouts from the gallery and builds each concept on a different one.
+      const cand = rank({ niche: a.niche, sells: a.sells, offer: a.offer }).out.slice(0, 8).map((r) => r.t);
+      const plan = await call("/make/plan", {
+        answers: sent, site: site ? { name: site.name, description: site.description } : null,
+        profile: profile ? { usps: profile.usps, products: profile.products, voice: profile.voice, palette: profile.palette, look: profile.look, language: profile.language } : null,
+        candidates: cand.map(candOf), candidateUrls: cand.map((t) => absUrl(TEMPLATE_IMGS[t.id])),
+        photos: source !== "none", ...refsNow(),
+      }, c.signal);
       adsRef.current = plan.concepts.map((cn, i) => ({
         i, title: cn.title, angle: cn.angle, ratio,
+        templateId: TPL.has(cn.templateId) ? cn.templateId : "", tpl: TPL.has(cn.templateId) ? { id: cn.templateId, title: TPL.get(cn.templateId).title } : null,
         concept: noText ? { ...cn, headline: "", sub: "" } : typed ? { ...cn, headline: typed, sub: "" } : cn,
         copy: { ...cn.copy, ...(typed ? { headline: typed } : {}) },
         src: "", error: "", review: null, edits: 0, held: false,
@@ -270,6 +315,8 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
     return ok;
   };
   const copyText = async (t) => { try { await navigator.clipboard.writeText(t); notify("Copied"); } catch (e) { notify("Could not copy. Select the text instead."); } };
+  // The ad and its written copy go to the Create an ad flow, which turns them into a ready-to-post set.
+  const addToMeta = (v) => notify(metaAds.add({ src: v.src, name: v.title || "Ad", copy: v.copy }) ? "Added. Open Create an ad (top of the menu) to continue." : "That ad is already added.", 3200);
   const download = (v) => packSave(new Blob([packB64(v.b64)], { type: v.mime }), `${(val("brand") || "ad").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${v.i + 1}.${packExt(v.mime)}`);
 
   const restart = () => { setPhase("source"); setStep(0); setAds([]); adsRef.current = []; setErr(""); setStatus(""); };
@@ -280,11 +327,11 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
     <section className="mx-auto mt-6 max-w-3xl" aria-label={video ? "Create Video Ads" : "Create Static Ads"}>
       {phase === "source" && (
         <div>
-          <h2 className="font-display text-[26px] font-extrabold tracking-[-0.03em] text-slate-950">Let's make an ad just for you</h2>
-          <p className="mt-1 text-sm text-slate-500">{video ? "Answer a few questions and we will build your video brief." : "Answer a few questions and we design three ads from scratch. No templates."}</p>
-          <p className="mt-6 text-sm font-semibold text-slate-900">First, do you have a product photo or a website?</p>
+          <h2 className="font-display text-[26px] font-extrabold tracking-[-0.03em] text-slate-950">{video ? "Let's make a video for you" : "Paste your website. We'll make ads that fit your brand."}</h2>
+          <p className="mt-1 text-sm text-slate-500">{video ? "Answer a few questions and we will build your video brief." : "We read your pages, learn your brand, ask a few quick questions, then build three ads on layouts that already work."}</p>
+          <p className="mt-6 text-sm font-semibold text-slate-900">Where should we learn about your brand?</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            {[["photo", "I have a photo", "Upload your product", Icon.Upload], ["site", "I have a website", "We read it for you", Icon.Search], ["none", "Neither", "We design it from your answers", Icon.Wand]].map(([id, t, s, I]) => (
+            {[["site", "My website", "We read your whole site", Icon.Search], ["photo", "A product photo", "Upload your product", Icon.Upload], ["none", "Neither", "We design it from your answers", Icon.Wand]].map(([id, t, s, I]) => (
               <button key={id} onClick={() => { setSource(id); setErr(""); }} aria-pressed={source === id}
                 className={`rounded-2xl border p-4 text-left transition ${source === id ? "border-slate-950 bg-white shadow-md ring-2 ring-slate-950" : "border-slate-200 bg-white hover:border-slate-300"}`}>
                 <I className="h-5 w-5 text-blue-600" />
@@ -317,12 +364,25 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
             <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") readSite(); }} placeholder="https://yourbrand.com" className={field} aria-label="Website link" />
-                <button onClick={readSite} disabled={reading} className={btnDark + " whitespace-nowrap"}>{reading ? "Reading…" : "Read my site"}</button>
+                <button onClick={readSite} disabled={reading} className={btnDark + " whitespace-nowrap"}>{reading ? "Reading…" : site ? "Read again" : "Read my site"}</button>
               </div>
+              {reading && <p aria-live="polite" className="mt-3 text-sm text-slate-500">{READ_STEPS[readStep]}</p>}
               {site && (
                 <div className="mt-4">
                   <p className="text-sm font-semibold text-slate-900">{site.name}</p>
                   <p className="mt-0.5 text-xs text-slate-500">{site.description}</p>
+                  {profile && (
+                    <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">What we learned{site.pages && site.pages.length > 1 ? ` from ${site.pages.length} pages` : ""}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {[profile.niche, profile.tone, profile.voice].filter(Boolean).map((x) => <span key={x} className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">{x}</span>)}
+                        {(profile.hexes || []).map((h) => <span key={h} title={h} className="h-5 w-5 rounded-full ring-1 ring-slate-200" style={{ background: h }} />)}
+                      </div>
+                      {profile.audience && <p className="mt-2 text-xs text-slate-600"><span className="font-semibold text-slate-400">For </span>{profile.audience}</p>}
+                      {profile.usps && profile.usps.length > 0 && <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs text-slate-600">{profile.usps.map((u) => <li key={u}>{u}</li>)}</ul>}
+                      {profile.offer && <p className="mt-2 text-xs text-slate-600"><span className="font-semibold text-slate-400">Offer on your site </span>{profile.offer}</p>}
+                    </div>
+                  )}
                   {(site.images || []).length > 0 && <p className="mt-3 text-xs font-semibold text-slate-700">Pick up to 3 photos to use in your ads</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(site.images || []).map((im) => {
@@ -352,6 +412,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
           <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Question {step + 1} of {pending.length}</p>
           <h2 className="font-display mt-1 text-2xl font-extrabold tracking-[-0.03em] text-slate-950">{q.label}</h2>
           {q.hint && <p className="mt-1 text-sm text-slate-500">{q.hint}</p>}
+          {known[q.id] && val(q.id) === known[q.id] && <p className="mt-1 text-xs font-semibold text-emerald-700">Filled in from your website. Change it if it is wrong.</p>}
           <div className="mt-5">
             {q.type === "text" && <input autoFocus value={val(q.id)} onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })} onKeyDown={(e) => { if (e.key === "Enter") next(); }} placeholder={q.ph} className={field} aria-label={q.label} />}
             {q.type === "area" && <textarea autoFocus rows={3} value={val(q.id)} onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })} placeholder={q.ph} className={field} aria-label={q.label} />}
@@ -369,7 +430,20 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
           <div className="mt-6 flex items-center gap-3">
             <button onClick={() => { setErr(""); if (step === 0) setPhase("source"); else setStep(step - 1); }} className={btnLight}>Back</button>
             <button onClick={next} className={btnDark}>{step + 1 === pending.length ? (video ? "Save my brief" : `Make my ads (${total} credits)`) : "Next"}</button>
+            {!video && <button onClick={() => { setErr(""); setPhase("matches"); }} className="text-sm font-semibold text-blue-700 hover:text-blue-800">Show matching templates (free)</button>}
             {q.optional && <button onClick={() => { setAnswers({ ...answers, [q.id]: "" }); setErr(""); if (step + 1 < pending.length) setStep(step + 1); else finish(); }} className="text-sm font-semibold text-slate-500 hover:text-slate-900">Skip</button>}
+          </div>
+        </div>
+      )}
+
+      {phase === "matches" && (
+        <div>
+          <Matches answers={{ niche: val("niche"), sells: val("sells"), offer: val("offer"), brand: val("brand") }}
+            photos={source === "photo" ? files.map((f) => ({ src: f.src, name: "Product photo" })) : []}
+            onUse={onUseTemplate} onBrowse={onBrowse} />
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button onClick={() => setPhase(ads.length ? "done" : "questions")} className={btnLight}>Back</button>
+            <button onClick={restart} className={btnLight}>Start over</button>
           </div>
         </div>
       )}
@@ -378,13 +452,13 @@ export function GuidedView({ kind = "static", notify, credits, onSpend }) {
         <div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-[26px] font-extrabold tracking-[-0.03em] text-slate-950">{phase === "making" ? "Making your ads" : "Your ads"}</h2>
-            {phase === "done" && <button onClick={restart} className={btnLight}>Make another set</button>}
+            {phase === "done" && <div className="flex gap-2"><button onClick={() => setPhase("matches")} className={btnLight}>Start from a template</button><button onClick={restart} className={btnLight}>Make another set</button></div>}
           </div>
           {status && <p aria-live="polite" className="mt-1 text-sm text-slate-500">{status}</p>}
           {err && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{err}</p>}
           {phase === "making" && !ads.length && <div className="mt-10"><Spinner /></div>}
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
-            {ads.filter((v) => !v.held).map((v) => <AdCard key={v.i} v={v} busy={!!busy[v.i]} unit={unit} onDownload={download} onChange={change} onRetry={retry} onCopy={copyText} />)}
+            {ads.filter((v) => !v.held).map((v) => <AdCard key={v.i} v={v} busy={!!busy[v.i]} unit={unit} onDownload={download} onMeta={addToMeta} onChange={change} onRetry={retry} onCopy={copyText} />)}
           </div>
           {phase === "done" && ads.some((v) => v.held) && <p className="mt-4 text-sm text-slate-500">{ads.filter((v) => v.held).length} ad{ads.filter((v) => v.held).length > 1 ? "s were" : " was"} held back because {ads.filter((v) => v.held).length > 1 ? "they" : "it"} scored under {PASS_SCORE}/100 after a remake. We only hand over ads that pass.</p>}
         </div>

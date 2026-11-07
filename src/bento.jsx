@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { TEMPLATES } from "./data";
-import { Icon, TemplateImage } from "./ui";
+import { Icon, Mascot, TemplateImage } from "./ui";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
 import { FEATURED_TOP } from "./featuredOrder.js";
 import { STOP, stem, hits } from "./searchTags.js";
@@ -12,7 +12,6 @@ import SplitText from "./components/bits/SplitText/SplitText.jsx";
 
 const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 const COUNT = TEMPLATES.length;
-const NICHES = new Set(TEMPLATES.map((t) => t.category)).size;
 const RANK = new Map(FEATURED_TOP.map((id, i) => [id, i]));
 // The carousel is the top of the Featured order: my best generated ads (see featuredOrder.js).
 const BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
@@ -33,6 +32,7 @@ const isCreative = (f) => !!f && /^(image|video)\//.test(f.type);
 // What each mode asks for (typed out as the placeholder) and what its button says.
 const MODES = [
   { id: "search", label: "Search templates", go: "Search", hints: [`Search ${COUNT} templates...`, "sneaker sale poster", "skincare, before and after", "black friday offer", "pet food"] },
+  { id: "create", label: "Create a static ad", go: "Start", hints: ["What do you sell? e.g. a vitamin C serum", "e.g. kids' winter gloves", "e.g. handmade candles"] },
   { id: "examine", label: "Examine Ad", go: "Run Diagnosis", hints: ["Paste your ad's headline or copy, or drop the creative to examine...", "Paste a screenshot of your ad...", "Upload an image or a video thumbnail..."] },
   { id: "spy", label: "Competitor Analysis", go: "Spy on Brand", hints: ["Enter a competitor domain, e.g. gymshark.com", "glossier.com", "Or just a brand name..."] },
   { id: "drop", label: "30-Day Drop", go: "Build My Drop", hints: ["Paste a store URL to plan 30 days of posts...", "https://yourstore.com"] },
@@ -41,10 +41,10 @@ const MODES = [
 const looksLikeSite = (s) => /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(s);
 
 const TILES = [
+  { id: "create", title: "Create an Ad", text: "Answer a few questions. We find the ads that fit your niche and offer and put your product in the one you pick." },
   { id: "examine", title: "Examine an Ad", text: "10-pillar creative audit (Hook, Offer, CTA) with prescription fixes." },
   { id: "spy", title: "Competitor Analysis", text: "Enter any domain to see active ads, top products & promos." },
   { id: "drop", title: "30-Day Drop", text: "Paste a store URL to generate 30 ready-to-post monthly creatives." },
-  { id: "gallery", title: `${COUNT} Ad Presets`, text: `Browse proven static & video formats across ${NICHES} niches.` },
 ];
 
 /* The placeholder types itself out, holds, then rubs out for the next example. It only runs while the box is empty. */
@@ -69,7 +69,7 @@ function useTyped(lines, on) {
 
 /* The composer, built like a search engine: one pill, type, pick what it should do in the chips under it, press Enter.
    In "Search templates" mode the matching ads drop down as you type. */
-function Composer({ onExamine, onSpy, onPack, onBrowse, onPick }) {
+function Composer({ onCreate, onExamine, onSpy, onPack, onBrowse, onPick }) {
   const [mode, setMode] = useState("search");
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
@@ -92,6 +92,7 @@ function Composer({ onExamine, onSpy, onPack, onBrowse, onPick }) {
   const submit = () => {
     const t = text.trim();
     if (mode === "search") { if (found[act]) onPick(found[act]); else onBrowse(t); }
+    else if (mode === "create") onCreate(t);
     else if (mode === "examine") { if (!file && looksLikeSite(t)) onSpy(t); else onExamine(file || undefined, t); }
     else if (mode === "spy") onSpy(t);
     else onPack(t);
@@ -123,14 +124,14 @@ function Composer({ onExamine, onSpy, onPack, onBrowse, onPick }) {
           onDrop={(e) => { e.preventDefault(); setOver(false); attach(e.dataTransfer.files && e.dataTransfer.files[0]); }}
           className={`flex h-14 items-center gap-2 border bg-white pl-5 pr-2 text-left shadow-[0_6px_24px_rgba(0,0,0,0.07)] transition focus-within:shadow-[0_8px_30px_rgba(0,0,0,0.12)] ${showList && found.length ? "rounded-t-[28px] border-b-transparent" : "rounded-full"} ${over ? "border-blue-500" : "border-[#DADCE0] focus-within:border-[#111]"}`}
         >
-          <Icon.Search className="h-5 w-5 shrink-0 text-[#888]" />
+          <Icon.Search className="h-5 w-5 shrink-0 text-[#666]" />
           <input
             ref={field} type="text" value={text} autoComplete="off" spellCheck="false"
             onChange={(e) => { setText(e.target.value); setOpen(true); setAct(-1); }}
             onFocus={() => setOpen(true)} onKeyDown={onKey}
             placeholder={typed} aria-label={m.label}
             role="combobox" aria-expanded={showList && found.length > 0} aria-controls="home-suggest" aria-autocomplete="list" aria-activedescendant={act >= 0 ? `home-suggest-${act}` : undefined}
-            className="h-full min-w-0 flex-1 bg-transparent text-base text-[#111] placeholder:text-[#999] focus:outline-none sm:text-[16px]"
+            className="h-full min-w-0 flex-1 bg-transparent text-base text-[#111] placeholder:text-[#666] focus:outline-none sm:text-[16px]"
           />
           {mode === "examine" && (
             <>
@@ -148,7 +149,7 @@ function Composer({ onExamine, onSpy, onPack, onBrowse, onPick }) {
             </>
           )}
           {text && (
-            <button type="button" onClick={() => { setText(""); setAct(-1); field.current && field.current.focus(); }} aria-label="Clear" className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#888] hover:bg-[#F4F4F4] hover:text-[#111] ${ring}`}><Icon.Close className="h-4 w-4" /></button>
+            <button type="button" onClick={() => { setText(""); setAct(-1); field.current && field.current.focus(); }} aria-label="Clear" className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[#666] hover:bg-[#F4F4F4] hover:text-[#111] ${ring}`}><Icon.Close className="h-4 w-4" /></button>
           )}
           <button type="button" onClick={submit} className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#111] px-4 text-[13px] font-semibold text-white transition hover:bg-black active:scale-95 ${ring}`}>
             {m.go} <span aria-hidden="true" className="hidden opacity-70 sm:inline">↵</span>
@@ -167,15 +168,15 @@ function Composer({ onExamine, onSpy, onPack, onBrowse, onPick }) {
                   <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-11 w-9 shrink-0 rounded-md bg-[#F6F6F6] object-cover" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-[#111]">{t.title}</span>
-                    <span className="block truncate text-xs text-[#888]">{t.label}</span>
+                    <span className="block truncate text-xs text-[#666]">{t.label}</span>
                   </span>
-                  <span aria-hidden="true" className="text-xs font-semibold text-[#888]">Use →</span>
+                  <span aria-hidden="true" className="text-xs font-semibold text-[#666]">Use →</span>
                 </button>
               </li>
             ))}
             <li>
               <button type="button" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onClick={() => onBrowse(text.trim())} className="flex w-full items-center gap-3 px-5 py-2 text-left text-sm font-medium text-[#444] hover:bg-[#F4F4F5]">
-                <Icon.Search className="h-4 w-4 text-[#888]" /> See all results for “{text.trim()}”
+                <Icon.Search className="h-4 w-4 text-[#666]" /> See all results for “{text.trim()}”
               </button>
             </li>
           </ul>
@@ -232,7 +233,7 @@ function Stream({ onPick }) {
               <span className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
                 {["Hook", "Offer", "CTA"].map((k, j) => (
                   <span key={k} className="xray-chip inline-flex items-center gap-1.5 rounded-full bg-white py-0.5 pl-0.5 pr-2 text-[10px] font-semibold text-[#111] shadow-[0_2px_8px_rgba(0,0,0,.18)]" style={{ "--i": j }}>
-                    <span className="grid h-4 w-4 place-items-center rounded-full bg-emerald-500 text-white"><Icon.Check className="h-2.5 w-2.5" /></span>{k}
+                    <span className="grid h-4 w-4 place-items-center rounded-full bg-blue-600 text-white"><Icon.Check className="h-2.5 w-2.5" /></span>{k}
                   </span>
                 ))}
               </span>
@@ -247,25 +248,29 @@ function Stream({ onPick }) {
   );
 }
 
-export function Bento({ onExamine, onSpy, onPack, onBrowse, onPick }) {
-  const go = { examine: () => onExamine(), spy: () => onSpy(""), drop: () => onPack(""), gallery: () => onBrowse("") };
+export function Bento({ onCreate, onExamine, onSpy, onPack, onBrowse, onPick }) {
+  const go = { create: () => onCreate(""), examine: () => onExamine(), spy: () => onSpy(""), drop: () => onPack("") };
   return (
     <section aria-label="Home" className="flex flex-col gap-[72px] pt-10 sm:pt-14">
       <div className="text-center">
-        <div><p className="hero-up inline-flex rounded-full border border-[#E4E4E7] bg-white px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#666]">{COUNT} Presets · Instant Ad X-Ray · Competitor Analysis</p></div>
+        <div className="hero-up"><Mascot pose="wave" className="mascot-bob mx-auto mb-3 h-24 sm:h-28" /></div>
+        <div><p className="hero-up inline-flex rounded-full border border-[#E4E4E7] bg-white px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#666]">Create an Ad · {COUNT} Templates · Ad X-Ray · Competitor Analysis</p></div>
         {/* React Bits SplitText: the words rise out of a mask as the page opens. */}
         <SplitText
-          tag="h1" text="Pick a look, examine an ad, or spy on any brand." splitType="words" effect="rise" mask delay={45} duration={0.9} textAlign="center"
+          tag="h1" text="Tell us what you sell. We'll make the ad." splitType="words" effect="rise" mask delay={45} duration={0.9} textAlign="center"
           className="font-display mx-auto mt-5 max-w-[22ch] text-[28px] font-extrabold leading-[1.12] tracking-[-0.035em] text-[#111] sm:max-w-none sm:text-[36px]"
         />
-        <p className="hero-up mx-auto mt-2 max-w-xl text-[15px] text-[#666]" style={{ "--d": "200ms" }}>Drop a store URL or creative. No prompt, no brief—just proven direct-response ads and instant diagnostics.</p>
-        <div className="mt-7"><Composer onExamine={onExamine} onSpy={onSpy} onPack={onPack} onBrowse={onBrowse} onPick={onPick} /></div>
+        <p className="hero-up mx-auto mt-2 max-w-xl text-[15px] text-[#666]" style={{ "--d": "200ms" }}>Answer a few questions about your niche, product and offer. We find the ads that fit and put your product in the one you pick.</p>
+        <div className="mt-7"><Composer onCreate={onCreate} onExamine={onExamine} onSpy={onSpy} onPack={onPack} onBrowse={onBrowse} onPick={onPick} /></div>
       </div>
 
-      <Stream onPick={onPick} />
+      <div className="-mt-12 text-center">
+        <p className="text-[13px] text-[#666]">Or start from a template. Tap one to put your product in it.</p>
+        <Stream onPick={onPick} />
+      </div>
 
       <div className="hero-up pb-4 text-center" style={{ "--d": "520ms" }}>
-        <p className="mb-4 text-[13px] text-[#888]">Every tool in one clinic — jump straight into a workflow</p>
+        <p className="mb-4 text-[13px] text-[#666]">Every tool in one clinic — jump straight into a workflow</p>
         <ul role="list" className="mx-auto grid max-w-[980px] gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
           {TILES.map((t) => (
             <li key={t.id}>

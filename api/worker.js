@@ -557,6 +557,66 @@ Return ONLY JSON: {"name":"brand or store name","description":"2-3 plain sentenc
   };
 }
 
+/* ------------------------ Reading a whole brand website ------------------------ */
+// Create an ad starts here: one pasted link, then several pages of that site (home, about, shop, FAQ, reviews, offers)
+// are read into a brand profile, so the questions that follow are answered for the customer and the ads are written for this brand.
+const BRAND_PAGES = [[/about|our-?story|story|mission|why-|who-we/i, 5], [/collection|shop|product|best-?sell|catalog/i, 4], [/review|testimonial|results|press/i, 3], [/sale|offer|deal|gift|bundle/i, 3], [/faq|help|shipping|returns/i, 2]];
+function sitePages(html, u) {
+  const host = (h) => h.replace(/^www\./, "");
+  const seen = new Set([u.pathname.replace(/\/$/, "") || "/"]), out = [];
+  for (const m of html.matchAll(/<a\b[^>]*\bhref=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    let a; try { a = new URL(m[1], u); } catch (e) { continue; }
+    if (!/^https?:$/.test(a.protocol) || host(a.hostname) !== host(u.hostname)) continue;
+    const path = a.pathname.replace(/\/$/, "") || "/";
+    if (seen.has(path) || /\.(jpe?g|png|gif|webp|pdf|svg|css|js)$/i.test(path) || /cart|account|login|checkout|policy|policies|privacy|terms|cdn-cgi|wp-admin|wp-json/i.test(path)) continue;
+    const text = plain(m[2]).slice(0, 60);
+    let score = 0;
+    for (const [re, w] of BRAND_PAGES) if (re.test(path) || re.test(text)) score = Math.max(score, w);
+    if (!score) continue;
+    seen.add(path); out.push({ href: a.origin + a.pathname, score, text });
+  }
+  return out.sort((x, y) => y.score - x.score).slice(0, 5);
+}
+// The colours the page's own code uses most, ignoring white, black and greys, as hints for the colour words.
+function pageHexes(html) {
+  const n = {};
+  for (const m of html.matchAll(/#([0-9a-f]{6})\b/gi)) n[m[1].toLowerCase()] = (n[m[1].toLowerCase()] || 0) + 1;
+  const sat = (h) => { const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16); return Math.max(r, g, b) - Math.min(r, g, b); };
+  return Object.entries(n).filter(([h]) => sat(h) > 28).sort((x, y) => y[1] - x[1]).slice(0, 4).map(([h]) => "#" + h);
+}
+async function readBrand(env, b) {
+  const u = safeUrl(b.url);
+  let store;
+  try { store = await readStore(u); } catch (e) { throw new Error(e.message && /address|web/.test(e.message) ? e.message : "We could not read that site. You can answer the questions by hand instead."); }
+  let html = "";
+  try { html = await getText(u.href, 900000); } catch (e) { /* the store reading above already holds this page's text */ }
+  const links = html ? sitePages(html, u) : [];
+  const more = (await Promise.allSettled(links.map(async (l) => {
+    const h = await getText(l.href, 500000);
+    return { url: l.href, title: clip(metaOf(h, "og:title") || (h.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || l.text, 90), text: clip(plain(h), 1800) };
+  }))).filter((r) => r.status === "fulfilled").map((r) => r.value);
+  if (!store.images.length && !store.text.trim() && !more.length) throw new Error("We could not find anything to read on that page. Try your home page link, or answer the questions by hand.");
+  const list = (v, n) => (Array.isArray(v) ? v : []).slice(0, n);
+  const niches = list(b.niches, 40).map((x) => clip(x, 40)), tones = list(b.tones, 8).map((x) => clip(x, 40));
+  const shots = await loadRefs(store.images.slice(0, 3).map((i) => ({ url: i.url })), 3).catch(() => []);
+  const hexes = pageHexes(html), themeColor = html ? metaOf(html, "theme-color") : "";
+  const data = [`HOME PAGE (${u.hostname}): ${clip(store.text, 2800)}`, ...more.map((p) => `PAGE "${p.title}" (${new URL(p.url).pathname}): ${p.text}`)].join("\n\n");
+  const o = await askClaude(env, [...shots.map((x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } })), { type: "text", text: `You are a brand strategist reading a company's website so a creative director can make ads for it. Below is the text of its pages${shots.length ? " and the first product photos" : ""}.
+${data}
+${hexes.length || themeColor ? `Colours used in the page code: ${[themeColor, ...hexes].filter(Boolean).join(", ")}.` : ""}
+Use ONLY what is in the data. Never invent facts, numbers, reviews or offers.
+Return ONLY JSON: {"name":"brand name","sells":"1-2 plain sentences: what they sell and what stands out","niche":"the ONE best match from this list, exactly as written, or empty string: ${niches.join(" | ")}","audience":"who it is for, one line, only if the pages show or strongly imply it, else empty string","tone":"the ONE closest from this list, exactly as written, or empty string: ${tones.join(" | ")}","offer":"an offer or promotion that is written on the pages right now, in its exact words, short, else empty string","usps":["up to 4 short real selling points taken from the pages"],"products":["up to 6 product or range names"],"voice":"3-6 words on how the brand writes (for example: dry, warm, technical)","palette":"3-4 colour words for the brand's look, from the colours and photos","look":"1-2 sentences on the visual style of the brand's photos and design","language":"the language of the site"}. Inside strings use single quotes, never double quotes.` }], 1400).catch(() => ({}));
+  const arr = (v, n, m) => list(v, n).map((x) => clip(x, m)).filter(Boolean);
+  return {
+    name: clip(o.name || store.name, 80),
+    description: clip(o.sells || store.text.split("\n")[0], 600),
+    niche: niches.includes(o.niche) ? o.niche : "", audience: clip(o.audience, 160), tone: tones.includes(o.tone) ? o.tone : "",
+    offer: clip(o.offer, 80), usps: arr(o.usps, 4, 120), products: arr(o.products, 6, 60), voice: clip(o.voice, 60), palette: clip(o.palette, 100), look: clip(o.look, 300), language: clip(o.language, 30),
+    hexes, images: store.images.slice(0, 12).map((i) => ({ url: i.url, label: i.label })), source: store.source,
+    pages: [{ url: u.href, title: clip(store.name, 90) || u.hostname }, ...more.map((p) => ({ url: p.url, title: p.title }))],
+  };
+}
+
 function b64(buf) { const a = new Uint8Array(buf); let s = ""; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); }
 async function loadRef(r, hostOk) {
   if (r && r.data) {
@@ -705,7 +765,7 @@ async function geminiImage(env, parts, quality, ratio) {
 // How any words in an ad must look: made as part of the picture, never a flat caption laid over it.
 const NATIVE_TEXT = `TEXT MUST LOOK NATIVE. The words must look like they were really there when the photo was taken, never like a layer added in an editor. If the old text was printed on a product (a can, bottle, box, bag, label, sign, screen), print the new words on that product itself as part of its real design: following its curve and perspective, lit by the same light, with the same gloss, reflections, shadows and surface texture, and the real printing method of that product (foil, ink, emboss, metallic, matte). If the old text was a headline in the scene, set it with the same depth, lighting and perspective as the old one. The lettering itself must be designed like a top packaging and advertising designer would for this exact product and its audience: pick the typeface style, weight, width, spacing and finish that fit it. For an energy or sports drink use aggressive, bold, condensed, sharp-edged lettering with energy and metallic or gradient highlights; for skincare, tea or luxury use refined, elegant lettering; for kids or sweets use playful lettering; and so on. Never default to a plain basic sans-serif. Spell every word exactly as given, crisp and fully readable, and keep a strong, balanced layout with the product's own logo or artwork.`;
 
-const PRODUCT_TRUTH = (n) => `The ${n > 1 ? "other " + n + " images show" : "other image shows"} the REAL product${n > 1 ? " from different angles or in different colours" : ""}. ${n > 1 ? "They are" : "It is"} the only source of truth for the product: reproduce it exactly, with the same shape, material, colour, logo, artwork and text, in the same position and size. Do not add, invent, move, restyle or remove any print, logo, label or detail. A side of the product that the ${n > 1 ? "photos do" : "photo does"} not show stays plain.`;
+const PRODUCT_TRUTH = (n) => `The ${n > 1 ? "other " + n + " images show" : "other image shows"} the REAL product${n > 1 ? " from different angles or in different colours" : ""}. ${n > 1 ? "They are" : "It is"} the only source of truth for the product: reproduce it exactly, with the same shape, material, colour, logo, artwork and text, in the same position and size. SIZE OF DETAILS: every print, logo, emblem, label and stitch keeps the same size relative to the whole product as in the photo (a small chest print is a small fraction of the garment's width, so it stays small); when the product appears smaller in the advert than in the photo, its details shrink by the same amount. Never enlarge a detail to make it easier to see. Do not add, invent, move, restyle or remove any print, logo, label or detail. A side of the product that the ${n > 1 ? "photos do" : "photo does"} not show stays plain.`;
 
 // Inspired ads: a text model first reads the reference and the customer's product, and writes down the ad format to keep
 // and, if the reference has words on it, the new wording for this product. The image model then follows that plan.
@@ -750,28 +810,71 @@ Return ONLY JSON: {"thinking":"two short sentences","instruction":"one paragraph
   return t ? t + " Keep every other element exactly as it is, in the same size and place." : "";
 }
 
+// Measures the real product from its own photos, as a share of the product's width (the same at any scale), so the image editor
+// gets numbers instead of guessing how big a print or logo is. Small fast model; the caller gives up on it after a few seconds.
+async function measureProduct(env, refs) {
+  const fast = Object.assign(Object.create(env), { MODEL: env.FAST_MODEL || "claude-haiku-5-5" });
+  const o = await askClaude(fast, [
+    ...refs.map((x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } })),
+    { type: "text", text: `These photos show one real product. For every print, logo, emblem, label, patch or pocket on it, give its width as a percentage of the product's full width (for a garment, its width across the chest) and where it sits, for example: 'cross emblem, 7 percent of the chest width, centred, 18 percent down from the collar'. Be precise and do not round small things up.
+Return ONLY JSON: {"details":"one or two short sentences listing each detail with its percentage of the product's width and its position"}. Inside strings use single quotes, never double quotes.` },
+  ], 400);
+  const d = clip(o.details, 400).trim();
+  return d ? `\nMEASURED FROM THE CUSTOMER'S PHOTOS, follow exactly: ${d}. In the finished advert draw each detail at exactly this share of the product's width, in this place, and no bigger, however small it becomes.` : "";
+}
+
 const AD_CTAS = ["Shop Now", "Learn More", "Sign Up", "Get Offer", "Order Now", "Book Now", "Contact Us", "Download"];
-// Guided builder: the customer's answers (and what we read from their site) become three different ad concepts.
+// What a good ad is here. Written down from the best ads in the gallery and from what customers kept and threw out,
+// so every plan starts from it instead of from a generic idea of an ad.
+const AD_TASTE = `WHAT A GOOD AD IS HERE (follow this over any generic ad habit):
+- It looks like a real agency campaign, never stock art or an AI render: believable photography (film look, real places, natural light, candid or deadpan people) or a bold designed poster with ONE idea, ONE colour story and big confident lettering. If a headline is used it is set large, on a real surface or poster, not as a small caption.
+- A headline is a concept, not a slogan: short, specific, a little surprising, in the voice of the brand. Never 'Elevate your...', 'Discover...', 'Experience...', 'Unlock...', 'Shop the...', never a headline plus a generic subtitle formula.
+- The real product is large, obvious and shown properly. Shoes, bags, packaging and bottles must look desirable, never small, hidden or distorted.
+- The three ads must look like three different campaigns: different layout, different scene, different colour story. No two in the same format.
+- No buttons, no web addresses, no QR codes, no star ratings, no review quotes, no certification seals, no invented numbers, awards or claims. An offer appears only if the customer gave one.
+- No health or medical claims, no before-and-after promises, no fake app or screen mock-ups.
+- People look real and fit the audience; casting is varied, never one stereotype.`;
+
+// Guided builder: what we read from the customer's site and what they answered become three different ad concepts,
+// each built on one proven layout from the gallery (the "candidates"), so the result starts from an ad that already works.
 async function planScratch(env, b) {
-  const a = b.answers || {}, s = b.site || {};
+  const a = b.answers || {}, s = b.site || {}, p = b.profile || {};
+  const cands = (Array.isArray(b.candidates) ? b.candidates : []).slice(0, 8)
+    .map((c) => ({ id: clip(c && c.id, 60), title: clip(c && c.title, 80), label: clip(c && c.label, 40), headline: clip(c && c.headline, 90), format: clip(c && c.format, 80), shows: clip(c && c.shows, 200) })).filter((c) => c.id);
+  const urls = Array.isArray(b.candidateUrls) ? b.candidateUrls : [];
+  const items = (v) => (Array.isArray(v) ? v : []).map((x) => clip(x, 120)).filter(Boolean).join("; ");
   const facts = [
     ["Brand", a.brand || s.name], ["What they sell", a.sells || s.description], ["Offer", a.offer], ["Audience", a.audience],
-    ["Goal of the ad", a.goal], ["Tone", a.tone], ["Wording wanted", a.wording], ["Language", a.language],
+    ["Goal of the ad", a.goal], ["Tone", a.tone], ["Wording wanted", a.wording], ["Language", a.language || p.language],
+    ["Real selling points from their site", items(p.usps)], ["Their products", items(p.products)], ["How the brand writes", p.voice],
+    ["Look of the brand", [p.look, p.palette && "Colours: " + p.palette].filter(Boolean).join(" ")],
   ].filter(([, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${clip(v, 300)}`).join("\n");
   // The planner must see the real product, or it designs around whatever the business text mentions.
   const shots = await loadRefs([...(Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), ...(Array.isArray(b.refUrls) ? b.refUrls : []).map((url) => ({ url }))], 3).catch(() => []);
-  const o = await askClaude(env, [...shots.map((x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } })), { type: "text", text: `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads from scratch for one business. Write exactly 3 concepts. Each uses a clearly different angle (for example the problem it solves, the result you get, social proof or proof of quality, the offer itself, a lifestyle moment) and a different scene.
+  const seen = await Promise.all(cands.map((c, i) => (urls[i] ? loadRef({ url: urls[i] }).catch(() => null) : null)));
+  const img = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
+  const candBlock = cands.map((c, i) => [{ type: "text", text: `CANDIDATE LAYOUT id "${c.id}": ${c.title} (${c.label}). Format: ${c.format || "n/a"}. Headline: "${c.headline}". ${c.shows}` }, ...(seen[i] ? [img(seen[i])] : [])]).flat();
+  const o = await askClaude(env, [
+    ...(shots.length ? [{ type: "text", text: "THE CUSTOMER'S REAL PRODUCT PHOTOS:" }, ...shots.map(img)] : []),
+    ...(candBlock.length ? [{ type: "text", text: "PROVEN LAYOUTS from our best-performing gallery, to choose from:" }, ...candBlock] : []),
+    { type: "text", text: `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads for one business. Write exactly 3 concepts. Each uses a clearly different angle (for example the problem it solves, the result you get, proof of quality, the offer itself, a lifestyle moment) and a clearly different scene and layout.
 THE BUSINESS
 ${facts}
 ${shots.length ? "The attached photos show the REAL product to advertise. Study them first. Advertise ONLY what is visible in them and ignore any other product the business text mentions. Every scene must feature that exact product, and \"product\" must describe it exactly as seen: type, colour, print or logo, and any text on it." : "No product photo exists, so design the visual around the idea and do not claim to show the real product."}
-Rules: use only the facts above. ${a.offer ? "The offer may appear in the ad exactly as given." : "There is NO offer: print no discount, price, free shipping or deadline anywhere."} No invented numbers, ratings, awards or testimonials. Headlines are short (max 8 words), believable and in the language given, or the language of the brand.
-Return ONLY JSON: {"concepts":[{"product":"the product exactly as it looks in the photos, or empty string when there are none","title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.` }], 2400);
+${AD_TASTE}
+${cands.length ? `LAYOUTS: give each concept a different candidate in "templateId", the one whose layout carries that concept best (judge by the kind of product, whether it is worn, held or packaged, whether an offer exists, and the tone). The candidate is only a proven layout and mood: never reuse its product, its wording or its brand name. Three different candidates with clearly different kinds of layout. If none fits a concept, use an empty string.` : ""}
+Rules: use only the facts above. ${a.offer ? "The offer may appear in the ad exactly as given." : "There is NO offer: print no discount, price, free shipping or deadline anywhere."} No invented numbers, ratings, awards or testimonials. Headlines are short (max 8 words), written in the brand's own voice and language.
+Return ONLY JSON: {"concepts":[{"templateId":"one candidate id exactly as written, or empty string","product":"the product exactly as it looks in the photos, or empty string when there are none","title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.` },
+  ], 2800);
   const list = (Array.isArray(o.concepts) ? o.concepts : []).slice(0, 3);
   if (list.length < 3) throw new Error("We could not plan the ads. Try again.");
+  const used = new Set();
   return { concepts: list.map((c) => {
     const k = c.copy && typeof c.copy === "object" ? c.copy : {};
+    const tid = cands.some((x) => x.id === c.templateId) && !used.has(c.templateId) ? c.templateId : "";
+    if (tid) used.add(tid);
     return {
-      product: clip(c.product, 300), title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700),
+      templateId: tid, product: clip(c.product, 300), title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700),
       copy: { primary: clip(k.primary, 320), headline: clip(k.headline, 60), description: clip(k.description, 50), cta: AD_CTAS.find((x) => x.toLowerCase() === String(k.cta || "").trim().toLowerCase()) || "Learn More" },
     };
   }) };
@@ -780,12 +883,12 @@ Return ONLY JSON: {"concepts":[{"product":"the product exactly as it looks in th
 async function makeAd(env, b) {
   const ratio = RATIOS.includes(b.ratio) ? b.ratio : "4:5";   // video templates are full-height frames, so the whole person stays in the picture
   const refs = await loadRefs((Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), 3);
+  // Photos from the customer's website arrive as links; each hop is checked by loadRef/safeUrl.
+  if (refs.length < 3 && Array.isArray(b.refUrls) && b.refUrls.length) refs.push(...await loadRefs(b.refUrls.map((url) => ({ url })), 3 - refs.length));
   if (b.mode === "scratch") {
     // A tailor-made ad: no template, only the concept written for this customer and (if any) their product photos.
     const c = b.concept || {}, a = b.answers || {};
-    // Photos from the customer's website arrive as links; each hop is checked by loadRef/safeUrl.
-    if (refs.length < 3 && Array.isArray(b.refUrls)) refs.push(...await loadRefs(b.refUrls.map((url) => ({ url })), 3 - refs.length));
-    const head = clip(c.headline, 90).trim(), sub = clip(c.sub, 120).trim();
+    const head =clip(c.headline, 90).trim(), sub = clip(c.sub, 120).trim();
     const words = head
       ? `Put this headline in the advert, spelled exactly as written, readable with strong contrast and generous margins: "${head}". ${NATIVE_TEXT}${sub ? ` Under it, smaller, exactly: "${sub}".` : ""} Write nothing else anywhere, apart from what is on the product itself.`
       : "No headline, caption, watermark or added logo. The only lettering allowed is what is on the product itself.";
@@ -795,6 +898,21 @@ ${c.product ? `The product, as in the photos: ${clip(c.product, 300)}. ` : ""}Co
 ${refs.length ? PRODUCT_TRUTH(refs.length) + " Show the real product clearly and fully in frame." : "There is no product photo, so do not invent a specific branded product, logo or packaging; let the idea and the scene carry the ad."}
 People, if any, look real with natural hands and faces. ${PHOTO_DIRECTION}${a.offer ? `The offer may be shown exactly as written, spelled exactly: "${clip(a.offer, 80)}".` : "Show no discount, price or offer anywhere."}
 ${words}` }], b.quality, ratio);
+  }
+  if (b.mode === "brand") {
+    // A finished template ad carries a made-up brand; the customer's brand replaces it and nothing else changes.
+    if (!b.template) throw new Error("template required");
+    const style = await loadRef({ data: b.template });
+    const from = clip(b.from, 60).trim(), to = clip(b.to, 60).trim();
+    if (!to && !refs.length) throw new Error("Add your brand name or logo first");
+    const swap = [
+      to ? `Everywhere the placeholder brand name${from ? ` "${from}"` : ""} appears (wordmarks, labels, packaging, signs, tags, sign-offs), write "${to}" instead, spelled exactly, in the same place, size, colour and lettering style.` : "",
+      refs.length ? "The second image is the customer's logo. Wherever the placeholder brand's logo or mark appears, put this logo instead, same place and size, drawn exactly as in the second image, never redrawn or restyled. Where the placeholder brand was only text, use the logo only if the text was a logo-style wordmark." : "",
+      clip(b.offer, 80).trim() ? `The offer text in the advert becomes exactly: "${clip(b.offer, 80).trim()}", same place and style, no old offer words left.` : "",
+    ].filter(Boolean).join("\n");
+    return geminiImage(env, [inline(style), ...refs.map(inline), { text: `RULE ONE, above everything else: DO NOT CHANGE THE FIRST IMAGE. It is a finished advert. This is an edit, not a new picture. Keep every person, face, hair, skin tone, pose, prop, product, background, light, colour, crop, layout and every word of text exactly as they are, and change only the brand marks described below.
+${swap}
+Nothing else may move, resize, or change. No old brand name or logo may remain anywhere. Text must be spelled exactly and stay sharp. FINAL CHECK: it must look like the first image with only the brand marks swapped; if anything else differs, redo it.` }], b.quality, ratio);
   }
   if (!refs.length && !b.resize && !b.base) throw new Error("Add a photo of your product first");   // a saved ad opened from the Vault is edited without product photos
   const headline = clip(b.headline, 90).trim(), sub = clip(b.sub, 120).trim();
@@ -837,11 +955,15 @@ ${words}` }], b.quality, ratio);
     const words = b.keepText ? "Keep every word of text in the image exactly as it is, in the same place and style."
       : headline ? `Replace ALL of the old headline text in the image (every line of it, including any second or smaller line) with this new text and nothing else: "${headline}". Use the same place, font style and weight as the old headline. None of the old words may remain anywhere in the image. Any text that is part of the customer's own photo stays as it is. ${NATIVE_TEXT}`
       : "Remove all headline and caption text from the image and leave clean background where it was.";
+    // The measuring is a bonus, never a wait: the ad goes ahead without it after 5 seconds.
+    const measured = env.ANTHROPIC_KEY && refs.length
+      ? await Promise.race([measureProduct(env, refs), new Promise((r) => setTimeout(() => r(""), 5000))]).catch(() => "")
+      : "";
     return geminiImage(env, [inline(style), ...refs.map(inline), { text: `RULE ONE, above everything else: DO NOT CHANGE THE FIRST IMAGE. This is a photo edit, not a new picture. Keep every person, face, hair style, hair texture, skin tone, body, pose, hand, prop, background, light, colour, crop and word exactly as they are, and change only the single thing described below.
 The FIRST image is a finished advert photo. EDIT it, do not recreate it. The other image${refs.length > 1 ? "s are the customer's own photos" : " is the customer's own photo"} and must be used AS THEY ARE, never redrawn, restyled, re-posed or turned into a flat-lay or cut-out. If the first image shows a picture inside it (a photo printed in a newspaper or magazine, on a screen, a poster, a card), put the customer's photo there unchanged: same person, same clothes, same background, same crop, only scaled to fit that frame. If the first image shows the product physically worn or held, replace only that product with the real product from the customer's photo. Everything else must stay pixel-for-pixel the same: the same person with the same face, hair, skin, pose and expression, the same clothes other than the product, the same background, camera angle, framing, lighting and colours. Never change the person's skin tone, ethnicity, age, face, hair colour, hair length, hair texture or hairstyle, and never swap them for someone else, even slightly. If the person has dark skin or curly hair they keep it exactly. Do not move, raise, lower, resize, crop or re-pose anything: every hand, arm, object, prop and the whole body stay in exactly the same place in the frame, and a face that is visible stays fully visible and uncovered. Treat the first image as a locked layer and only paint the new product over the old one inside the area the old product occupied.
 ${words}
-${PRODUCT_TRUTH(refs.length)}
-FINAL CHECK before you answer: the result must look like the first image with only the product area swapped. If the person, her hair, her skin tone, her pose, the newspaper position or the background differ from the first image in any way, you have failed; redo it. The customer's photo itself must look exactly like the uploaded photo.${place}${note ? `\nAbout the product: ${note}` : ""}` }], b.quality, ratio);
+${PRODUCT_TRUTH(refs.length)}${measured}
+FINAL CHECK before you answer: the result must look like the first image with only the product area swapped, and every print or logo on the product must be no larger, relative to the product, than in the customer's photo. If the person, her hair, her skin tone, her pose, the newspaper position or the background differ from the first image in any way, you have failed; redo it. The customer's photo itself must look exactly like the uploaded photo.${place}${note ? `\nAbout the product: ${note}` : ""}` }], b.quality, ratio);
   }
   let plan = null;
   if (b.mode === "inspired" && env.ANTHROPIC_KEY) plan = await planInspired(env, style, refs, note, headline, about).catch(() => null);
@@ -1212,6 +1334,46 @@ async function askClaudeSearch(env, prompt, maxTokens = 3000) {
   try { return parseLoose(text); } catch (e) { return askClaude(env, "Return the following answer as the JSON object it describes, and nothing else:\n\n" + text, maxTokens); }
 }
 
+// ---- Angle Finder: the different kinds of buyer (client avatars) and the angles that speak to each of them ----
+// The kinds are the nine in src/angles.js, so every angle already maps to a template on the page.
+const ANGLE_KINDS = {
+  offer: "a deal, bundle or discount is the reason to buy now",
+  urgency: "a real deadline or limited stock",
+  proof: "other buyers, reviews or an expert vouch for it",
+  problem: "names a pain the buyer already feels, then fixes it",
+  mechanism: "shows how or why the product works",
+  compare: "side by side with what they use now",
+  founder: "the person or story behind the product",
+  ugc: "an honest first-person try-it review",
+  new: "something new has arrived",
+};
+async function findAngles(env, b) {
+  const product = clip(b.description, 800).trim();
+  if (product.length < 8) throw bad("Say what you sell, in a sentence or two");
+  const idea = clip(b.audience, 300).trim();
+  const kinds = Object.keys(ANGLE_KINDS).map((k) => `${k} (${ANGLE_KINDS[k]})`).join("; ");
+  const prompt = `You are a direct-response ad strategist. A seller describes what they sell. Find the DIFFERENT kinds of buyer (client avatars) this can win, and for each one the best angles to speak to them.
+What they sell: ${product}
+Who the seller already thinks buys it (optional, do not just repeat it): ${idea || "(not given)"}
+
+Find 5 avatars. They must differ in WHY they buy (the moment in their life, the pain, the reason), not only in age or gender. Where it fits include one person buying for someone else, one who is sceptical or has been let down by something similar, and one who is nearly ready to buy. Give each a short human label such as "The Overwhelmed New Parent".
+For each avatar give: who (one line), situation (the moment that makes them look for this), pain (what bothers them, in their own words), desire (what they want instead), objection (what stops them buying), where (where to reach them: platform and format), and exactly 3 angles.
+Each angle has: kind, one of these ids: ${kinds}; use three different kinds for each avatar. hook, a ready-to-run ad headline under 12 words, about this product, in that avatar's voice. message, the one argument the ad makes, one sentence. visual, the one real-looking photograph the ad shows, one sentence, never an illustration.
+Rules: never invent statistics, review counts, star ratings, awards, medical or income claims, or prices; where a real number would help write [X] for the seller to fill in. No real brand names. Plain words, no jargon or hype. No hook may repeat another.
+Return ONLY JSON: {"product":"what is sold, one line","avatars":[{"name":"","who":"","situation":"","pain":"","desire":"","objection":"","where":"","angles":[{"kind":"","hook":"","message":"","visual":""}]}]}`;
+  const o = await askClaude(env, prompt, 4500);
+  const avatars = (Array.isArray(o.avatars) ? o.avatars : []).slice(0, 6).map((a) => {
+    a = a || {};
+    const angles = (Array.isArray(a.angles) ? a.angles : []).slice(0, 4).map((g) => {
+      g = g || {};
+      return { kind: ANGLE_KINDS[g.kind] ? g.kind : "problem", hook: clip(g.hook, 200), message: clip(g.message, 300), visual: clip(g.visual, 300) };
+    }).filter((g) => g.hook);
+    return { name: clip(a.name, 80), who: clip(a.who, 240), situation: clip(a.situation, 300), pain: clip(a.pain, 300), desire: clip(a.desire, 300), objection: clip(a.objection, 300), where: clip(a.where, 200), angles };
+  }).filter((a) => a.name && a.angles.length);
+  if (avatars.length < 2) throw new Error("The AI could not find clear kinds of buyer for this. Add a little more detail about the product and try again.");
+  return { product: clip(o.product, 240) || product.slice(0, 240), avatars };
+}
+
 async function findRivals(env, b) {
   const input = clip(b.brand, 200).trim();
   if (input.length < 2) throw bad("Type your brand name or paste your website");
@@ -1525,7 +1687,9 @@ function allowedOrigin(req, env) {
 //   PADDLE_WEBHOOK_SECRET   the notification destination's secret key (Paddle > Developer tools > Notifications)
 //   PADDLE_CLIENT_TOKEN     Paddle's client-side token (safe to expose)
 //   PADDLE_ENV              "sandbox" while testing, otherwise leave unset
-//   PADDLE_PRICES           JSON mapping our price keys to Paddle price ids, for example
+//   PADDLE_API_KEY          server-side API key with "Customer portal sessions: write" (Paddle > Developer tools >
+//                           Authentication); powers the Cancel plan button. Without it the page points to the receipt.
+//   PADDLE_PRICES          JSON mapping our price keys to Paddle price ids, for example
 //                           {"starter_month":"pri_..","starter_year":"pri_..","pro_month":"pri_..","pro_year":"pri_..",
 //                            "agency_month":"pri_..","agency_year":"pri_..","topup":"pri_.."}
 const billingOn = (env) => String(env.BILLING || "").toLowerCase() === "on";
@@ -1549,6 +1713,7 @@ function creditCost(path, b) {
     case "/ask": return 3;
     case "/organic": return 3;
     case "/rivals": return 3;
+    case "/angles/find": return 2;
     case "/make/ad": return premium ? 12 : 5;
     case "/make/review": return 1;
     case "/make/plan": return 2;
@@ -1556,6 +1721,7 @@ function creditCost(path, b) {
     case "/pack/image": return premium ? 12 : 5;
     case "/pack/brief": case "/pack/posts": return 2;
     case "/pack/store": case "/pack/review": return 1;
+    case "/brand/read": return 2;
     default: return 0;
   }
 }
@@ -1592,6 +1758,23 @@ async function billingRoute(env, req, u) {
     const b = await req.json().catch(() => ({}));
     await dbRpc(env, "billing_set_segment", { uid: who.id, seg: String(b.segment || "") });
     return json(env, { ok: true });
+  }
+  // A signed-in Paddle page for this account's subscription, so cancelling takes one click, like buying did.
+  if (p === "/billing/portal" && req.method === "POST") {
+    const a = await dbRpc(env, "billing_refresh", { uid: who.id });
+    if (!a.paddle_customer_id) throw Object.assign(new Error("There is no paid plan on this account."), { status: 422 });
+    const fallback = "Couldn't open the billing page. Use the link in your Paddle receipt, or email us.";
+    if (!env.PADDLE_API_KEY) throw Object.assign(new Error(fallback), { status: 502, code: "portal_unavailable" });
+    const r = await fetch(`https://${env.PADDLE_ENV === "sandbox" ? "sandbox-" : ""}api.paddle.com/customers/${encodeURIComponent(a.paddle_customer_id)}/portal-sessions`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + env.PADDLE_API_KEY, "content-type": "application/json" },
+      body: JSON.stringify(a.paddle_subscription_id ? { subscription_ids: [a.paddle_subscription_id] } : {}),
+    });
+    const j = await r.json().catch(() => null);
+    const urls = j && j.data && j.data.urls;
+    if (!r.ok || !urls) { console.log("portal session failed", r.status, JSON.stringify(j).slice(0, 200)); throw Object.assign(new Error(fallback), { status: 502, code: "portal_unavailable" }); }
+    const sub = (urls.subscriptions || [])[0];
+    return json(env, { cancel: (sub && sub.cancel_subscription) || urls.general.overview, manage: urls.general.overview });
   }
   return json(env, { error: "not found" }, 404);
 }
@@ -1640,7 +1823,320 @@ async function paddleWebhook(env, req) {
   return json(env, { ok: true });
 }
 
+/* ------------------------------ Meta (Facebook) ads ------------------------------ */
+// A signed-in user connects Facebook once; we create their ad on Meta, always PAUSED, and only a second click turns it on.
+// The user's Meta token is stored encrypted in Supabase (supabase/meta.sql) and never leaves the Worker. The whole section is
+// off until META_APP_ID, META_APP_SECRET, META_TOKEN_KEY, META_GRAPH_VERSION, META_REDIRECT_URI and SUPABASE_SERVICE_ROLE are set.
+const META_SCOPES = "ads_management,ads_read,business_management,pages_show_list,pages_read_engagement,instagram_basic";
+// Meta's currency table: these have offset 1, so a daily budget of 50 is sent as 50, not 5000. Check the table when adding currencies.
+const META_WHOLE_UNIT = ["JPY", "KRW", "CLP", "COP", "CRC", "HUF", "ISK", "IDR", "PYG", "TWD", "VND"];
+const META_GOALS = {
+  sales: { objective: "OUTCOME_SALES", optimization: "OFFSITE_CONVERSIONS", event: "PURCHASE", cta: "SHOP_NOW" },
+  leads: { objective: "OUTCOME_LEADS", optimization: "OFFSITE_CONVERSIONS", event: "LEAD", cta: "BOOK_TRAVEL" },
+  traffic: { objective: "OUTCOME_TRAFFIC", optimization: "LANDING_PAGE_VIEWS", cta: "LEARN_MORE" },
+  aware: { objective: "OUTCOME_AWARENESS", optimization: "REACH", cta: "LEARN_MORE" },
+};
+const metaOn = (env) => !!(env.META_APP_ID && env.META_APP_SECRET && env.META_TOKEN_KEY && env.META_GRAPH_VERSION && env.META_REDIRECT_URI && env.SUPABASE_SERVICE_ROLE);
+const unb64u = (s) => Uint8Array.from(atob(String(s).replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+const metaHmac = (secret) => crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+const userError = (message, status = 422, code) => Object.assign(new Error(message), { status, ...(code ? { code } : {}) });
+
+// The state we hand Facebook and get back: user id, time, random part, then a signature. Good for ten minutes.
+async function signState(secret, uid, now = Date.now()) {
+  const body = `${uid}.${now}.${crypto.randomUUID()}`;
+  return body + "." + b64u(new Uint8Array(await crypto.subtle.sign("HMAC", await metaHmac(secret), new TextEncoder().encode(body))));
+}
+async function verifyState(secret, state, now = Date.now()) {
+  const p = String(state || "").split(".");
+  if (p.length !== 4) return null;
+  let ok = false;
+  try { ok = await crypto.subtle.verify("HMAC", await metaHmac(secret), unb64u(p[3]), new TextEncoder().encode(p.slice(0, 3).join("."))); } catch (e) { return null; }
+  const age = now - Number(p[1]);
+  return ok && age >= 0 && age <= 10 * 60000 ? p[0] : null;
+}
+// Meta's data deletion call: "signature.payload", signed with the app secret.
+async function parseSignedRequest(secret, sr) {
+  const [sig, payload] = String(sr || "").split(".");
+  if (!sig || !payload) return null;
+  try {
+    if (!(await crypto.subtle.verify("HMAC", await metaHmac(secret), unb64u(sig), new TextEncoder().encode(payload)))) return null;
+    const j = JSON.parse(new TextDecoder().decode(unb64u(payload)));
+    return j && j.user_id ? { user_id: String(j.user_id) } : null;
+  } catch (e) { return null; }
+}
+const aesKey = (keyB64) => {
+  const raw = Uint8Array.from(atob(String(keyB64 || "")), (c) => c.charCodeAt(0));
+  if (raw.length !== 32) throw new Error("META_TOKEN_KEY must be 32 random bytes in base64");
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+};
+async function encryptToken(keyB64, plain) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aesKey(keyB64), new TextEncoder().encode(plain));
+  return b64u(iv) + "." + b64u(new Uint8Array(ct));
+}
+async function decryptToken(keyB64, blob) {
+  const [iv, ct] = String(blob).split(".");
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64u(iv) }, await aesKey(keyB64), unb64u(ct)));
+}
+const toMinorUnits = (amount, currency) => Math.round(amount * (META_WHOLE_UNIT.includes(String(currency).toUpperCase()) ? 1 : 100));
+
+// The link people land on, with tracking added once.
+function metaLink(site) {
+  const u = new URL(/^https?:\/\//i.test(site) ? site : "https://" + site);
+  for (const [k, v] of [["utm_source", "meta"], ["utm_medium", "paid"], ["utm_campaign", "addoctor"]]) if (!u.searchParams.has(k)) u.searchParams.set(k, v);
+  return u.toString();
+}
+// plan = { goal, budget, adsets, ads, country (ISO-2), site, name }; ctx = { adAccountId, pageId, instagramId?, pixelId?, currency, campaignId }
+const buildCampaign = (plan, name, graphVersion) => ({
+  name, objective: META_GOALS[plan.goal].objective, status: "PAUSED", special_ad_categories: [],
+  // Newer Graph versions refuse a campaign unless it says whether ad sets share one budget.
+  ...(parseFloat(String(graphVersion || "").replace(/^v/, "")) >= 24 ? { is_adset_budget_sharing_enabled: false } : {}),
+});
+function buildAdSet(plan, ctx, i = 0) {
+  const g = META_GOALS[plan.goal];
+  return {
+    name: `${plan.name || "AdDoctor"} ad set ${i + 1}`, campaign_id: ctx.campaignId,
+    daily_budget: toMinorUnits(plan.budget / plan.adsets, ctx.currency),
+    billing_event: "IMPRESSIONS", optimization_goal: g.optimization, bid_strategy: "LOWEST_COST_WITHOUT_CAP",
+    // No placements listed means Advantage+ placements; no age or gender means Meta finds the people.
+    targeting: { geo_locations: { countries: [plan.country] }, targeting_automation: { advantage_audience: 1 } },
+    ...(g.event ? { promoted_object: { pixel_id: ctx.pixelId, custom_event_type: g.event } } : {}),
+    ...(plan.goal !== "aware" ? { destination_type: "WEBSITE" } : {}),
+    status: "PAUSED",
+  };
+}
+function buildCreative(plan, ctx, ad, imageHash) {
+  const link = metaLink(plan.site);
+  return {
+    name: ad.name || "AdDoctor ad",
+    object_story_spec: { page_id: ctx.pageId, link_data: { link, message: ad.primary || "", name: ad.headline || "", description: ad.description || "", image_hash: imageHash, call_to_action: { type: META_GOALS[plan.goal].cta, value: { link } } } },
+    ...(ctx.instagramId ? { instagram_user_id: ctx.instagramId } : {}),
+  };
+}
+
+// Meta's own error becomes one our users can read. Only code, subcode and trace id are logged, never a token.
+class MetaError extends Error {}
+function metaError(e = {}) {
+  const fbCode = Number(e.code) || 0;
+  const raw = String(e.error_user_msg || e.message || "Meta refused the request.").slice(0, 220);
+  console.log("meta error", fbCode, e.error_subcode || "", e.fbtrace_id || "");
+  let kind = "meta_error", msg = raw;
+  if (fbCode === 190) { kind = "meta_reconnect"; msg = "Your Meta connection ended. Reconnect Meta and try again."; }
+  else if (/payment|funding|billing/i.test(raw)) { kind = "meta_billing"; msg = raw + " Add a payment method under Billing in Ads Manager."; }
+  return Object.assign(new MetaError(msg), { status: 422, code: kind, fbCode, retriable: [1, 2, 4, 17, 341].includes(fbCode) });
+}
+async function metaCall(env, token, method, path, params = {}, f = fetch) {
+  const url = new URL(`https://graph.facebook.com/${env.META_GRAPH_VERSION}/${String(path).replace(/^\//, "")}`);
+  if (method === "GET") for (const [k, v] of Object.entries(params)) url.searchParams.set(k, typeof v === "string" ? v : JSON.stringify(v));
+  const r = await f(url.toString(), { method, headers: { Authorization: "Bearer " + token, ...(method === "POST" ? { "content-type": "application/json" } : {}) }, body: method === "POST" ? JSON.stringify(params) : undefined });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || j.error) throw metaError((j && j.error) || {});
+  return j;
+}
+
+/* Stored connections: supabase/meta.sql. The service role is the only reader. */
+async function metaDb(env, method, path, body, prefer, f = fetch) {
+  const r = await f(supaBase(env) + "/rest/v1/" + path, {
+    method, headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: "Bearer " + env.SUPABASE_SERVICE_ROLE, "content-type": "application/json", ...(prefer ? { Prefer: prefer } : {}) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await r.text();
+  if (!r.ok) { console.log("meta store failed", method, path.split("?")[0], r.status); throw Object.assign(new Error("Could not reach the Meta connection store. Try again."), { status: 502, dbStatus: r.status }); }
+  return text ? JSON.parse(text) : null;
+}
+const eq = encodeURIComponent;
+async function saveConnection(env, uid, c, f) {
+  await metaDb(env, "POST", "meta_connections?on_conflict=user_id", { user_id: uid, fb_user_id: c.fbUserId, token_enc: await encryptToken(env.META_TOKEN_KEY, c.token), token_expires_at: c.expiresAt, updated_at: new Date().toISOString() }, "resolution=merge-duplicates,return=minimal", f);
+}
+async function loadConnection(env, uid, f) {
+  const [row] = (await metaDb(env, "GET", `meta_connections?user_id=eq.${eq(uid)}&select=*&limit=1`, undefined, undefined, f)) || [];
+  if (!row) return null;
+  let token;
+  try { token = await decryptToken(env.META_TOKEN_KEY, row.token_enc); } catch (e) { console.log("meta token could not be decrypted"); return null; }
+  return { userId: uid, fbUserId: row.fb_user_id, token, expiresAt: row.token_expires_at, adAccountId: row.ad_account_id, pageId: row.page_id, instagramId: row.instagram_id, pixelId: row.pixel_id, currency: row.currency };
+}
+const saveSelection = (env, uid, s, f) => metaDb(env, "PATCH", `meta_connections?user_id=eq.${eq(uid)}`, { ad_account_id: s.adAccountId, page_id: s.pageId, instagram_id: s.instagramId || null, pixel_id: s.pixelId || null, currency: s.currency, updated_at: new Date().toISOString() }, "return=minimal", f);
+const deleteConnection = (env, uid, f) => metaDb(env, "DELETE", `meta_connections?user_id=eq.${eq(uid)}`, undefined, "return=minimal", f);
+// Meta's deletion call names the Facebook user, not ours. Removes every connection and launch record for them.
+async function deleteByFacebookUser(env, fbUserId, f) {
+  const rows = (await metaDb(env, "DELETE", `meta_connections?fb_user_id=eq.${eq(fbUserId)}`, undefined, "return=representation", f)) || [];
+  for (const r of rows) await metaDb(env, "DELETE", `meta_launches?user_id=eq.${eq(r.user_id)}`, undefined, "return=minimal", f);
+}
+
+/* Asking Meta what the user owns. Only active ad accounts are offered. */
+async function listAssets(env, token, f) {
+  const [accts, pages] = await Promise.all([
+    metaCall(env, token, "GET", "me/adaccounts", { fields: "name,currency,account_status", limit: 50 }, f),
+    metaCall(env, token, "GET", "me/accounts", { fields: "name,instagram_business_account{id,username}", limit: 50 }, f),
+  ]);
+  const adAccounts = (accts.data || []).filter((a) => a.account_status === 1).map((a) => ({ id: a.id, name: a.name, currency: a.currency, status: "active" }));
+  const pixels = {};
+  for (const a of adAccounts.slice(0, 10)) {
+    try { pixels[a.id] = ((await metaCall(env, token, "GET", `${a.id}/adspixels`, { fields: "name", limit: 25 }, f)).data || []).map((p) => ({ id: p.id, name: p.name })); } catch (e) { pixels[a.id] = []; }
+  }
+  return { adAccounts, pixels, pages: (pages.data || []).map((p) => ({ id: p.id, name: p.name, instagram: p.instagram_business_account ? { id: p.instagram_business_account.id, username: p.instagram_business_account.username || "" } : null })) };
+}
+async function selectAssets(env, uid, conn, body, f) {
+  const a = await listAssets(env, conn.token, f);
+  const acct = a.adAccounts.find((x) => x.id === String(body.adAccountId || ""));
+  const page = a.pages.find((x) => x.id === String(body.pageId || ""));
+  if (!acct) throw userError("That ad account is not on your Meta login.");
+  if (!page) throw userError("That Page is not on your Meta login.");
+  const ig = body.instagramId ? String(body.instagramId) : "";
+  if (ig && !(page.instagram && page.instagram.id === ig)) throw userError("That Instagram account is not linked to the Page you chose.");
+  const px = body.pixelId ? String(body.pixelId) : "";
+  if (px && !(a.pixels[acct.id] || []).some((p) => p.id === px)) throw userError("That Pixel is not on the ad account you chose.");
+  await saveSelection(env, uid, { adAccountId: acct.id, pageId: page.id, instagramId: ig, pixelId: px, currency: acct.currency }, f);
+}
+
+/* Launch: everything is created PAUSED. A failure part-way deletes the campaign again. */
+function validateLaunch(input) {
+  const p = (input && input.plan) || {}, list = Array.isArray(input && input.ads) ? input.ads : [];
+  if (p.specialCategory) throw userError("Ads about housing, credit, jobs or politics need extra steps with Meta, so AdDoctor cannot create them yet. Use Ads Manager for these.");
+  const plan = { goal: String(p.goal), budget: Number(p.budget), adsets: Math.floor(Number(p.adsets)), ads: Number(p.ads) || 0, country: String(p.country || "").toUpperCase(), site: String(p.site || ""), name: String(p.name || "").slice(0, 60) };
+  if (!META_GOALS[plan.goal]) throw userError("Choose what the ad should do first.");
+  if (!(plan.budget >= 1 && plan.budget <= 10000)) throw userError("The daily budget must be between 1 and 10000.");
+  if (!(plan.adsets >= 1 && plan.adsets <= 3)) throw userError("Use 1 to 3 ad sets.");
+  if (!/^[A-Z]{2}$/.test(plan.country)) throw userError("Choose a country.");
+  try { metaLink(plan.site); } catch (e) { throw userError("The website link does not look right."); }
+  if (!list.length || list.length > 30) throw userError("Add between 1 and 30 ads.");
+  const requestId = String((input && input.requestId) || "");
+  if (!/^[A-Za-z0-9-]{8,64}$/.test(requestId)) throw userError("Missing request id. Reload and try again.");
+  const ads = list.map((a, i) => {
+    const m = /^data:(image\/(?:png|jpeg));base64,([A-Za-z0-9+/=]+)$/.exec(String((a && a.src) || ""));
+    if (!m) throw userError(`Ad ${i + 1} must be a PNG or JPEG picture.`);
+    if (m[2].length * 0.75 > 8 * 1024 * 1024) throw userError(`Ad ${i + 1} is over 8 MB.`);
+    const t = (v, n) => String(v || "").slice(0, n);
+    return { bytes: m[2], name: t(a.name, 60) || `Ad ${i + 1}`, primary: t(a.primary, 2000), headline: t(a.headline, 100), description: t(a.description, 200) };
+  });
+  return { plan, ads, requestId };
+}
+const actOf = (id) => (String(id).startsWith("act_") ? String(id) : "act_" + id);
+
+async function launchPaused(env, conn, input, f = fetch) {
+  const { plan, ads, requestId } = validateLaunch(input);
+  if (!conn.adAccountId || !conn.pageId) throw userError("Choose your ad account and Page first.");
+  if (META_GOALS[plan.goal].event && !conn.pixelId) throw userError("Sales and leads need your Meta Pixel. Choose a Pixel, or install one first.");
+  const act = actOf(conn.adAccountId);
+  // The record goes in before the first Meta call, so a double click or a retry finds it.
+  try { await metaDb(env, "POST", "meta_launches", { request_id: requestId, user_id: conn.userId, status: "creating" }, "return=minimal", f); }
+  catch (e) {
+    if (e.dbStatus !== 409) throw e;
+    const [row] = (await metaDb(env, "GET", `meta_launches?request_id=eq.${eq(requestId)}&user_id=eq.${eq(conn.userId)}&select=status,result`, undefined, undefined, f)) || [];
+    if (!row) throw userError("That launch belongs to someone else.", 403);
+    if (row.status === "created" || row.status === "active") return row.result;
+    if (row.status === "creating") throw userError("This ad is still being created. Wait a moment.");
+    await metaDb(env, "PATCH", `meta_launches?request_id=eq.${eq(requestId)}`, { status: "creating" }, "return=minimal", f);
+  }
+  let campaignId = null;
+  try {
+    const hashes = [];
+    for (const a of ads) {
+      const img = await metaCall(env, conn.token, "POST", `${act}/adimages`, { bytes: a.bytes }, f);
+      hashes.push(Object.values(img.images || {})[0].hash);
+    }
+    const n = Math.min(plan.adsets, ads.length), p = { ...plan, adsets: n };
+    const ctx = { adAccountId: act, pageId: conn.pageId, instagramId: conn.instagramId, pixelId: conn.pixelId, currency: conn.currency };
+    const day = new Date().toISOString().slice(0, 10);
+    campaignId = (await metaCall(env, conn.token, "POST", `${act}/campaigns`, buildCampaign(p, `AdDoctor ${plan.name || plan.goal} ${day}`, env.META_GRAPH_VERSION), f)).id;
+    ctx.campaignId = campaignId;
+    const adsetIds = [], adIds = [];
+    for (let i = 0; i < n; i++) adsetIds.push((await metaCall(env, conn.token, "POST", `${act}/adsets`, buildAdSet(p, ctx, i), f)).id);
+    for (let i = 0; i < ads.length; i++) {
+      const cr = await metaCall(env, conn.token, "POST", `${act}/adcreatives`, buildCreative(p, ctx, ads[i], hashes[i]), f);
+      adIds.push((await metaCall(env, conn.token, "POST", `${act}/ads`, { name: ads[i].name, adset_id: adsetIds[i % n], creative: { creative_id: cr.id }, status: "PAUSED" }, f)).id);
+    }
+    const result = { campaignId, adsetIds, adIds, status: "PAUSED", managerUrl: `https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${act.slice(4)}&selected_campaign_ids=${campaignId}` };
+    await metaDb(env, "PATCH", `meta_launches?request_id=eq.${eq(requestId)}`, { status: "created", campaign_id: campaignId, result }, "return=minimal", f);
+    return result;
+  } catch (e) {
+    let left = false;
+    if (campaignId) { try { await metaCall(env, conn.token, "DELETE", campaignId, {}, f); } catch (x) { left = true; } }
+    try { await metaDb(env, "PATCH", `meta_launches?request_id=eq.${eq(requestId)}`, { status: "failed", campaign_id: campaignId }, "return=minimal", f); } catch (x) { /* the original error is the one to show */ }
+    if (left && e instanceof MetaError) e.message += " A paused draft may be left in Ads Manager. You can delete it there.";
+    throw e;
+  }
+}
+// Turns on only a launch this user made. Ads first, the campaign last, so nothing runs until the end.
+async function activateLaunch(env, conn, requestId, f = fetch) {
+  const [row] = (await metaDb(env, "GET", `meta_launches?request_id=eq.${eq(requestId)}&user_id=eq.${eq(conn.userId)}&select=status,result`, undefined, undefined, f)) || [];
+  if (!row || !row.result || !["created", "active"].includes(row.status)) throw userError("There is no paused ad to turn on.");
+  const r = row.result;
+  for (const id of [...r.adIds, ...r.adsetIds, r.campaignId]) await metaCall(env, conn.token, "POST", id, { status: "ACTIVE" }, f);
+  await metaDb(env, "PATCH", `meta_launches?request_id=eq.${eq(requestId)}`, { status: "active" }, "return=minimal", f);
+}
+
+const metaSite = (env) => String(env.SITE_URL || String(env.ALLOW_ORIGIN || DEFAULT_ORIGINS).split(",")[0]).trim().replace(/\/+$/, "");
+const metaBack = (env, error) => new Response(null, { status: 302, headers: { Location: `${metaSite(env)}/?${error ? "meta_error=" + error : "meta=done"}#meta` } });
+
+// Facebook sends the browser here after the login dialog. There is no sign-in header, so the user is the one inside the signed state.
+async function metaCallback(env, u, f = fetch) {
+  if (!metaOn(env)) return metaBack(env, "off");
+  const q = u.searchParams;
+  if (q.get("error")) return metaBack(env, q.get("error") === "access_denied" ? "denied" : "failed");
+  const uid = await verifyState(env.META_APP_SECRET, q.get("state"));
+  if (!uid || !q.get("code")) return metaBack(env, "state");
+  try {
+    const exchange = async (params) => {
+      const r = await f(`https://graph.facebook.com/${env.META_GRAPH_VERSION}/oauth/access_token`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ client_id: env.META_APP_ID, client_secret: env.META_APP_SECRET, ...params }).toString() });
+      const j = await r.json().catch(() => null);
+      if (!r.ok || !j || !j.access_token) { console.log("meta exchange failed", r.status, (j && j.error && j.error.code) || ""); throw new Error("exchange"); }
+      return j;
+    };
+    const short = await exchange({ redirect_uri: env.META_REDIRECT_URI, code: q.get("code") });
+    const long = await exchange({ grant_type: "fb_exchange_token", fb_exchange_token: short.access_token });
+    const me = await metaCall(env, long.access_token, "GET", "me", { fields: "id" }, f);
+    await saveConnection(env, uid, { fbUserId: me.id, token: long.access_token, expiresAt: new Date(Date.now() + (Number(long.expires_in) || 5184000) * 1000).toISOString() }, f);
+    return metaBack(env, "");
+  } catch (e) { return metaBack(env, "failed"); }
+}
+async function metaDeletion(env, req, f = fetch) {
+  if (!metaOn(env)) return json(env, { error: "not set up" }, 501);
+  const sr = new URLSearchParams(await req.text()).get("signed_request");
+  const p = await parseSignedRequest(env.META_APP_SECRET, sr);
+  if (!p) return json(env, { error: "bad request" }, 400);
+  await deleteByFacebookUser(env, p.user_id, f);
+  return json(env, { url: metaSite(env) + "/#meta", confirmation_code: crypto.randomUUID() });
+}
+
+const SELECTION = (c) => (c && c.adAccountId ? { adAccountId: c.adAccountId, pageId: c.pageId, instagramId: c.instagramId || "", pixelId: c.pixelId || "", currency: c.currency } : null);
+async function metaRoute(env, req, u, f = fetch) {
+  const p = u.pathname;
+  const who = await supaUser(env, req.headers.get("Authorization") || "");
+  if (!who) throw userError("Sign in first.", 401, "signin_required");
+  if (!metaOn(env)) return p === "/meta/status" ? json(env, { enabled: false, connected: false, expiresAt: null, selection: null }) : json(env, { error: "Connecting Meta is not set up yet.", code: "not_configured" }, 501);
+  if (p === "/meta/connect/start" && req.method === "POST") {
+    const url = new URL(`https://www.facebook.com/${env.META_GRAPH_VERSION}/dialog/oauth`);
+    for (const [k, v] of Object.entries({ client_id: env.META_APP_ID, redirect_uri: env.META_REDIRECT_URI, state: await signState(env.META_APP_SECRET, who.id), scope: META_SCOPES, response_type: "code" })) url.searchParams.set(k, v);
+    return json(env, { url: url.toString() });
+  }
+  const conn = await loadConnection(env, who.id, f);
+  const expired = !!conn && !!conn.expiresAt && Date.parse(conn.expiresAt) < Date.now();
+  if (p === "/meta/status" && req.method === "GET") return json(env, { enabled: true, connected: !!conn && !expired, expired, expiresAt: conn ? conn.expiresAt : null, selection: SELECTION(conn) });
+  if (p === "/meta/disconnect" && req.method === "POST") {
+    if (conn) { try { await metaCall(env, conn.token, "DELETE", "me/permissions", {}, f); } catch (e) { /* the token may already be dead; our copy is removed either way */ } await deleteConnection(env, who.id, f); }
+    return json(env, { ok: true });
+  }
+  if (!conn || expired) throw userError("Connect Meta first.", 422, "meta_reconnect");
+  if (p === "/meta/assets" && req.method === "GET") return json(env, await listAssets(env, conn.token, f));
+  if (p === "/meta/select" && req.method === "POST") { await selectAssets(env, who.id, conn, await req.json().catch(() => ({})), f); return json(env, { ok: true }); }
+  if (p === "/meta/launch" && req.method === "POST") {
+    if ((await bump(`meta/${who.id}/${Math.floor(Date.now() / 3600000)}`, 3600)) > 10) throw userError("That is a lot of launches in one hour. Try again later.", 429);
+    return json(env, await launchPaused(env, conn, await req.json().catch(() => ({})), f));
+  }
+  if (p === "/meta/activate" && req.method === "POST") {
+    const b = await req.json().catch(() => ({}));
+    await activateLaunch(env, conn, String(b.requestId || ""), f);
+    return json(env, { ok: true });
+  }
+  return json(env, { error: "not found" }, 404);
+}
+
 async function handle(req, rawEnv, hooks) {
+    // Meta calls these two itself: no Origin header, no sign-in header.
+    { const pu = new URL(req.url);
+      if (req.method === "GET" && pu.pathname === "/meta/callback") return metaCallback(rawEnv, pu);
+      if (req.method === "POST" && pu.pathname === "/meta/data-deletion") return metaDeletion(Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: "*" }), req); }
     if (req.method === "POST" && new URL(req.url).pathname === "/billing/webhook") return paddleWebhook(Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: "*" }), req);
     const origin = allowedOrigin(req, rawEnv);
     // json() reads ALLOW_ORIGIN for the CORS header; give it the one origin that matched.
@@ -1662,6 +2158,10 @@ async function handle(req, rawEnv, hooks) {
     if (u.pathname.startsWith("/billing/")) {
       try { return await billingRoute(env, req, u); }
       catch (e) { return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String((e && e.message) || e).slice(0, 240) }, e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500); }
+    }
+    if (u.pathname.startsWith("/meta/")) {
+      try { return await metaRoute(env, req, u); }
+      catch (e) { return json(env, e && e.code ? { error: String(e.message).slice(0, 300), code: e.code } : { error: String((e && e.message) || e).slice(0, 240) }, e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500); }
     }
     let who = null;
     if (PAID.test(u.pathname)) {
@@ -1817,9 +2317,11 @@ async function handle(req, rawEnv, hooks) {
       if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await req.json()));
       if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await req.json()));
       if (u.pathname === "/rivals" && req.method === "POST") return json(env, await findRivals(env, await req.json()));
+      if (u.pathname === "/angles/find" && req.method === "POST") return json(env, await findAngles(env, await req.json()));
       if (u.pathname === "/library" && req.method === "POST") return json(env, await winningAds(env, await req.json()));
+      if (u.pathname === "/brand/read" && req.method === "POST") return json(env, await readBrand(env, await req.json()));
       // what this server can do, so the page can offer the right way to read the Ad Library
-      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library", "spymore"] : [])] });
+      if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", "brandread", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library", "spymore"] : [])] });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
         const b = await req.json();
@@ -1856,6 +2358,9 @@ async function handle(req, rawEnv, hooks) {
       return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String(e.message || e).slice(0, 240) }, st);
     }
 }
+
+// Only tools/meta.test.mjs imports this. If Cloudflare ever refuses the paste because of it, delete this one line.
+export const metaTest = { signState, verifyState, parseSignedRequest, encryptToken, decryptToken, toMinorUnits, OBJECTIVE: META_GOALS, buildCampaign, buildAdSet, buildCreative, metaCall, saveConnection, loadConnection, saveSelection, deleteConnection, listAssets, selectAssets, launchPaused, activateLaunch, metaCallback, metaDeletion, metaRoute };
 
 export default {
   async fetch(req, rawEnv) {

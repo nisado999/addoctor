@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src",
+    "test": "node --test tools/meta.test.mjs",
     "library": "node tools/build-library.mjs"
   },
   "dependencies": {

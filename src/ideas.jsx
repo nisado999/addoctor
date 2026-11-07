@@ -21,49 +21,49 @@ const ring = "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-60
 // {p} product, {b} what it does (a verb phrase: "fades dark spots"), {o} the offer, {a} who it is for. A capital
 // letter capitalises the value. [Square brackets] are for the visitor to fill in with their own real numbers.
 const PLAYS = {
-  proof: { hue: "245, 158, 11", best: "Cold audiences", why: "People trust other buyers more than they trust the brand.", shot: "Your product beside two or three real review quotes, stars first.", hooks: [
+  proof: { best: "Cold audiences", why: "People trust other buyers more than they trust the brand.", shot: "Your product beside two or three real review quotes, stars first.", hooks: [
     "\"The first {p} that actually {b}.\" ★★★★★",
     "[X] five-star reviews later: the {p} that {b}",
     "{A} keep reordering this {p}. Here's why.",
     "\"I was sceptical. It really {b}.\"",
   ] },
-  problem: { hue: "244, 63, 94", best: "Cold audiences", why: "Naming the pain makes the right people stop scrolling.", shot: "A split frame: the problem on one side, your product fixing it on the other.", hooks: [
+  problem: { best: "Cold audiences", why: "Naming the pain makes the right people stop scrolling.", shot: "A split frame: the problem on one side, your product fixing it on the other.", hooks: [
     "Tried everything and nothing {b}? Try this.",
     "If nothing you've tried {b}, read this.",
     "Stop paying for products that promise and don't deliver.",
     "The {p} for {a} who are done with quick fixes.",
   ] },
-  mechanism: { hue: "16, 185, 129", best: "People who need a reason", why: "Showing how it works turns a claim into a reason to believe it.", shot: "A close-up of the product with three labels pointing at what makes it work.", hooks: [
+  mechanism: { best: "People who need a reason", why: "Showing how it works turns a claim into a reason to believe it.", shot: "A close-up of the product with three labels pointing at what makes it work.", hooks: [
     "How this {p} {b} (it's not what you think)",
     "The one detail that makes this {p} work",
     "Here's exactly how it {b}.",
   ] },
-  offer: { hue: "43, 89, 255", best: "Warm audiences and sales", why: "A clear deal gives people a reason to buy today instead of later.", shot: "The product front and centre, the offer in big type, styled like a receipt or price tag.", hooks: [
+  offer: { best: "Warm audiences and sales", why: "A clear deal gives people a reason to buy today instead of later.", shot: "The product front and centre, the offer in big type, styled like a receipt or price tag.", hooks: [
     "{O}: the {p} that {b}",
     "{O}. It {b}.",
     "Your new favourite {p}, now {o}",
   ] },
-  urgency: { hue: "234, 88, 12", best: "Retargeting", why: "A real deadline moves people who were already interested.", shot: "The product with an 'ends [day]' sticker or a simple countdown.", hooks: [
+  urgency: { best: "Retargeting", why: "A real deadline moves people who were already interested.", shot: "The product with an 'ends [day]' sticker or a simple countdown.", hooks: [
     "Ends [day]: {o}",
     "Last chance for {o}",
     "Only [N] left: the {p} that {b}",
   ] },
-  compare: { hue: "124, 92, 255", best: "Shoppers comparing options", why: "Side by side, your advantage is obvious in a second.", shot: "Two columns: yours against the usual kind, with ticks and crosses.", hooks: [
+  compare: { best: "Shoppers comparing options", why: "Side by side, your advantage is obvious in a second.", shot: "Two columns: yours against the usual kind, with ticks and crosses.", hooks: [
     "{P} vs. the one you're using now",
     "Others promise. This {p} {b}.",
     "Why {a} are switching to this {p}",
   ] },
-  founder: { hue: "180, 120, 80", best: "Building trust", why: "A real person behind the product makes it feel safe to try.", shot: "A short handwritten-style note next to the product, or the founder holding it.", hooks: [
+  founder: { best: "Building trust", why: "A real person behind the product makes it feel safe to try.", shot: "A short handwritten-style note next to the product, or the founder holding it.", hooks: [
     "I made this {p} because nothing else {b}.",
     "I couldn't find a {p} that {b}. So I made one.",
     "A note from the founder: why our {p} {b}",
   ] },
-  ugc: { hue: "236, 72, 153", best: "TikTok and Reels", why: "It looks like a post from a friend, not like an ad.", shot: "Phone-camera look: a hand holding the product, a caption in native text style.", hooks: [
+  ugc: { best: "TikTok and Reels", why: "It looks like a post from a friend, not like an ad.", shot: "Phone-camera look: a hand holding the product, a caption in native text style.", hooks: [
     "I tried this {p} for [time]. Here's what happened.",
     "POV: you finally found a {p} that {b}",
     "My honest take on this {p} after [time]",
   ] },
-  new: { hue: "14, 165, 233", best: "Launches", why: "New is a reason to look, even for people who already know you.", shot: "A clean hero shot on a plain backdrop with a small 'New' badge.", hooks: [
+  new: { best: "Launches", why: "New is a reason to look, even for people who already know you.", shot: "A clean hero shot on a plain backdrop with a small 'New' badge.", hooks: [
     "New: the {p} that {b}",
     "Introducing our {p}. It {b}.",
     "Just launched: {p}, made for {a}",
@@ -114,7 +114,7 @@ function evidence(ads) {
 
 // Square-bracket parts are the visitor's to fill in, so they are marked.
 const Hook = ({ text }) => text.split(/(\[[^\]]+\])/).map((part, i) => (/^\[.*\]$/.test(part)
-  ? <mark key={i} className="rounded bg-amber-100 px-0.5 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">{part}</mark>
+  ? <mark key={i} className="rounded bg-blue-100 px-0.5 text-blue-800">{part}</mark>
   : <span key={i}>{part}</span>));
 
 function IdeaCard({ id, n, seed, values, ev, kept, onKeep, onMake, onCopy }) {
@@ -128,9 +128,9 @@ function IdeaCard({ id, n, seed, values, ev, kept, onKeep, onMake, onCopy }) {
   const ad = ev && ev.top[Math.floor(r() * ev.top.length)];
   const tpl = TEMPLATES.find((t) => t.id === angle.tpl);
   return (
-    <article className="deal-in bento-soft flex flex-col overflow-hidden rounded-3xl p-5 shadow-[var(--shadow-soft)] ring-1 ring-slate-200/70" style={{ "--hue": play.hue, "--i": n }}>
+    <article className="deal-in bento-soft flex flex-col overflow-hidden rounded-3xl p-5 shadow-[var(--shadow-soft)] ring-1 ring-slate-200/70" style={{ "--hue": "43, 89, 255", "--i": n }}>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"><span className="tabular-nums" style={{ color: `rgb(${play.hue})` }}>{String(n + 1).padStart(2, "0")}</span> · {angle.label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"><span className="tabular-nums text-slate-400">{String(n + 1).padStart(2, "0")}</span> · {angle.label}</p>
         <span className="shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-[10.5px] font-semibold text-slate-600 ring-1 ring-slate-200">{play.best}</span>
       </div>
 
@@ -156,7 +156,7 @@ function IdeaCard({ id, n, seed, values, ev, kept, onKeep, onMake, onCopy }) {
           <img src={lib(ad.img)} alt={`Ad from ${ad.brand}`} width={ad.w} height={ad.h} loading="lazy" decoding="async" className="block h-auto w-full rounded-2xl" />
           <figcaption className="flex items-center gap-3 pt-3">
             <span className="min-w-0 flex-1">
-              <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Proven pattern</span>
+              <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-blue-700">Proven pattern</span>
               <span className="block truncate text-[12.5px] font-semibold text-slate-900">{ad.brand} ran this for {ad.days} days</span>
               <span className="block text-[11px] text-slate-500">Median {ev.median} days across {ev.n} {ev.n === 1 ? "ad" : "ads"} like it</span>
             </span>
@@ -247,7 +247,7 @@ export function IdeasView({ onMake, notify, active = true }) {
       </div>
 
       <div className="relative mt-4">
-        <div className="bento-field pointer-events-none absolute -inset-8 -z-10" aria-hidden="true" />
+        <div className="bento-field pointer-events-none absolute -inset-8 -z-10 max-sm:-inset-x-4" aria-hidden="true" />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {hand.map((id, n) => {
             const seed = id in s.kept ? s.kept[id] : s.seed;
@@ -261,7 +261,7 @@ export function IdeasView({ onMake, notify, active = true }) {
           <Icon.Sparkle className="h-4 w-4" />Deal a new hand
         </button>
       </div>
-      <p className="mx-auto mt-3 max-w-xl text-center text-xs leading-relaxed text-slate-500">Fill in anything in <mark className="rounded bg-amber-100 px-1 text-amber-900">[brackets]</mark> with your own real numbers. The examples are real ads that ran for a month or more; brands only keep paying for ads that work.</p>
+      <p className="mx-auto mt-3 max-w-xl text-center text-xs leading-relaxed text-slate-500">Fill in anything in <mark className="rounded bg-blue-100 px-1 text-blue-800">[brackets]</mark> with your own real numbers. The examples are real ads that ran for a month or more; brands only keep paying for ads that work.</p>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Icon } from "./ui";
-import { useBilling, openCheckout, saveSegment, PLANS, PLAN_NAME, PRO_PLANS, PRO_FEATURE, TOPUP, COSTS } from "./billing.js";
+import { useBilling, openCheckout, openCancel, saveSegment, PLANS, PLAN_NAME, PRO_PLANS, PRO_FEATURE, TOPUP, COSTS } from "./billing.js";
 import { useDialog } from "./dialog.jsx";
 import { track } from "./track.js";
 
@@ -26,23 +26,22 @@ const BEST_PCT = Math.max(...PLANS.filter((p) => p.year > 0).map(pctOf));
 
 const TIERS = {
   free: { top: "from-white", border: "border border-slate-200", accent: "text-slate-400", box: "bg-slate-100/80 ring-slate-200/70" },
+  // Two quiet colours (paper, ink) and one loud one (blue), spent only on the plan we recommend.
   starter: {
-    top: "from-lime-200 via-lime-50 dark:from-[#4b5a0c] dark:via-[#1b2108]", border: "border border-[#8DB00E] shadow-lg shadow-lime-600/20 dark:border-[#A6C41C] dark:shadow-[#E3FD2B]/10", accent: "text-lime-700 dark:text-[#E3FD2B]",
-    box: "bg-white/75 ring-lime-300 dark:bg-black/30 dark:ring-[#7d9418]/60",
-    btn: "border-2 border-[#8DB00E] bg-transparent text-lime-900 hover:bg-lime-100 dark:border-[#A6C41C] dark:text-[#E3FD2B] dark:hover:bg-[#E3FD2B]/10 shadow-none", cta: "Get Starter",
-    current: "border border-[#8DB00E] bg-lime-100 text-lime-900 dark:border-[#A6C41C] dark:bg-[#26300a] dark:text-[#E3FD2B]",
+    top: "from-white", border: "border border-slate-300", accent: "text-slate-500", box: "bg-slate-100/80 ring-slate-200/70",
+    btn: "border-2 border-slate-900 bg-transparent text-slate-900 hover:bg-slate-100 shadow-none", cta: "Get Starter",
+    current: "border border-slate-300 bg-slate-100 text-slate-900",
   },
   pro: {
-    top: "from-pink-200 via-rose-50 dark:from-[#6a1243] dark:via-[#250a19]", border: "border-2 border-[#E0207F] shadow-xl shadow-pink-600/25 dark:border-[#F02D8E] dark:shadow-[#FF2F97]/15 lg:-translate-y-2 lg:scale-[1.02]", accent: "text-pink-600 dark:text-[#FF63B5]",
-    box: "bg-white/75 ring-pink-200 dark:bg-black/30 dark:ring-[#a3205f]/60",
-    btn: "bg-[#FF2F97] text-[#0b0a09] hover:bg-[#f0208a] shadow-pink-500/40 dark:shadow-[#FF2F97]/25", cta: "Get Pro",
-    current: "border border-[#E0207F] bg-pink-100 text-pink-800 dark:border-[#F02D8E] dark:bg-[#3a0f27] dark:text-[#FF63B5]",
+    top: "from-blue-100 via-blue-50", border: "border-2 border-blue-600 shadow-xl shadow-blue-600/25 lg:-translate-y-2 lg:scale-[1.02]", accent: "text-blue-600",
+    box: "bg-white/75 ring-blue-200 dark:bg-black/30",
+    btn: "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/40", cta: "Get Pro",
+    current: "border border-blue-300 bg-blue-50 text-blue-700",
   },
   agency: {
-    top: "from-blue-200 via-sky-50 dark:from-[#1f3fa6] dark:via-[#0f1b4a]", border: "border border-blue-300 shadow-lg shadow-blue-500/20 dark:border-[#3566f0] dark:shadow-[#2C5EF4]/20", accent: "text-blue-600 dark:text-[#7f9fff]",
-    box: "bg-white/75 ring-blue-200 dark:bg-black/30 dark:ring-[#2c4cc4]/60",
-    btn: "bg-[#2C5EF4] text-white hover:bg-[#2250e0] shadow-blue-600/40", cta: "Get For Teams",
-    current: "border border-blue-300 bg-blue-50 text-blue-700 dark:border-[#3566f0] dark:bg-[#12205a] dark:text-[#9db6ff]",
+    top: "from-white", border: "border border-slate-300", accent: "text-slate-500", box: "bg-slate-100/80 ring-slate-200/70",
+    btn: "border-2 border-slate-900 bg-transparent text-slate-900 hover:bg-slate-100 shadow-none", cta: "Get For Teams",
+    current: "border border-slate-300 bg-slate-100 text-slate-900",
   },
 };
 
@@ -84,7 +83,7 @@ const FAQ = [
   ["Why is yearly Pro the better deal?", `You pay ${money(PRO.year)} instead of ${money(PRO.month * 12)} (you save ${money(saveOf(PRO))}), and every yearly payment adds ${PRO.bonus.toLocaleString("en-US")} bonus credits, about ${Math.floor(PRO.bonus / COSTS.image)} more ads. That works out to about ${cents(perMonth(PRO, true) / adsOf(PRO))} an ad.`],
   ["Do unused credits carry over?", "Plan credits renew every month and do not carry over. Top-up and bonus credits last 12 months and are used after your plan credits."],
   ["Why is Starter monthly only?", "Starter is for trying AdDoctor on one shop. If you already know you'll use it all year, Pro yearly costs less per ad and has every feature."],
-  ["Can I cancel?", "Any time, from the link in your Paddle receipt. Your plan keeps working until the end of the period you paid for."],
+  ["Can I cancel?", "Any time, with Cancel plan at the top of this page. Your plan keeps working until the end of the period you paid for."],
   ["Can I get a refund?", "Within 14 days of your first payment, if you've used fewer than 10% of its credits. The Refunds page has the details."],
   ["Who handles the payment?", "Paddle is the seller of record. Prices are in US dollars, and taxes such as VAT are added at checkout where they apply."],
 ];
@@ -125,16 +124,16 @@ function PlanCard(props) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <h3 className="text-lg font-extrabold uppercase tracking-tight text-slate-950">{p.name}</h3>
-          {y && <span className="rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">Save {pctOf(p)}%</span>}
+          {y && <span className="rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">Save {pctOf(p)}%</span>}
         </div>
-        {p.popular && <span className="shrink-0 rounded-full bg-[#FF2F97] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0b0a09] shadow-sm">Most popular</span>}
+        {p.popular && <span className="shrink-0 rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">Most popular</span>}
       </div>
       <p className="mt-1 min-h-[2.5rem] text-xs leading-snug text-slate-500">{p.who}</p>
 
       <div className="mt-3 min-h-[4.75rem]"><Price p={p} yearly={yearly} /></div>
 
       {p.bonus && (
-        <p className={`mt-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-bold ${y ? "bg-[#FF2F97] text-[#0b0a09]" : "bg-white/70 text-pink-700 ring-1 ring-pink-200"}`}>
+        <p className={`mt-2 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-bold ${y ? "bg-blue-600 text-white" : "bg-white/70 text-blue-700 ring-1 ring-blue-200"}`}>
           <Icon.Sparkle className="h-3.5 w-3.5 shrink-0" />{y ? `+${p.bonus.toLocaleString("en-US")} bonus credits included` : `Yearly adds ${p.bonus.toLocaleString("en-US")} bonus credits`}
         </p>
       )}
@@ -172,7 +171,7 @@ function Compare({ yearly }) {
             <tr className="border-b border-slate-200">
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500" scope="col"><span className="sr-only">Feature</span></th>
               {PLANS.map((p) => (
-                <th key={p.id} scope="col" className={`px-3 py-3 text-center ${p.popular ? "bg-pink-50/70 dark:bg-[#250a19]" : ""}`}>
+                <th key={p.id} scope="col" className={`px-3 py-3 text-center ${p.popular ? "bg-blue-50/70" : ""}`}>
                   <span className="block text-sm font-extrabold uppercase tracking-tight text-slate-950">{p.name}</span>
                   <span className="text-xs font-medium text-slate-500">{money(perMonth(p, yearly))}/mo</span>
                 </th>
@@ -183,7 +182,7 @@ function Compare({ yearly }) {
             {ROWS.map(([label, f]) => (
               <tr key={label} className="border-b border-slate-100 last:border-0">
                 <th scope="row" className="px-4 py-2.5 text-left font-medium text-slate-600">{label}</th>
-                {PLANS.map((p) => <td key={p.id} className={`px-3 py-2.5 text-center ${p.popular ? "bg-pink-50/70 dark:bg-[#250a19]" : ""}`}>{cell(f(p))}</td>)}
+                {PLANS.map((p) => <td key={p.id} className={`px-3 py-2.5 text-center ${p.popular ? "bg-blue-50/70" : ""}`}>{cell(f(p))}</td>)}
               </tr>
             ))}
           </tbody>
@@ -258,7 +257,7 @@ function PlanFinder({ yearly, ...buy }) {
           <p className="text-sm font-semibold text-slate-600">We recommend <span className="text-slate-950">{rec.name}</span></p>
           <p className="mt-2 max-w-xs text-center text-xs leading-relaxed text-slate-600">You'd use about {need.toLocaleString("en-US")} credits a month. {rec.name} includes {rec.credits.toLocaleString("en-US")}{over > 0 ? `, and ${topups} top-up${topups === 1 ? "" : "s"} of ${TOPUP.credits} (${money(topups * TOPUP.price)}) covers the rest.` : ", so you're covered."}</p>
           <div className={`mt-4 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl ${rec.popular ? "border-2 border-[#E0207F] dark:border-[#F02D8E]" : "border border-slate-200"}`}>
-            <h3 className="text-lg font-extrabold uppercase tracking-tight text-slate-950">{rec.name}{yearOf(rec, yearly) && <span className="ml-2 align-middle rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">Save {pctOf(rec)}%</span>}</h3>
+            <h3 className="text-lg font-extrabold uppercase tracking-tight text-slate-950">{rec.name}{yearOf(rec, yearly) && <span className="ml-2 align-middle rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">Save {pctOf(rec)}%</span>}</h3>
             <div className="mt-3 flex items-baseline justify-between text-xs"><span className="text-slate-500">Expected monthly usage</span><span className={`font-bold tabular-nums ${over > 0 ? "text-rose-600" : "text-emerald-600"}`}>{need.toLocaleString("en-US")}/{rec.credits.toLocaleString("en-US")} credits</span></div>
             <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${over > 0 ? "bg-rose-500" : "bg-emerald-500"} transition-all`} style={{ width: `${pct}%` }} /></div>
             <div className="mt-4"><Price p={rec} yearly={yearly} big={false} /></div>
@@ -276,7 +275,7 @@ function YearToggle({ yearly, setYearly }) {
       <span className={`text-xs font-semibold ${yearly ? "text-slate-500" : "text-slate-900"}`}>Monthly</span>
       <button role="switch" aria-checked={yearly} aria-label="Yearly billing" onClick={() => setYearly(!yearly)} className={`relative h-6 w-11 rounded-full transition ${ring} ${yearly ? "bg-[#2563EB]" : "bg-slate-300"}`}><span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${yearly ? "translate-x-5" : ""}`} /></button>
       <span className={`text-xs font-semibold ${yearly ? "text-slate-900" : "text-slate-500"}`}>Yearly</span>
-      <span className="rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">Save {BEST_PCT}% + bonus</span>
+      <span className="rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">Save {BEST_PCT}% + bonus</span>
     </div>
   );
 }
@@ -296,6 +295,7 @@ export default function PlansView({ user, onSignIn, notify }) {
     setBusy("");
   };
   const chooseSegment = async (id) => { try { await saveSegment(id); } catch (e) { notify("Couldn't save that. Try again."); } };
+  const cancelPlan = async () => { try { await openCancel(); } catch (e) { notify(e.message); } };
   const buy = { acct, user, busy, bill, onBuy };
 
   if (bill.ready && !bill.on) {
@@ -321,6 +321,7 @@ export default function PlansView({ user, onSignIn, notify }) {
                 {acct.status === "canceled" && <span className="ml-2 align-middle text-xs font-semibold text-amber-700">ends {date(acct.periodEnd)}</span>}
                 {acct.status === "past_due" && <span className="ml-2 align-middle text-xs font-semibold text-rose-700">payment failed</span>}
               </p>
+              {acct.plan !== "free" && acct.status !== "canceled" && <button id="plan-cancel" onClick={cancelPlan} className={`mt-1 rounded text-xs font-semibold text-slate-500 underline underline-offset-2 hover:text-slate-900 ${ring}`}>Cancel plan</button>}
             </div>
             <div className="text-right">
               <p className="text-3xl font-semibold tabular-nums text-slate-900">{acct.total}<span className="ml-1 text-sm font-medium text-slate-500">credits</span></p>
@@ -436,17 +437,17 @@ function UpgradeModal({ reason, feature, user, onSignIn, onPlans, onClose, notif
         </div>
         <div className="space-y-3 px-6 pb-6 pt-4">
           {!onPro && (
-            <div className="rounded-2xl border-2 border-[#E0207F] bg-gradient-to-b from-pink-100 via-rose-50 to-white p-4 dark:border-[#F02D8E] dark:from-[#3a0f27] dark:via-[#250a19] dark:to-[#151412]">
+            <div className="rounded-2xl border-2 border-blue-600 bg-gradient-to-b from-blue-100 via-blue-50 to-white p-4">
               <div className="flex items-baseline justify-between gap-2">
-                <p className="text-sm font-extrabold uppercase tracking-tight text-slate-950">Pro yearly <span className="ml-1 rounded-md bg-gradient-to-r from-rose-500 to-pink-500 px-1.5 py-0.5 align-middle text-[10px] text-white">Save {pctOf(PRO)}%</span></p>
+                <p className="text-sm font-extrabold uppercase tracking-tight text-slate-950">Pro yearly <span className="ml-1 rounded-md bg-blue-600 px-1.5 py-0.5 align-middle text-[10px] text-white">Save {pctOf(PRO)}%</span></p>
                 <p className="text-2xl font-extrabold tracking-tight text-slate-950">{money(perMonth(PRO, true))}<span className="text-xs font-medium text-slate-500">/mo</span></p>
               </div>
               <ul className="mt-2 space-y-1 text-[12.5px] text-slate-700">
-                <li className="flex gap-2"><Icon.Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-pink-600" />{PRO.credits} credits a month (≈ {adsOf(PRO)} ads) + {PRO.bonus.toLocaleString("en-US")} bonus credits now</li>
-                <li className="flex gap-2"><Icon.Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-pink-600" />{PRO_FEATURE.platforms}, {PRO_FEATURE.pptx}, {PRO_FEATURE.premium.toLowerCase()}</li>
-                <li className="flex gap-2"><Icon.Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-pink-600" />{money(PRO.year)} billed yearly · 14-day refund if you've used under 10%</li>
+                <li className="flex gap-2"><Icon.Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />{PRO.credits} credits a month (≈ {adsOf(PRO)} ads) + {PRO.bonus.toLocaleString("en-US")} bonus credits now</li>
+                <li className="flex gap-2"><Icon.Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />{PRO_FEATURE.platforms}, {PRO_FEATURE.pptx}, {PRO_FEATURE.premium.toLowerCase()}</li>
+                <li className="flex gap-2"><Icon.Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />{money(PRO.year)} billed yearly · 14-day refund if you've used under 10%</li>
               </ul>
-              <button onClick={() => go("pro_year")} disabled={busy === "pro_year" || !bill.on} className={`${btn} mt-3 bg-[#FF2F97] text-[#0b0a09] shadow-lg shadow-pink-500/40 hover:bg-[#f0208a]`}>{busy === "pro_year" ? "Opening…" : user ? "Get Pro yearly" : "Sign in to get Pro"}</button>
+              <button onClick={() => go("pro_year")} disabled={busy === "pro_year" || !bill.on} className={`${btn} mt-3 bg-blue-600 text-white shadow-lg shadow-blue-600/40 hover:bg-blue-700`}>{busy === "pro_year" ? "Opening…" : user ? "Get Pro yearly" : "Sign in to get Pro"}</button>
               <button onClick={() => go("pro_month")} disabled={busy === "pro_month" || !bill.on} className={`mt-2 w-full rounded text-center text-xs font-semibold text-slate-600 hover:text-slate-900 ${ring}`}>{busy === "pro_month" ? "Opening…" : `or ${money(PRO.month)} monthly`}</button>
             </div>
           )}

@@ -986,7 +986,7 @@ ${spyCompact(ads)}`;
               const locked = p !== "Meta" && proLock;
               return (
                 <button key={p} type="button" onClick={() => (locked ? askUpgrade("pro_only", "platforms") : setPlatform(p))} aria-pressed={platform === p} aria-label={locked ? `${p} (Pro)` : undefined} className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition ${platform === p ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
-                  {p}{locked && <span className="inline-flex items-center gap-0.5 rounded-full bg-pink-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-pink-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}
+                  {p}{locked && <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-100 px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-blue-700"><Icon.Lock className="h-2.5 w-2.5" />Pro</span>}
                 </button>
               );
             })}
