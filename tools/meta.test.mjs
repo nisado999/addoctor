@@ -234,3 +234,24 @@ test("activate refuses another user's launch and flips every object to ACTIVE, c
   assert.ok(graph(w.calls).every((c) => c.body.status === "ACTIVE"));
   assert.equal(ids.at(-1), w.db.launches["req-12345678"].result.campaignId);
 });
+
+test("Read my website reads the whole site, even from a pasted product link", async () => {
+  const home = '<title>Shop</title><a href="/pages/about">About us</a><a href="https://other.test/shop">x</a><a href="/cart">Cart</a>';
+  const files = {
+    "https://shop.test/": home,
+    "https://shop.test/pages/about": "<title>About</title>We make hoodies.",
+    "https://shop.test/products/hoodie": "<title>Hoodie</title>A hoodie.",
+    "https://shop.test/sitemap.xml": "<sitemapindex><sitemap><loc>https://shop.test/sitemap_products.xml</loc></sitemap><sitemap><loc>https://shop.test/sitemap_pages.xml</loc></sitemap></sitemapindex>",
+    "https://shop.test/sitemap_pages.xml": "<urlset><url><loc>https://shop.test/pages/our-story</loc></url><url><loc>https://shop.test/collections/all?a=1&amp;b=2</loc></url><url><loc>https://evil.test/pages/about</loc></url></urlset>",
+    "https://shop.test/pages/our-story": "<title>Story</title>Since 2019.",
+    "https://shop.test/collections/all": "<title>All</title>Everything.",
+  };
+  const asked = [], real = globalThis.fetch;
+  globalThis.fetch = async (u) => { u = String(u); asked.push(u); return u in files ? new Response(files[u], { status: 200 }) : new Response("no", { status: 404 }); };
+  try {
+    const r = await m.readBrand({}, { url: "shop.test/products/hoodie" });
+    for (const p of ["/", "/pages/about", "/pages/our-story", "/collections/all", "/products/hoodie"]) assert.ok(asked.includes("https://shop.test" + p), "not read: " + p);
+    assert.ok(!asked.some((u) => /evil\.test|sitemap_products|\/cart/.test(u)), "read a page it should skip");
+    assert.equal(r.pages.length, 5);
+  } finally { globalThis.fetch = real; }
+});

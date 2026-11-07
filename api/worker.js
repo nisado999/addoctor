@@ -561,21 +561,44 @@ Return ONLY JSON: {"name":"brand or store name","description":"2-3 plain sentenc
 // Create an ad starts here: one pasted link, then several pages of that site (home, about, shop, FAQ, reviews, offers)
 // are read into a brand profile, so the questions that follow are answered for the customer and the ads are written for this brand.
 const BRAND_PAGES = [[/about|our-?story|story|mission|why-|who-we/i, 5], [/collection|shop|product|best-?sell|catalog/i, 4], [/review|testimonial|results|press/i, 3], [/sale|offer|deal|gift|bundle/i, 3], [/faq|help|shipping|returns/i, 2]];
+const SITE_PAGES_MAX = 12; // pages read besides the home page (each one is a fetch; the free Cloudflare plan allows 50 per request)
+const SKIP_PATH = /\.(jpe?g|png|gif|webp|pdf|svg|css|js)$|cart|account|login|checkout|policy|policies|privacy|terms|cdn-cgi|wp-admin|wp-json/i;
+const sameHost = (a, b) => a.replace(/^www\./, "") === b.replace(/^www\./, "");
+// Every page of the site worth reading that the home page links to, best first.
 function sitePages(html, u) {
-  const host = (h) => h.replace(/^www\./, "");
   const seen = new Set([u.pathname.replace(/\/$/, "") || "/"]), out = [];
   for (const m of html.matchAll(/<a\b[^>]*\bhref=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
     let a; try { a = new URL(m[1], u); } catch (e) { continue; }
-    if (!/^https?:$/.test(a.protocol) || host(a.hostname) !== host(u.hostname)) continue;
+    if (!/^https?:$/.test(a.protocol) || !sameHost(a.hostname, u.hostname)) continue;
     const path = a.pathname.replace(/\/$/, "") || "/";
-    if (seen.has(path) || /\.(jpe?g|png|gif|webp|pdf|svg|css|js)$/i.test(path) || /cart|account|login|checkout|policy|policies|privacy|terms|cdn-cgi|wp-admin|wp-json/i.test(path)) continue;
+    if (seen.has(path) || SKIP_PATH.test(path)) continue;
     const text = plain(m[2]).slice(0, 60);
     let score = 0;
     for (const [re, w] of BRAND_PAGES) if (re.test(path) || re.test(text)) score = Math.max(score, w);
     if (!score) continue;
     seen.add(path); out.push({ href: a.origin + a.pathname, score, text });
   }
-  return out.sort((x, y) => y.score - x.score).slice(0, 5);
+  return out;
+}
+// The same, from the site's sitemap: finds the about, shop and review pages when the home page builds its menu with script.
+// A sitemap index is followed one level, skipping the long product lists.
+async function sitemapPages(u) {
+  const locs = (x) => [...x.matchAll(/<loc>\s*([^<\s]+?)\s*<\/loc>/gi)].map((m) => m[1].replace(/&amp;/g, "&"));
+  const out = [];
+  try {
+    let urls = locs(await getText(u.origin + "/sitemap.xml", 600000));
+    const kids = urls.filter((x) => /\.xml(\?|$)/i.test(x) && !/product/i.test(x)).slice(0, 2);
+    if (kids.length) urls = urls.filter((x) => !/\.xml(\?|$)/i.test(x)).concat(...(await Promise.allSettled(kids.map((k) => getText(k, 600000)))).map((r) => (r.status === "fulfilled" ? locs(r.value) : [])));
+    for (const s of urls) {
+      let a; try { a = new URL(s); } catch (e) { continue; }
+      const path = a.pathname.replace(/\/$/, "") || "/";
+      if (!sameHost(a.hostname, u.hostname) || path === "/" || SKIP_PATH.test(path)) continue;
+      let score = 0;
+      for (const [re, w] of BRAND_PAGES) if (re.test(path)) score = Math.max(score, w);
+      if (score) out.push({ href: a.origin + a.pathname, score, text: "" });
+    }
+  } catch (e) { /* no sitemap: the home page's links are enough */ }
+  return out;
 }
 // The colours the page's own code uses most, ignoring white, black and greys, as hints for the colour words.
 function pageHexes(html) {
@@ -585,15 +608,21 @@ function pageHexes(html) {
   return Object.entries(n).filter(([h]) => sat(h) > 28).sort((x, y) => y[1] - x[1]).slice(0, 4).map(([h]) => "#" + h);
 }
 async function readBrand(env, b) {
-  const u = safeUrl(b.url);
+  const pasted = safeUrl(b.url);
+  // Whatever page was pasted (a product, a collection), the brand is the whole site: start from its front page and read the pasted page too.
+  const u = new URL(pasted.origin + "/");
   let store;
-  try { store = await readStore(u); } catch (e) { throw new Error(e.message && /address|web/.test(e.message) ? e.message : "We could not read that site. You can answer the questions by hand instead."); }
+  try { store = await readStore(u); } catch (e) {
+    try { store = await readStore(pasted); } catch (e2) { throw new Error(e2.message && /address|web/.test(e2.message) ? e2.message : "We could not read that site. You can answer the questions by hand instead."); }
+  }
   let html = "";
   try { html = await getText(u.href, 900000); } catch (e) { /* the store reading above already holds this page's text */ }
-  const links = html ? sitePages(html, u) : [];
+  const found = [...(pasted.pathname.replace(/\/$/, "") ? [{ href: pasted.origin + pasted.pathname, score: 9, text: "" }] : []), ...(html ? sitePages(html, u) : []), ...(await sitemapPages(u))];
+  const once = new Set();
+  const links = found.sort((x, y) => y.score - x.score).filter((l) => { const k = new URL(l.href).pathname.replace(/\/$/, ""); return !once.has(k) && once.add(k); }).slice(0, SITE_PAGES_MAX);
   const more = (await Promise.allSettled(links.map(async (l) => {
     const h = await getText(l.href, 500000);
-    return { url: l.href, title: clip(metaOf(h, "og:title") || (h.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || l.text, 90), text: clip(plain(h), 1800) };
+    return { url: l.href, title: clip(metaOf(h, "og:title") || (h.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || l.text, 90), text: clip(plain(h), 1500) };
   }))).filter((r) => r.status === "fulfilled").map((r) => r.value);
   if (!store.images.length && !store.text.trim() && !more.length) throw new Error("We could not find anything to read on that page. Try your home page link, or answer the questions by hand.");
   const list = (v, n) => (Array.isArray(v) ? v : []).slice(0, n);
@@ -2360,7 +2389,7 @@ async function handle(req, rawEnv, hooks) {
 }
 
 // Only tools/meta.test.mjs imports this. If Cloudflare ever refuses the paste because of it, delete this one line.
-export const metaTest = { signState, verifyState, parseSignedRequest, encryptToken, decryptToken, toMinorUnits, OBJECTIVE: META_GOALS, buildCampaign, buildAdSet, buildCreative, metaCall, saveConnection, loadConnection, saveSelection, deleteConnection, listAssets, selectAssets, launchPaused, activateLaunch, metaCallback, metaDeletion, metaRoute };
+export const metaTest = { readBrand, sitemapPages, signState, verifyState, parseSignedRequest, encryptToken, decryptToken, toMinorUnits, OBJECTIVE: META_GOALS, buildCampaign, buildAdSet, buildCreative, metaCall, saveConnection, loadConnection, saveSelection, deleteConnection, listAssets, selectAssets, launchPaused, activateLaunch, metaCallback, metaDeletion, metaRoute };
 
 export default {
   async fetch(req, rawEnv) {

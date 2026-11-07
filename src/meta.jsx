@@ -608,7 +608,7 @@ export function MetaView({ user, notify, onNav, onExamine }) {
 
         {q.id === "site" && (
           <div className="mt-4">
-            <p className="mb-3 text-[13px] text-slate-500">We read your pages to find what you sell, your offer and your selling points, so you answer less. Takes about a minute.</p>
+            <p className="mb-3 text-[13px] text-slate-500">We read your whole site, not just the page you paste: home, about, shop, reviews and FAQ. We use it to find what you sell, your offer and your selling points, so you answer less. Takes about a minute.</p>
             <label className={labelCls} htmlFor="meta-site">Website</label>
             <div className="flex gap-2">
               <input id="meta-site" className={inputCls} value={s.site} maxLength={200} placeholder="coldwear.com" onChange={(e) => pick({ site: e.target.value.trim(), fromSite: false })} onKeyDown={(e) => { if (e.key === "Enter" && !reading) readSite(); }} />
