@@ -81,8 +81,8 @@ function toError(r, j) {
     return new ApiError("rate_limited", msg, { ...extra, retryAfter: wait });
   }
   // The older server passed provider errors straight through, so a 5xx message is shown only from the new one.
-  // The Worker uses 502 for "a service we depend on failed" and writes a safe sentence for it (the AI is busy, billing is off...).
-  if (status >= 500) return new ApiError("server", code || status === 502 ? said : "", extra);
+  // The Worker keeps provider errors in its own log and sends a short sentence (the AI is busy, we could not plan the ads...); `said` is empty unless it reads like one.
+  if (status >= 500) return new ApiError("server", said, extra);
   if (status === 404 && !said) return new ApiError("api", "The AdDoctor server has not been updated for this yet.", extra);
   if (status === 413 && !said) return new ApiError("api", "That is too large to send. Try a smaller file.", extra);
   return new ApiError("api", said || `The AdDoctor server couldn't do that (error ${status}).`, extra);
