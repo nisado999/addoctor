@@ -429,6 +429,7 @@ async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
     e.status = r.status === 429 ? 429 : 502;
     throw e;
   }
+  if (j.stop_reason === "max_tokens") console.log("anthropic reply cut off at", maxTokens, "tokens");
   const tool = (j.content || []).find((b) => b.type === "tool_use");
   if (tool && tool.input && typeof tool.input === "object" && Object.keys(tool.input).length) return tool.input;
   const text = (j.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
@@ -883,7 +884,7 @@ async function planScratch(env, b) {
   const seen = await Promise.all(cands.map((c, i) => (urls[i] ? loadRef({ url: urls[i] }).catch(() => null) : null)));
   const img = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
   const candBlock = cands.map((c, i) => [{ type: "text", text: `CANDIDATE LAYOUT id "${c.id}": ${c.title} (${c.label}). Format: ${c.format || "n/a"}. Headline: "${c.headline}". ${c.shows}` }, ...(seen[i] ? [img(seen[i])] : [])]).flat();
-  const o = await askClaude(env, [
+  const content = [
     ...(shots.length ? [{ type: "text", text: "THE CUSTOMER'S REAL PRODUCT PHOTOS:" }, ...shots.map(img)] : []),
     ...(candBlock.length ? [{ type: "text", text: "PROVEN LAYOUTS from our best-performing gallery, to choose from:" }, ...candBlock] : []),
     { type: "text", text: `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads for one business. Write exactly 3 concepts. Each uses a clearly different angle (for example the problem it solves, the result you get, proof of quality, the offer itself, a lifestyle moment) and a clearly different scene and layout.
@@ -894,8 +895,12 @@ ${AD_TASTE}
 ${cands.length ? `LAYOUTS: give each concept a different candidate in "templateId", the one whose layout carries that concept best (judge by the kind of product, whether it is worn, held or packaged, whether an offer exists, and the tone). The candidate is only a proven layout and mood: never reuse its product, its wording or its brand name. Three different candidates with clearly different kinds of layout. If none fits a concept, use an empty string.` : ""}
 Rules: use only the facts above. ${a.offer ? "The offer may appear in the ad exactly as given." : "There is NO offer: print no discount, price, free shipping or deadline anywhere."} No invented numbers, ratings, awards or testimonials. Headlines are short (max 8 words), written in the brand's own voice and language.
 Return ONLY JSON: {"concepts":[{"templateId":"one candidate id exactly as written, or empty string","product":"the product exactly as it looks in the photos, or empty string when there are none","title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.` },
-  ], 2800);
-  const list = (Array.isArray(o.concepts) ? o.concepts : []).slice(0, 3);
+  ];
+  // Three long concepts can run past a short reply limit, and the model sometimes sends two: ask again once before giving up.
+  const concepts = async () => { const o = await askClaude(env, content, 4500); return Array.isArray(o.concepts) ? o.concepts : []; };
+  let list = await concepts();
+  if (list.length < 3) { console.log("plan came back with", list.length, "concepts, asking again"); list = await concepts(); }
+  list = list.slice(0, 3);
   if (list.length < 3) throw new Error("We could not plan the ads. Try again.");
   const used = new Set();
   return { concepts: list.map((c) => {
