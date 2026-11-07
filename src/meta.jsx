@@ -714,6 +714,7 @@ export function MetaView({ user, notify, onNav, onExamine }) {
           <button type="button" onClick={() => set({ step: at - 1 })} disabled={at === 0} className={`${lightBtn} disabled:invisible`}>Back</button>
           <button type="button" onClick={next} disabled={!ready} className={darkBtn}>{at === qs.length - 1 ? "Show my set-up" : "Next"} <Icon.Arrow className="h-4 w-4" /></button>
         </div>
+        {(at > 0 || s.fromSite) && <button type="button" onClick={() => { writeJSON(KEY, {}); window.location.reload(); }} className="mt-4 text-xs font-semibold text-slate-500 underline hover:text-slate-900">Start over with a clean form</button>}
       </section>
     </div>
   );
