@@ -79,3 +79,10 @@ When a video or image is replaced, give it a new file name (new id). GitHub Page
 - Server: `api/worker.js` (`billingRoute`, `paddleWebhook`, charge block, refund wrapper; `BILLING=on` switches it on). DB: `supabase/billing.sql` (ledger, idempotent refs, service_role-only functions). Client: `src/billing.js`, `src/plans.jsx`.
 - Prices in credits live in three places that must change together: `creditCost()` in the Worker, `COSTS` in `src/billing.js`, `plan_allowance()` in the SQL.
 - Setup and rollout steps: `docs/BILLING-SETUP.md`. Terms and Refunds pages are drafts needing legal review.
+
+## Meta Ads Plan (added 2026-11-05)
+- New screen #plan ("Meta Ads Plan", sidebar under Analyse, Ctrl+K palette). src/planner.jsx is the UI, src/metaPlan.js the questions and the rules (pure, no network, no credits).
+- About 14 questions in 3 parts (brand, goal and numbers, account), some shown only for a business type. The plan: break-even ROAS, max and target cost per result, readiness checks, campaigns and ad sets with daily budgets, targeting, ad concepts and hooks, kill/scale rules, a 30-day timeline. Sizing follows Meta's ~50 results a week per ad set: one campaign and one ad set until the budget can feed more. Leads, local and app plans are sized on a cautious typical cost (TYPICAL in metaPlan.js) when it is below the break-even target.
+- Answers and the last plan stay in localStorage addoctor.metaplan.v1. Copy and Download (.txt) use planText().
+- "Want Nisado to run this for you?" lead form at the end. It inserts into Supabase table agency_leads: RUN supabase/leads.sql ONCE in the SQL editor, or every send falls back to a pre-filled email link. Visitors can insert but never read; read leads in Table Editor. For an email per lead add a Database Webhook on INSERT (or Zapier/Make). Name, email and an optional booking link come from VITE_AGENCY_NAME / VITE_AGENCY_EMAIL / VITE_AGENCY_BOOKING. GTM events: plan_start, plan_made, plan_copy, plan_download, agency_lead, agency_lead_failed, agency_booking.
+- Privacy page has a row for the lead form. No landing page in public/ yet (would help SEO: "meta ads plan generator").
