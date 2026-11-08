@@ -297,3 +297,8 @@ test("Read my website returns every product photo of a shop, flags included", as
     assert.ok(r.images.some((i) => /flag/.test(i.url)));
   } finally { globalThis.fetch = real; }
 });
+
+test("every route that spends AI money is behind the sign-in and rate limits", () => {
+  for (const p of ["/start", "/analyze", "/creative", "/ask", "/rivals", "/angles/find", "/brand/read", "/pack/image", "/pack/store", "/make/plan", "/make/ad", "/make/review", "/spy/read"]) assert.ok(m.PAID.test(p), p);
+  for (const p of ["/caps", "/status", "/thumb", "/log", "/billing/config"]) assert.ok(!m.PAID.test(p), p);
+});

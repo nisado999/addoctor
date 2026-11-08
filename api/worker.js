@@ -1667,7 +1667,8 @@ async function deleteAccount(env, req) {
   return json(env, { ok: true });
 }
 
-const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|library|spy\/|pack\/|make\/)/;
+// Every route that spends AI or data-provider money. A route missing here has no sign-in rule, no rate limit and no charge.
+const PAID = /^\/(start|page|analyze|creative|brands|organic|ask|rivals|library|angles\/|brand\/|spy\/|pack\/|make\/)/;
 
 async function bump(key, ttl) {
   if (typeof caches === "undefined") return 0;
@@ -1757,7 +1758,7 @@ function creditCost(path, b) {
     case "/pack/image": return premium ? 12 : 5;
     case "/pack/brief": case "/pack/posts": return 2;
     case "/pack/store": case "/pack/review": return 1;
-    case "/brand/read": return 2;
+    case "/brand/read": return 0;   // the pages show no price for Read my website, so it stays free; it is still signed-in and rate-limited as a PAID route
     default: return 0;
   }
 }
@@ -2396,7 +2397,7 @@ async function handle(req, rawEnv, hooks) {
 }
 
 // Only tools/meta.test.mjs imports this. If Cloudflare ever refuses the paste because of it, delete this one line.
-export const metaTest = { readBrand, sitemapPages, signState, verifyState, parseSignedRequest, encryptToken, decryptToken, toMinorUnits, OBJECTIVE: META_GOALS, buildCampaign, buildAdSet, buildCreative, metaCall, saveConnection, loadConnection, saveSelection, deleteConnection, listAssets, selectAssets, launchPaused, activateLaunch, metaCallback, metaDeletion, metaRoute };
+export const metaTest = { PAID, readBrand, sitemapPages, signState, verifyState, parseSignedRequest, encryptToken, decryptToken, toMinorUnits, OBJECTIVE: META_GOALS, buildCampaign, buildAdSet, buildCreative, metaCall, saveConnection, loadConnection, saveSelection, deleteConnection, listAssets, selectAssets, launchPaused, activateLaunch, metaCallback, metaDeletion, metaRoute };
 
 export default {
   async fetch(req, rawEnv) {
