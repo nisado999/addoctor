@@ -425,7 +425,9 @@ async function askClaude(env, content, maxTokens = 2000, mode = "tool") {
     if (mode === "tool" && r.status === 400 && /tool/i.test(msg)) return askClaude(env, content, maxTokens, "text");   // this model takes no tools
     // The provider's own message stays in the server log; the visitor only sees a short line.
     console.log("anthropic error", r.status, msg.slice(0, 300));
-    const e = new Error(r.status === 429 || r.status === 529 ? "The AI is busy right now. Try again in a minute." : "The AI could not answer this time. Try again.");
+    // The status code and the kind of fault are safe to show; a request or model fault (400, 404) also carries the provider's short reason.
+    const why = /credit|billing/i.test(msg) ? "The AI account is out of credit" : r.status === 401 || r.status === 403 ? "The AI key was refused" : r.status === 400 || r.status === 404 ? `The AI refused this request: ${msg.replace(/\s+/g, " ").slice(0, 140)}` : "The AI could not answer this time";
+    const e = new Error(r.status === 429 || r.status === 529 ? "The AI is busy right now. Try again in a minute." : `${why} (error ${r.status}). Try again.`);
     e.status = r.status === 429 ? 429 : 502;
     throw e;
   }
