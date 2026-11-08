@@ -733,7 +733,8 @@ function App() {
   const V = VIEWS[view];
   const inStudio = !!V.studio;
   const inspect = useCallback((tp) => { track("template_open", tplInfo(tp)); setLook(tp); }, []);
-  const isOwner = !!(user && user.email && OWNERS.includes(user.email.toLowerCase()));
+  // The server's verified-owner flag (OWNER_EMAILS in Cloudflare) counts too, so the build needs no email list.
+  const isOwner = !!(user && user.email && OWNERS.includes(user.email.toLowerCase())) || !!(billing.account && billing.account.owner);
   // With billing on, credits live on the server: this device's daily allowance is not used, and actions that run
   // in the browser (Examine) cost nothing.
   // A balance not known yet (signed out, or still loading) lets the action go to the server, which asks for a
@@ -748,7 +749,7 @@ function App() {
   const useMatch = (t, photos) => { track("template_use", { method: "create_flow", ...tplInfo(t) }); setProduct({ ...t, mode: "exact", photos }); };
   const browseNiche = (c) => { if (goto("explore")) { setQuick(null); setQ(""); setCat(c || "All"); } };
   const screen = (id) => (
-    id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
+    id === "lab" ? (isOwner ? <LabView notify={notify} active={view === "lab"} owner={isOwner} /> : <p className="mt-6 text-sm text-slate-600">The Template Lab is for the site owner. Sign in with the owner account to use it.</p>)
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
     : id === "static" || id === "video" ? <GuidedView key={createSeed} kind={id} seed={createSeed} onUseTemplate={useMatch} onBrowse={browseNiche} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
     : id === "meta" ? <MetaView user={user} notify={notify} onNav={goto} onExamine={(file) => openExam({ file })} credits={shownCredits} onSpend={doSpend} onUseTemplate={useMatch} onBrowse={browseNiche} />
