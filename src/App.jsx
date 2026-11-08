@@ -13,7 +13,7 @@ import { useBilling } from "./billing.js";
 import { ErrorBoundary, lazyRetry } from "./boundary.jsx";
 import { useDialog, confirmDiscard, openDialogCount } from "./dialog.jsx";
 import { SwipeView, useSwipe } from "./swipe.jsx";
-import { MyAdsView, useMyAds } from "./myads.jsx";
+import { MyAdsView, useMyAds, syncMyAds } from "./myads.jsx";
 import { CommandPalette } from "./palette.jsx";
 import { ThemeToggle } from "./theme.jsx";
 
@@ -507,6 +507,7 @@ function App() {
       if (dead) return;
       setUser(u);
       setAuthReady(true);
+      if (u) syncMyAds();
       if (event === "PASSWORD_RECOVERY") {
         // Back from a reset-password email: the dialog opens on choosing a new password.
         authModeRef.current = "recovery";

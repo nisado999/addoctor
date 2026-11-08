@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "./ui";
 import { readJSON, writeJSON } from "./storage.js";
+import { cloudAdsList, cloudAdPut, cloudAdDelete } from "./auth.js";
 
 /* Ads you made in the studio and saved to the Vault. Each keeps a small JPEG of the finished picture in this browser,
    so it can be opened and downloaded again later. */
@@ -66,10 +67,31 @@ export async function saveMyAd({ dataUrl, title, category, templateId }) {
   const thumb = await shrink(dataUrl);
   const item ={ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, category, templateId, thumb, savedAt: Date.now() };
   if (!commit(clean([item, ...list]))) throw new Error("Your browser has no room left to save this. Remove an older saved ad and try again.");
+  cloudAdPut(toRow(item)).catch(() => {});   // the account copy is a bonus: a failure leaves the browser copy
   return item.id;
 }
 
-export const removeMyAd = (id) => commit(list.filter((x) => x.id !== id));
+export const removeMyAd = (id) => {
+  const ok = commit(list.filter((x) => x.id !== id));
+  if (ok) cloudAdDelete(id).catch(() => {});
+  return ok;
+};
+
+const toRow = (x) => ({ id: x.id, title: x.title, category: x.category, template_id: x.templateId, thumb: x.thumb, saved_at: x.savedAt });
+
+/* On sign-in: ads saved on the account appear here, and ads saved here while signed out go up to the account.
+   shortcut: an ad removed on another computer comes back if this browser still holds it; add a deleted marker if that matters. */
+export async function syncMyAds() {
+  try {
+    const remote = await cloudAdsList();
+    if (!remote) return;
+    const have = new Set(remote.map((r) => r.id));
+    const up = list.filter((x) => x.thumb && !have.has(x.id));
+    const down = remote.map((r) => ({ id: r.id, title: r.title, category: r.category, templateId: r.template_id, thumb: r.thumb, savedAt: Number(r.saved_at) }));
+    commit(clean([...down, ...up].sort((a, b) => b.savedAt - a.savedAt)));
+    await Promise.all(up.map((x) => cloudAdPut(toRow(x))));
+  } catch (e) { /* offline, or saved_ads.sql not run yet: the browser copy still works */ }
+}
 
 export function MyAdsView({ query, onOpen }) {
   const all = useMyAds();

@@ -118,4 +118,32 @@ async function saveLead(row) {
   if (error) throw new Error(error.message || "Could not send");
 }
 
-export { saveLead, authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, sendReset, setNewPassword, signOut, accessToken, authOptions, deleteAccount };
+/* Saved ads kept on the account (supabase/saved_ads.sql), so My ads follows the visitor to another computer.
+   All three do nothing when signed out; the browser copy in myads.jsx still works. */
+async function cloudClient() {
+  if (!client && !authWanted()) return null;
+  const c = await supa();
+  const { data } = await c.auth.getSession();
+  return data.session ? { c, uid: data.session.user.id } : null;
+}
+async function cloudAdsList() {
+  const s = await cloudClient();
+  if (!s) return null;
+  const { data, error } = await s.c.from("saved_ads").select("*").order("saved_at", { ascending: false }).limit(40);
+  if (error) throw new Error(error.message);
+  return data;
+}
+async function cloudAdPut(row) {
+  const s = await cloudClient();
+  if (!s) return;
+  const { error } = await s.c.from("saved_ads").upsert({ ...row, user_id: s.uid });
+  if (error) throw new Error(error.message);
+}
+async function cloudAdDelete(id) {
+  const s = await cloudClient();
+  if (!s) return;
+  const { error } = await s.c.from("saved_ads").delete().eq("id", id).eq("user_id", s.uid);
+  if (error) throw new Error(error.message);
+}
+
+export { cloudAdsList, cloudAdPut, cloudAdDelete, saveLead, authWanted, watchAuth, signInGoogle, signInEmail, signUpEmail, sendReset, setNewPassword, signOut, accessToken, authOptions, deleteAccount };
