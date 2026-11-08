@@ -123,13 +123,14 @@ function AdCard({ v, onDownload, onMeta, onChange, onRetry, onCopy, unit, busy }
   );
 }
 
-export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "", onUseTemplate, onBrowse }) {
+/* inline: shown inside Create an ad, so a finished ad is added to that flow's list (no "open Create an ad" hint) and siteUrl is already known. */
+export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "", onUseTemplate, onBrowse, inline = false, siteUrl = "" }) {
   const video = kind === "video";
   const questions = video ? VIDEO_QUESTIONS : STATIC_QUESTIONS;
   const [phase, setPhase] = useState("source");   // source | questions | matches | making | done | brief
   const [source, setSource] = useState("site");    // site | photo | none: the website is the main way in
   const [files, setFiles] = useState([]);          // [{id, src}]
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(siteUrl);
   const [site, setSite] = useState(null);          // {name, description, images, pages, niche, audience, tone, offer, usps, ...}
   const [profile, setProfile] = useState(null);    // the same reading, when the server read the whole site
   const [known, setKnown] = useState({});          // answers filled in from the site: {niche: "Fashion", ...}
@@ -316,7 +317,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
   };
   const copyText = async (t) => { try { await navigator.clipboard.writeText(t); notify("Copied"); } catch (e) { notify("Could not copy. Select the text instead."); } };
   // The ad and its written copy go to the Create an ad flow, which turns them into a ready-to-post set.
-  const addToMeta = (v) => notify(metaAds.add({ src: v.src, name: v.title || "Ad", copy: v.copy }) ? "Added. Open Create an ad (top of the menu) to continue." : "That ad is already added.", 3200);
+  const addToMeta = (v) => notify(metaAds.add({ src: v.src, name: v.title || "Ad", copy: v.copy }) ? (inline ? "Added to your ads." : "Added. Open Create an ad (top of the menu) to continue.") : "That ad is already added.", 3200);
   const download = (v) => packSave(new Blob([packB64(v.b64)], { type: v.mime }), `${(val("brand") || "ad").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${v.i + 1}.${packExt(v.mime)}`);
 
   const restart = () => { setPhase("source"); setStep(0); setAds([]); adsRef.current = []; setErr(""); setStatus(""); };

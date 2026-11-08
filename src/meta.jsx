@@ -7,6 +7,7 @@ import { track } from "./track.js";
 import { metaAds, useMetaAds } from "./metaQueue.js";
 import { useMyAds } from "./myads.jsx";
 import { MetaPublish } from "./metaPublish.jsx";
+import { GuidedView } from "./guided.jsx";
 import { GOALS, CATS, MARGIN, REPEAT, CONV, CLOSE, EXP, HAVE, SEASON, SALES_A_DAY, PER_AD, GUESS_CONV, nice, suggest, recommend } from "./adBudget.js";
 
 /* Create an ad, the guided way to run an ad on Meta. One flow, as automatic as it can be:
@@ -266,7 +267,8 @@ function FeedPost({ ad, brand, host, copy: c, children }) {
   );
 }
 
-export function MetaView({ user, notify, onNav, onExamine }) {
+export function MetaView({ user, notify, onNav, onExamine, credits, onSpend, onUseTemplate, onBrowse }) {
+  const [making, setMaking] = useState(false); // the static ad builder, open inside the "Choose your ads" step
   const [s, setS] = useState(() => {
     const v = readJSON(KEY, null);
     const o = v && typeof v === "object" ? v : {};
@@ -435,7 +437,7 @@ export function MetaView({ user, notify, onNav, onExamine }) {
             <div className="flex flex-col rounded-xl border border-blue-300 bg-blue-50/60 p-4">
               <p className="text-sm font-semibold text-slate-900">Make new ads</p>
               <p className="mt-1 flex-1 text-xs leading-relaxed text-slate-600">Answer a few questions and we design the ads with your product. Recommended.</p>
-              <button type="button" onClick={() => onNav("static")} className={`${darkBtn} mt-3 justify-center`}>Create a static ad</button>
+              <button type="button" onClick={() => setMaking(!making)} aria-expanded={making} className={`${darkBtn} mt-3 justify-center`}>{making ? "Hide the ad maker" : "Create a static ad"}</button>
             </div>
             <div className="flex flex-col rounded-xl border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-900">Start from a template</p>
@@ -491,6 +493,12 @@ export function MetaView({ user, notify, onNav, onExamine }) {
               </div>
             ))}
           </div>
+        )}
+
+        {making && (
+          <section className={`${card} mt-4`}>
+            <GuidedView inline kind="static" siteUrl={s.site} notify={notify} credits={credits} onSpend={onSpend} onUseTemplate={onUseTemplate} onBrowse={onBrowse} />
+          </section>
         )}
 
         <div className="mt-6 flex items-center justify-between">

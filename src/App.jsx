@@ -751,7 +751,7 @@ function App() {
     id === "lab" ? <LabView notify={notify} active={view === "lab"} owner={isOwner} />
     : id === "pack" ? <PackView notify={notify} credits={shownCredits} onSpend={doSpend} active={view === "pack"} seed={packSeed} />
     : id === "static" || id === "video" ? <GuidedView key={createSeed} kind={id} seed={createSeed} onUseTemplate={useMatch} onBrowse={browseNiche} notify={notify} credits={shownCredits} onSpend={doSpend} active={view === id} />
-    : id === "meta" ? <MetaView user={user} notify={notify} onNav={goto} onExamine={(file) => openExam({ file })} />
+    : id === "meta" ? <MetaView user={user} notify={notify} onNav={goto} onExamine={(file) => openExam({ file })} credits={shownCredits} onSpend={doSpend} onUseTemplate={useMatch} onBrowse={browseNiche} />
     : id === "rivals" ? <RivalsView onSpy={toSpy} />
     : id === "angles" ? <AngleView notify={notify} onMake={rebuild} />
     : id === "inspiration" ? <IdeasView notify={notify} onMake={rebuild} active={view === "inspiration"} />
