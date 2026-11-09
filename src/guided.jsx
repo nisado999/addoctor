@@ -7,6 +7,7 @@ import { imageCost, billingOn, COSTS } from "./billing.js";
 import { packShrink, packB64, packExt, packSave, XRayLoader } from "./pack";
 import { Matches, NICHES, STATIC, rank } from "./matches.jsx";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
+import { useDialog } from "./dialog.jsx";
 
 /* ---------------------- Guided builder: an interview, then an ad made for this customer ---------------------- */
 
@@ -64,7 +65,22 @@ function CopyRow({ label, text, onCopy }) {
   );
 }
 
+// The whole ad, as large as the screen allows, uncropped. Escape, the backdrop or the button close it.
+function ZoomView({ src, title, onClose }) {
+  const ref = useRef(null);
+  const { overlayProps, requestClose } = useDialog({ onClose, panelRef: ref });
+  return (
+    <div {...overlayProps} className="fixed inset-0 z-[90] grid place-items-center bg-slate-950/85 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={ref} className="relative">
+        <img src={src} alt={title} className="max-h-[92vh] max-w-[94vw] rounded-xl object-contain shadow-2xl" />
+        <button type="button" onClick={requestClose} aria-label="Close the preview" className="absolute -right-2 -top-2 grid h-9 w-9 place-items-center rounded-full bg-white text-slate-900 shadow-lg"><Icon.Close className="h-4 w-4" /></button>
+      </div>
+    </div>
+  );
+}
+
 function AdCard({ v, onDownload, onMeta, onChange, onRetry, onCopy, unit, busy }) {
+  const [zoom, setZoom] = useState(false);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const rv = v.review, cp = v.copy;
@@ -73,7 +89,7 @@ function AdCard({ v, onDownload, onMeta, onChange, onRetry, onCopy, unit, busy }
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
       <div className="relative bg-slate-100" style={{ aspectRatio: v.ratio.replace(":", " / ") }}>
-        {v.src ? <img src={v.src} alt={v.title} className="h-full w-full object-cover" /> : (
+        {v.src ? <button type="button" onClick={() => setZoom(true)} aria-label={`Zoom in on ${v.title}`} className="block h-full w-full cursor-zoom-in"><img src={v.src} alt={v.title} className="h-full w-full object-cover" /></button> : (
           <div className="grid h-full w-full place-items-center p-6 text-center">
             {v.error ? (
               <div>
@@ -87,6 +103,8 @@ function AdCard({ v, onDownload, onMeta, onChange, onRetry, onCopy, unit, busy }
         )}
         {v.src && busy && <XRayLoader title={v.title} over />}
         {rv && <span className={`absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${tone}`}>{rv.score}/100</span>}
+        {v.src && !busy && <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-slate-950/70 px-2.5 py-1 text-[11px] font-semibold text-white">Click to zoom</span>}
+        {zoom && <ZoomView src={v.src} title={v.title} onClose={() => setZoom(false)} />}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <p className="text-sm font-semibold text-slate-900">{v.title}</p>
@@ -155,8 +173,10 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
   useEffect(() => { const l = life.current; return () => l.abort(); }, []);
 
   const unit = imageCost(false);
+  // One ad per product photo the customer picked, never fewer than VERSIONS.
+  const nAds = Math.min(MAX_PHOTOS, Math.max(VERSIONS, source === "photo" ? files.length : source === "site" ? picked.length : 0));
   // With billing on, planning the ads (/make/plan) is charged too.
-  const total = unit * VERSIONS + (billingOn() ? COSTS.packText : 0);
+  const total = unit * nAds + (billingOn() ? COSTS.packText : 0);
   const setAd = (i, patch) => { adsRef.current = adsRef.current.map((a) => (a.i === i ? { ...a, ...patch } : a)); setAds(adsRef.current); };
 
   // Questions the website reading already answered are skipped. Worked out once, when the questions start, so
@@ -199,6 +219,12 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
   };
 
   const refsNow = () => ({ refs: source === "photo" ? files.map((f) => f.src) : [], refUrls: source === "site" ? picked : [] });
+  // With several photos each ad is about one of them (v.concept.photo, 1-based): it and its review see only that photo, so a hoodie ad is never checked against the beanie.
+  const photosFor = (v) => {
+    const all = refsNow(), k = v && v.concept && v.concept.photo;
+    if (!(k > 0) || all.refs.length + all.refUrls.length < 2) return all;
+    return { refs: all.refs.slice(k - 1, k), refUrls: all.refUrls.slice(k - 1, k) };
+  };
 
   // The product, the brand and the offer, in the few words the ad maker needs when it rebuilds a proven layout for this customer.
   const noteFor = () => {
@@ -209,7 +235,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
   };
   // With a proven layout and a real product photo the ad is rebuilt on that layout; otherwise it is designed from the concept alone.
   const render = async (v, signal) => {
-    const t = v.templateId && TPL.get(v.templateId), photos = refsNow();
+    const t = v.templateId && TPL.get(v.templateId), photos = photosFor(v);
     const onLayout = t && TEMPLATE_IMGS[t.id] && (photos.refs.length || photos.refUrls.length) && !ctxRef.current.noText;
     const r = onLayout
       ? await call("/make/ad", { mode: "inspired", template: await packShrink(TEMPLATE_IMGS[t.id], 1000), about: t.desc || "", note: noteFor(), headline: v.concept.headline || "", ratio: v.ratio, quality: "standard", ...photos }, signal)
@@ -217,7 +243,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
     return { src: `data:${r.mime};base64,${r.data}`, mime: r.mime, b64: r.data, grant: r.grant || "" };
   };
   // The full analysis: the same rubric as Check score, run on every ad before the customer sees it.
-  const review = async (src, v, signal) => call("/make/review", { image: await packShrink(src, 900), headline: v.concept.headline || "", refs: refsNow().refs.slice(0, 2), refUrls: refsNow().refUrls.slice(0, 2), note: [val("sells"), val("offer") && `Offer: ${val("offer")}`].filter(Boolean).join(". ") }, signal);
+  const review = async (src, v, signal) => call("/make/review", { image: await packShrink(src, 900), headline: v.concept.headline || "", refs: photosFor(v).refs.slice(0, 2), refUrls: photosFor(v).refUrls.slice(0, 2), note: [val("sells"), val("offer") && `Offer: ${val("offer")}`].filter(Boolean).join(". ") }, signal);
 
   const finish = async () => {
     if (video) {
@@ -226,7 +252,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
       setPhase("brief"); return;
     }
     if (!SPY_API) { setErr("This needs the AdDoctor server. Open the published page, not the preview."); return; }
-    if (credits < total) { setErr(`Making ${VERSIONS} ads needs ${total} credits and you have ${credits}.`); return; }
+    if (credits < total) { setErr(`Making ${nAds} ads needs ${total} credits and you have ${credits}.`); return; }
     const a = answers;
     const ratio = RATIO_OF[a.ratio] || "4:5";
     const noText = a.wording === "No text, picture only";
@@ -236,14 +262,14 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
     setErr(""); setPhase("making"); setAds([]); adsRef.current = [];
     const c = new AbortController(); const onLife = () => c.abort(); life.current.signal.addEventListener("abort", onLife, { once: true });
     try {
-      setStatus("Designing three different ads for you…");
+      setStatus(`Designing ${nAds} different ads for you…`);
       // The planner sees the best-fitting proven layouts from the gallery and builds each concept on a different one.
       const cand = rank({ niche: a.niche, sells: a.sells, offer: a.offer }).out.slice(0, 8).map((r) => r.t);
       const plan = await call("/make/plan", {
         answers: sent, site: site ? { name: site.name, description: site.description } : null,
         profile: profile ? { usps: profile.usps, products: profile.products, voice: profile.voice, palette: profile.palette, look: profile.look, language: profile.language } : null,
         candidates: cand.map(candOf), candidateUrls: cand.map((t) => absUrl(TEMPLATE_IMGS[t.id])),
-        photos: source !== "none", ...refsNow(),
+        photos: source !== "none", count: nAds, ...refsNow(),
       }, c.signal);
       adsRef.current = plan.concepts.map((cn, i) => ({
         i, title: cn.title, angle: cn.angle, ratio,
@@ -261,7 +287,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
           let ok = false;
           for (let t = 0; t < MAX_TRIES && !ok; t++) {
             try {
-              setStatus(`Creating and checking your ads… ${done + held} of ${VERSIONS} done`);
+              setStatus(`Creating and checking your ads… ${done + held} of ${adsRef.current.length} done`);
               const im = await render(v, c.signal); onSpend(unit);
               const rv = await review(im.src, v, c.signal);
               // A wrong product fails the ad whatever its score: the review's product point must be clean.
@@ -306,7 +332,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
     setBusy((b) => ({ ...b, [v.i]: true }));
     let ok = false;
     try {
-      const r = await call("/make/ad", { base: await packShrink(v.src, 1600), fix: t, grant: v.grant, ratio: v.ratio, quality: "standard", ...refsNow() }, life.current.signal);
+      const r = await call("/make/ad", { base: await packShrink(v.src, 1600), fix: t, grant: v.grant, ratio: v.ratio, quality: "standard", ...photosFor(v) }, life.current.signal);
       if (!free && r.freeLeft === undefined) onSpend(unit);
       const src = `data:${r.mime};base64,${r.data}`;
       setAd(v.i, { src, mime: r.mime, b64: r.data, edits: v.edits + 1, review: null });

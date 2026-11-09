@@ -862,7 +862,7 @@ const AD_TASTE = `WHAT A GOOD AD IS HERE (follow this over any generic ad habit)
 - It looks like a real agency campaign, never stock art or an AI render: believable photography (film look, real places, natural light, candid or deadpan people) or a bold designed poster with ONE idea, ONE colour story and big confident lettering. If a headline is used it is set large, on a real surface or poster, not as a small caption.
 - A headline is a concept, not a slogan: short, specific, a little surprising, in the voice of the brand. Never 'Elevate your...', 'Discover...', 'Experience...', 'Unlock...', 'Shop the...', never a headline plus a generic subtitle formula.
 - The real product is large, obvious and shown properly. Shoes, bags, packaging and bottles must look desirable, never small, hidden or distorted.
-- The three ads must look like three different campaigns: different layout, different scene, different colour story. No two in the same format.
+- The ads must look like different campaigns: different layout, different scene, different colour story. No two in the same format.
 - No buttons, no web addresses, no QR codes, no star ratings, no review quotes, no certification seals, no invented numbers, awards or claims. An offer appears only if the customer gave one.
 - No health or medical claims, no before-and-after promises, no fake app or screen mock-ups.
 - People look real and fit the audience; casting is varied, never one stereotype.`;
@@ -883,34 +883,35 @@ async function planScratch(env, b) {
   ].filter(([, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${clip(v, 300)}`).join("\n");
   // The planner must see the real product, or it designs around whatever the business text mentions.
   const shots = await loadRefs([...(Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), ...(Array.isArray(b.refUrls) ? b.refUrls : []).map((url) => ({ url }))], 6).catch(() => []);
+  const want = Math.min(6, Math.max(3, Math.floor(Number(b.count)) || 3));   // one ad per photo the customer picked, 3 at least
   const seen =await Promise.all(cands.map((c, i) => (urls[i] ? loadRef({ url: urls[i] }).catch(() => null) : null)));
   const img = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
   const candBlock = cands.map((c, i) => [{ type: "text", text: `CANDIDATE LAYOUT id "${c.id}": ${c.title} (${c.label}). Format: ${c.format || "n/a"}. Headline: "${c.headline}". ${c.shows}` }, ...(seen[i] ? [img(seen[i])] : [])]).flat();
   const content = [
     ...(shots.length ? [{ type: "text", text: "THE CUSTOMER'S REAL PRODUCT PHOTOS:" }, ...shots.map(img)] : []),
     ...(candBlock.length ? [{ type: "text", text: "PROVEN LAYOUTS from our best-performing gallery, to choose from:" }, ...candBlock] : []),
-    { type: "text", text: `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads for one business. Write exactly 3 concepts. Each uses a clearly different angle (for example the problem it solves, the result you get, proof of quality, the offer itself, a lifestyle moment) and a clearly different scene and layout.
+    { type: "text", text: `You are a senior direct-response creative director designing static Meta (Facebook and Instagram) ads for one business. Write exactly ${want} concepts.${shots.length > 1 ? ` The customer gave ${shots.length} product photos, numbered 1 to ${shots.length} in the order shown. Give every concept a different photo, and use every photo at least once; the concept is about the product in that photo.` : ""} Each uses a clearly different angle (for example the problem it solves, the result you get, proof of quality, the offer itself, a lifestyle moment) and a clearly different scene and layout.
 THE BUSINESS
 ${facts}
 ${shots.length ? "The attached photos show the REAL product to advertise. Study them first. Advertise ONLY what is visible in them and ignore any other product the business text mentions. Every scene must feature that exact product, and \"product\" must describe it exactly as seen: type, colour, print or logo, and any text on it." : "No product photo exists, so design the visual around the idea and do not claim to show the real product."}
 ${AD_TASTE}
 ${cands.length ? `LAYOUTS: give each concept a different candidate in "templateId", the one whose layout carries that concept best (judge by the kind of product, whether it is worn, held or packaged, whether an offer exists, and the tone). The candidate is only a proven layout and mood: never reuse its product, its wording or its brand name. Three different candidates with clearly different kinds of layout. If none fits a concept, use an empty string.` : ""}
 Rules: use only the facts above. ${a.offer ? "The offer may appear in the ad exactly as given." : "There is NO offer: print no discount, price, free shipping or deadline anywhere."} No invented numbers, ratings, awards or testimonials. Headlines are short (max 8 words), written in the brand's own voice and language.
-Return ONLY JSON: {"concepts":[{"templateId":"one candidate id exactly as written, or empty string","product":"the product exactly as it looks in the photos, or empty string when there are none","title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.` },
+Return ONLY JSON: {"concepts":[{"photo":${shots.length > 1 ? `the number of the customer photo this ad is about, 1 to ${shots.length}` : "0"},"templateId":"one candidate id exactly as written, or empty string","product":"the product exactly as it looks in the photos, or empty string when there are none","title":"2-4 words","angle":"one short line","headline":"the exact headline to print, or empty string if the visual should carry the ad","sub":"an optional short line under it, or empty string","scene":"a detailed description of the visual: setting, composition, light, colours, props, where the text sits. Do not repeat the headline here.","copy":{"primary":"the post text above the image: 2 to 4 short lines that open with a hook, name the benefit and end with a reason to act, max 280 characters","headline":"the bold line next to the button, max 40 characters","description":"one short supporting line, max 30 characters","cta":"one of: ${AD_CTAS.join(", ")}"}}]}. The copy follows the same rules as the ad: only the facts above, no invented numbers, ratings or testimonials, and no offer unless one is given. Inside strings use single quotes, never double quotes.` },
   ];
   // Three long concepts can run past a short reply limit, and the model sometimes sends two: ask again once before giving up.
-  const concepts = async () => { const o = await askClaude(env, content, 4500); return Array.isArray(o.concepts) ? o.concepts : []; };
+  const concepts = async () => { const o = await askClaude(env, content, 1500 * want); return Array.isArray(o.concepts) ? o.concepts : []; };
   let list = await concepts();
-  if (list.length < 3) { console.log("plan came back with", list.length, "concepts, asking again"); list = await concepts(); }
-  list = list.slice(0, 3);
-  if (list.length < 3) throw new Error("We could not plan the ads. Try again.");
+  if (list.length < want) { console.log("plan came back with", list.length, "concepts, asking again"); list = await concepts(); }
+  list = list.slice(0, want);
+  if (list.length < Math.min(want, 3)) throw new Error("We could not plan the ads. Try again.");
   const used = new Set();
   return { concepts: list.map((c) => {
     const k = c.copy && typeof c.copy === "object" ? c.copy : {};
     const tid = cands.some((x) => x.id === c.templateId) && !used.has(c.templateId) ? c.templateId : "";
     if (tid) used.add(tid);
     return {
-      templateId: tid, product: clip(c.product, 300), title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700),
+      photo: Math.min(shots.length, Math.max(0, Math.floor(Number(c.photo)) || 0)), templateId: tid, product: clip(c.product, 300), title: clip(c.title, 50), angle: clip(c.angle, 120), headline: clip(c.headline, 90), sub: clip(c.sub, 120), scene: clip(c.scene, 700),
       copy: { primary: clip(k.primary, 320), headline: clip(k.headline, 60), description: clip(k.description, 50), cta: AD_CTAS.find((x) => x.toLowerCase() === String(k.cta || "").trim().toLowerCase()) || "Learn More" },
     };
   }) };
