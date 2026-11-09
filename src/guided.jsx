@@ -8,14 +8,16 @@ import { packShrink, packB64, packExt, packSave, XRayLoader } from "./pack";
 import { Matches, NICHES, STATIC, rank } from "./matches.jsx";
 import { TEMPLATE_IMGS } from "./templateImgs.js";
 import { useDialog } from "./dialog.jsx";
+import { saveMyAd } from "./myads.jsx";
+import { draftGet, draftSet } from "./draft.js";
 
 /* ---------------------- Guided builder: an interview, then an ad made for this customer ---------------------- */
 
 const VIDEO_KEY = "addoctor.videobrief.v1";
 const VERSIONS = 3;
 const MAX_PHOTOS = 6;    // keep in step with makeAd and planScratch in api/worker.js
-const PASS_SCORE = 80;   // an ad under this review score is never shown
-const MAX_TRIES = 2;     // first render plus one remake
+const PASS_SCORE = 80;   // an ad under this review score is remade
+const MAX_TRIES = 4;     // first render plus three remakes
 const call = (path, body, signal) => apiFetch(path, { body, signal, timeout: 180000 });   // one image can take a while
 
 // type: text | area | choice. "site" marks what a website reading can answer. "custom" lets a choice be typed instead.
@@ -79,8 +81,9 @@ function ZoomView({ src, title, onClose }) {
   );
 }
 
-function AdCard({ v, onDownload, onMeta, onChange, onRetry, onCopy, unit, busy }) {
+function AdCard({ v, onDownload, onMeta, onVault, onChange, onRetry, onCopy, unit, busy }) {
   const [zoom, setZoom] = useState(false);
+  const [vaulted, setVaulted] = useState("");   // the picture already saved to the Vault, so a changed ad can be saved again
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const rv = v.review, cp = v.copy;
@@ -133,6 +136,7 @@ function AdCard({ v, onDownload, onMeta, onChange, onRetry, onCopy, unit, busy }
           <div className="mt-auto flex flex-wrap gap-2 pt-2">
             <button onClick={() => onDownload(v)} className="inline-flex items-center gap-1.5 rounded-full bg-slate-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"><Icon.Download className="h-3.5 w-3.5" />Download</button>
             <button onClick={() => onMeta(v)} className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"><Icon.Arrow className="h-3.5 w-3.5" />Add to my Meta ad</button>
+            <button disabled={busy || vaulted === v.src} onClick={async () => { if (await onVault(v)) setVaulted(v.src); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50"><Icon.Bookmark className="h-3.5 w-3.5" />{vaulted === v.src ? "Saved to Vault" : "Save to Vault"}</button>
             <button disabled={busy} onClick={() => setOpen(!open)} className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50">{v.edits ? `Change again (${unit} credit${unit > 1 ? "s" : ""})` : "Change something (free)"}</button>
             <button disabled={busy} onClick={() => onRetry(v)} className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-300 disabled:opacity-50">New version</button>
           </div>
@@ -171,6 +175,38 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
   const ctxRef = useRef({});
   const life = useRef(new AbortController());
   useEffect(() => { const l = life.current; return () => l.abort(); }, []);
+
+  // The whole page is kept in the browser until "Make another set": answers, picked photos, the site reading and the finished ads,
+  // so a refresh or leaving the page loses nothing. A run that was still painting comes back with the ads that had finished.
+  const DRAFT = `guided-${kind}`;
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    draftGet(DRAFT).then((d) => {
+      if (!live) return;
+      // Not when this page was opened with its own start (text from Home, or another website than the saved one).
+      if (!video && d && d.v === 1 && Date.now() - d.t < 7 * 864e5 && !seed && (!siteUrl || !d.url || d.url === siteUrl)) {
+        const done = (Array.isArray(d.ads) ? d.ads : []).filter((a) => a && (a.src || a.error));
+        adsRef.current = done; ctxRef.current = d.ctx || {};
+        setSource(d.source || "site"); setFiles(d.files || []); setUrl(d.url || siteUrl); setSite(d.site || null); setProfile(d.profile || null);
+        setKnown(d.known || {}); setPicked(d.picked || []); setAnswers(d.answers || {}); setStep(d.step || 0); setAds(done);
+        setPhase(d.phase === "making" || d.phase === "done" ? (done.some((a) => a.src) ? "done" : "questions") : (d.phase || "source"));
+      }
+      setReady(true);
+    });
+    return () => { live = false; };
+    // Runs once, when the page opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!ready || video) return;
+    const t = setTimeout(() => {
+      const empty = phase === "source" && !site && !files.length && !ads.length;
+      draftSet(DRAFT, empty ? null : { v: 1, t: Date.now(), phase, source, url, site, profile, known, picked, answers, step, files, ads, ctx: ctxRef.current });
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, phase, source, url, site, profile, known, picked, answers, step, files, ads]);
 
   const unit = imageCost(false);
   // One ad per product photo the customer picked, never fewer than VERSIONS.
@@ -276,31 +312,35 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
         templateId: TPL.has(cn.templateId) ? cn.templateId : "", tpl: TPL.has(cn.templateId) ? { id: cn.templateId, title: TPL.get(cn.templateId).title } : null,
         concept: noText ? { ...cn, headline: "", sub: "" } : typed ? { ...cn, headline: typed, sub: "" } : cn,
         copy: { ...cn.copy, ...(typed ? { headline: typed } : {}) },
-        src: "", error: "", review: null, edits: 0, held: false,
+        src: "", error: "", review: null, edits: 0,
       }));
       setAds(adsRef.current);
-      let done = 0, held = 0, n = 0;
-      // An ad is only shown once its analysis reaches PASS_SCORE. One that misses is remade once; if it misses again it is held back.
+      let done = 0, n = 0;
+      // An ad under PASS_SCORE is remade, up to MAX_TRIES times, and no ad ever disappears: if none of the tries passes, the best one is shown with its score.
       const worker = async () => {
         while (n < adsRef.current.length && !c.signal.aborted) {
           const v = adsRef.current[n++];
-          let ok = false;
+          let ok = false, best = null, lastErr = "";
           for (let t = 0; t < MAX_TRIES && !ok; t++) {
             try {
-              setStatus(`Creating and checking your ads… ${done + held} of ${adsRef.current.length} done`);
+              setStatus(t ? `Remaking "${v.title}", it scored ${best ? best.rv.score : "under " + PASS_SCORE}/100…` : `Creating and checking your ads… ${done} of ${adsRef.current.length} done`);
               const im = await render(v, c.signal); onSpend(unit);
               const rv = await review(im.src, v, c.signal);
               // A wrong product fails the ad whatever its score: the review's product point must be clean.
               if (rv.score >= PASS_SCORE && !(rv.pillars || []).some((p) => p.id === "product" && !p.na && p.score < 80)) { setAd(v.i, { ...im, review: rv }); ok = true; }
-            } catch (e) { if (c.signal.aborted) return; }
+              else if (!best || rv.score > best.rv.score) best = { im, rv };
+            } catch (e) { if (c.signal.aborted) return; lastErr = (e && e.message) || ""; }
           }
-          if (ok) done++; else { setAd(v.i, { held: true }); held++; }
+          if (!ok && best) setAd(v.i, { ...best.im, review: best.rv });
+          else if (!ok) setAd(v.i, { error: lastErr || "This ad could not be made. Try again." });
+          done++;
         }
       };
       await Promise.all([worker(), worker()]);
       if (c.signal.aborted) return;
       setStatus(""); setPhase("done");
-      notify(done ? `Your ${done} ad${done > 1 ? "s are" : " is"} ready.` : "None of the ads reached our quality bar. Try again.", 3200);
+      const made = adsRef.current.filter((a) => a.src).length;
+      notify(made ? `Your ${made} ad${made > 1 ? "s are" : " is"} ready.` : "The ads could not be made. Try again.", 3200);
     } catch (e) {
       if (c.signal.aborted) return;
       setErr((e && e.message) || "Something went wrong"); setPhase(adsRef.current.length ? "done" : "questions"); setStatus("");
@@ -345,6 +385,14 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
   const copyText = async (t) => { try { await navigator.clipboard.writeText(t); notify("Copied"); } catch (e) { notify("Could not copy. Select the text instead."); } };
   // The ad and its written copy go to the Create an ad flow, which turns them into a ready-to-post set.
   const addToMeta = (v) => notify(metaAds.add({ src: v.src, name: v.title || "Ad", copy: v.copy }) ? (inline ? "Added to your ads." : "Added. Open Create an ad (top of the menu) to continue.") : "That ad is already added.", 3200);
+  // Keeps the finished picture under My ads in the Vault, the same save the template studio uses.
+  const saveVault = async (v) => {
+    try {
+      await saveMyAd({ dataUrl: v.src, title: v.title || "Ad", category: val("niche") || "", templateId: v.templateId || "" });
+      notify("Saved to your Vault, under My ads");
+      return true;
+    } catch (e) { notify((e && e.message) || "The ad could not be saved."); return false; }
+  };
   const download = (v) => packSave(new Blob([packB64(v.b64)], { type: v.mime }), `${(val("brand") || "ad").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${v.i + 1}.${packExt(v.mime)}`);
 
   const restart = () => { setPhase("source"); setStep(0); setAds([]); adsRef.current = []; setErr(""); setStatus(""); };
@@ -486,9 +534,9 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
           {err && <p role="alert" className="mt-2 text-sm font-medium text-rose-600">{err}</p>}
           {phase === "making" && !ads.length && <div className="mt-10"><Spinner /></div>}
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
-            {ads.filter((v) => !v.held).map((v) => <AdCard key={v.i} v={v} busy={!!busy[v.i]} unit={unit} onDownload={download} onMeta={addToMeta} onChange={change} onRetry={retry} onCopy={copyText} />)}
+            {ads.map((v) => <AdCard key={v.i} v={v} busy={!!busy[v.i]} unit={unit} onDownload={download} onMeta={addToMeta} onVault={saveVault} onChange={change} onRetry={retry} onCopy={copyText} />)}
           </div>
-          {phase === "done" && ads.some((v) => v.held) && <p className="mt-4 text-sm text-slate-500">{ads.filter((v) => v.held).length} ad{ads.filter((v) => v.held).length > 1 ? "s were" : " was"} held back because {ads.filter((v) => v.held).length > 1 ? "they" : "it"} scored under {PASS_SCORE}/100 after a remake. We only hand over ads that pass.</p>}
+          {phase === "done" && ads.some((v) => v.review && v.review.score < PASS_SCORE) && <p className="mt-4 text-sm text-slate-500">An ad that scored under {PASS_SCORE}/100 was remade up to {MAX_TRIES - 1} times and this is the best version. Use “Change something” or “New version” to improve it.</p>}
         </div>
       )}
 
