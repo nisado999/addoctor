@@ -12,6 +12,7 @@ import { TEMPLATE_IMGS } from "./templateImgs.js";
 
 const VIDEO_KEY = "addoctor.videobrief.v1";
 const VERSIONS = 3;
+const MAX_PHOTOS = 6;    // keep in step with makeAd and planScratch in api/worker.js
 const PASS_SCORE = 80;   // an ad under this review score is never shown
 const MAX_TRIES = 2;     // first render plus one remake
 const call = (path, body, signal) => apiFetch(path, { body, signal, timeout: 180000 });   // one image can take a while
@@ -166,8 +167,8 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
   const q = pending[step];
 
   const addFiles = async (list) => {
-    const arr = Array.from(list || []).filter((f) => /^image\/(jpeg|png|webp)$/.test(f.type)).slice(0, Math.max(0, 3 - files.length));
-    if (!arr.length) { setErr("Choose JPG, PNG or WebP photos (up to 3)."); return; }
+    const arr = Array.from(list || []).filter((f) => /^image\/(jpeg|png|webp)$/.test(f.type)).slice(0, Math.max(0, MAX_PHOTOS - files.length));
+    if (!arr.length) { setErr(`Choose JPG, PNG or WebP photos (up to ${MAX_PHOTOS}).`); return; }
     const out = [];
     for (const f of arr) { try { out.push({ id: Math.random().toString(36).slice(2), src: await packShrink(await read(f), 1000) }); } catch (e) { /* skip unreadable file */ } }
     if (out.length) { setFiles((p) => p.concat(out)); setErr(""); } else setErr("Those photos could not be read.");
@@ -346,7 +347,7 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
               <label className="flex cursor-pointer flex-col items-center gap-2 text-center text-sm text-slate-600">
                 <Icon.Upload className="h-6 w-6 text-slate-400" />
                 <span className="font-semibold text-slate-900">Choose product photos</span>
-                <span className="text-xs">JPG, PNG or WebP, up to 3</span>
+                <span className="text-xs">JPG, PNG or WebP, up to {MAX_PHOTOS}</span>
                 <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
               </label>
               {files.length > 0 && (
@@ -384,12 +385,12 @@ export function GuidedView({ kind = "static", notify, credits, onSpend, seed = "
                       {profile.offer && <p className="mt-2 text-xs text-slate-600"><span className="font-semibold text-slate-400">Offer on your site </span>{profile.offer}</p>}
                     </div>
                   )}
-                  {(site.images || []).length > 0 && <p className="mt-3 text-xs font-semibold text-slate-700">We found {site.images.length} product photo{site.images.length === 1 ? "" : "s"}. Pick up to 3 to use in your ads</p>}
+                  {(site.images || []).length > 0 && <p className="mt-3 text-xs font-semibold text-slate-700">We found {site.images.length} product photo{site.images.length === 1 ? "" : "s"}. Pick up to {MAX_PHOTOS} to use in your ads</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {(site.images || []).map((im) => {
                       const on = picked.includes(im.url);
                       return (
-                        <button key={im.url} onClick={() => setPicked((p) => (p.includes(im.url) ? p.filter((x) => x !== im.url) : p.length >= 3 ? p : p.concat(im.url)))} aria-pressed={on}
+                        <button key={im.url} onClick={() => setPicked((p) => (p.includes(im.url) ? p.filter((x) => x !== im.url) : p.length >= MAX_PHOTOS ? p : p.concat(im.url)))} aria-pressed={on}
                           className={`h-20 w-20 overflow-hidden rounded-xl ring-2 ${on ? "ring-slate-950" : "ring-transparent hover:ring-slate-300"}`}>
                           <img src={im.url} alt={im.label || "Product"} loading="lazy" className="h-full w-full object-cover" />
                         </button>

@@ -882,8 +882,8 @@ async function planScratch(env, b) {
     ["Look of the brand", [p.look, p.palette && "Colours: " + p.palette].filter(Boolean).join(" ")],
   ].filter(([, v]) => v && String(v).trim()).map(([k, v]) => `${k}: ${clip(v, 300)}`).join("\n");
   // The planner must see the real product, or it designs around whatever the business text mentions.
-  const shots = await loadRefs([...(Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), ...(Array.isArray(b.refUrls) ? b.refUrls : []).map((url) => ({ url }))], 3).catch(() => []);
-  const seen = await Promise.all(cands.map((c, i) => (urls[i] ? loadRef({ url: urls[i] }).catch(() => null) : null)));
+  const shots = await loadRefs([...(Array.isArray(b.refs) ? b.refs : []).map((d) => ({ data: d })), ...(Array.isArray(b.refUrls) ? b.refUrls : []).map((url) => ({ url }))], 6).catch(() => []);
+  const seen =await Promise.all(cands.map((c, i) => (urls[i] ? loadRef({ url: urls[i] }).catch(() => null) : null)));
   const img = (x) => ({ type: "image", source: { type: "base64", media_type: x.mime, data: x.data } });
   const candBlock = cands.map((c, i) => [{ type: "text", text: `CANDIDATE LAYOUT id "${c.id}": ${c.title} (${c.label}). Format: ${c.format || "n/a"}. Headline: "${c.headline}". ${c.shows}` }, ...(seen[i] ? [img(seen[i])] : [])]).flat();
   const content = [
