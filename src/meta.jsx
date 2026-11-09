@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "./ui";
 import { readJSON, writeJSON } from "./storage.js";
 import { copyText, hasFeature } from "./shared.js";
@@ -18,6 +18,7 @@ import { GOALS, CATS, MARGIN, REPEAT, CONV, CLOSE, EXP, HAVE, SEASON, SALES_A_DA
    It guides; it does not connect to Meta. Answers are kept in this browser, the ads only in this tab. */
 
 const KEY = "addoctor.meta.v1";
+let freshLoad = true;   // true until this page load has opened the wizard once
 const HOOKS = {
   fashion: "Clothes that feel as good as they look.",
   beauty: "Skincare that fits your routine.",
@@ -270,11 +271,14 @@ function FeedPost({ ad, brand, host, copy: c, children }) {
 export function MetaView({ user, notify, onNav, onExamine, credits, onSpend, onUseTemplate, onBrowse }) {
   const [making, setMaking] = useState(false); // the static ad builder, open inside the "Choose your ads" step
   const [s, setS] = useState(() => {
-    const v = readJSON(KEY, null);
+    const v = freshLoad ? null : readJSON(KEY, null);
     const o = v && typeof v === "object" ? v : {};
     const stage = ["quiz", "plan", "creative", "ready"].includes(o.stage) ? o.stage : (o.finished ? "plan" : "quiz");
     return { goal: "", product: "", items: "", aov: "", margin: "", repeat: "", conv: "", close: "", exp: "", have: "", season: "", budget: "", track: "", countryCode: "", site: "", name: "", sells: "", offer: "", fromSite: false, ...o, stage, step: Number.isInteger(o.step) ? o.step : 0, done: Array.isArray(o.done) ? o.done : [], usps: Array.isArray(o.usps) ? o.usps : [] };
   });
+  // The first time this page is opened after a load or refresh, drop the old answers so the user starts over. Leaving for the
+  // builder or a template and coming back keeps them, because "come back with Create an ad" relies on it.
+  useEffect(() => { if (freshLoad) { freshLoad = false; writeJSON(KEY, null); } }, []);
   const [reading, setReading] = useState(false);
   const [err, setErr] = useState("");
   const ads = useMetaAds();
