@@ -126,7 +126,6 @@ const ADDED = {
   "tp-nichesm-351": 1793749885,
   "tp-featuresbenefitsm-26": 1793749884,
   "tp-fashiontxtm-9": 1793749432,
-  "tp-fashiontxtm-8": 1793749431,
   "tp-fashiontxtm-6": 1793749429,
   "tp-fashiontxtm-3": 1793749426,
   "tp-skincarem-1": 1793748938,

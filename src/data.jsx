@@ -645,15 +645,6 @@ const TEMPLATES = [
     primary: "A fashion static ad: Denim Day Two Pairs. The brand shown is a made-up placeholder: your name and logo replace it.",
   },
   {
-    id: "tp-fashiontxtm-8", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
-    category: "Fashion", label: "Fashion", title: "The Jacket You Keep",
-    format: "4:5 · Static · Pro model photoshoot", framework: "Offer",
-    art: { kind: "quote", bg: "linear-gradient(160deg,#1e293b 0%,#020617 100%)", hl: "#f8fafc", hook: "The Jacket You Keep", text: "The Jacket You Keep", sign: "YOUR BRAND", tag: "Fashion" },
-    why: ["Clear product, one idea and big readable copy.","A proven static-ad layout with the contents swapped."],
-    headline: "The Jacket You Keep",
-    primary: "A fashion static ad: The Jacket You Keep. The brand shown is a made-up placeholder: your name and logo replace it.",
-  },
-  {
     id: "tp-fashiontxtm-6", type: "static", trending: true, isNew: true, brandName: "YOUR BRAND",
     category: "Fashion", label: "Fashion", title: "Market Day Canvas Tote",
     format: "4:5 · Static · Pro model photoshoot", framework: "Offer",

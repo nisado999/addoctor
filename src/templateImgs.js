@@ -126,7 +126,6 @@ const TEMPLATE_IMGS = {
   "tp-nichesm-351": B + "templates/tp-nichesm-351.jpg",
   "tp-featuresbenefitsm-26": B + "templates/tp-featuresbenefitsm-26.jpg",
   "tp-fashiontxtm-9": B + "templates/tp-fashiontxtm-9.jpg",
-  "tp-fashiontxtm-8": B + "templates/tp-fashiontxtm-8.jpg",
   "tp-fashiontxtm-6": B + "templates/tp-fashiontxtm-6.jpg",
   "tp-fashiontxtm-3": B + "templates/tp-fashiontxtm-3.jpg",
   "tp-skincarem-1": B + "templates/tp-skincarem-1.jpg",

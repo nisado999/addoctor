@@ -778,6 +778,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const [sizes, setSizes] = useState({});             // the same ad in other placements, by ratio. Made only when asked for
   const [placement, setPlacement] = useState("");    // fashion: where and how big the customer's logo or print goes on the garment
   const fashion = tpl.category === "Fashion" && !editing;
+  const [logoOnly, setLogoOnly] = useState(false);       // fashion: the photo is a bare logo, so ask where it goes. A finished garment needs no placement
   const tall = isVideo && !editing;                  // a video template is a full-height frame: use its first frame, not the cropped 4:5 poster
   const [still, setStill] = useState("");
   const [ar, setAr] = useState(tall ? "9 / 16" : "4 / 5");
@@ -1349,15 +1350,18 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                     <input id="make-headline" value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={90} className={`${field} !rounded-xl !py-3`} placeholder="e.g. Made to move in" />
                   </Step>
                 )}
-                {fashion && (
-                  <Step n="02" done={!!placement.trim()} title="Where should the logo go?" hint="Optional. Say where and how big. Without it, a logo goes small on the chest" htmlFor="make-place">
+                {fashion && (logoOnly || placement.trim() ? (
+                  <Step n="02" done={!!placement.trim()} title="Where should the logo go?" hint="Only for a photo of a bare logo. Say where and how big. Without it, a logo goes small on the chest" htmlFor="make-place">
                     <input id="make-place" value={placement} onChange={(e) => setPlacement(e.target.value)} maxLength={120} className={`${field} !rounded-xl !py-3`} placeholder="e.g. small, on the left chest" />
                     <div className="mt-2.5 flex flex-wrap gap-2">
                       {placeIdeas.map((s) => <button key={s} type="button" onClick={() => setPlacement(s)} className="sx-chip rounded-full px-3.5 py-1.5 text-xs font-medium text-slate-600">{s}</button>)}
                     </div>
                   </Step>
-                )}
-                <Step n="03" done={!!note.trim()} title="About your product" hint="Optional, facts only. To change the ad, use “Change something” after it is made" htmlFor="make-note">
+                ) : (
+                  // A finished garment (a printed hoodie, say) already carries its own design, so there is nothing to place.
+                  <button type="button" onClick={() => setLogoOnly(true)} className="-mt-3 self-start text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-slate-900 hover:decoration-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 rounded">My photo is only a logo, not a whole product</button>
+                ))}
+                <Step n={fashion ? "02" : "03"} done={!!note.trim()} title="About your product" hint="Optional, facts only. To change the ad, use “Change something” after it is made" htmlFor="make-note">
                   <input id="make-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className={`${field} !rounded-xl !py-3`} placeholder="e.g. a sticker with a silver logo, not a shirt" />
                 </Step>
                 <div className="sx-step flex items-center gap-4">

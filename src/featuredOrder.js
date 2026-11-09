@@ -16,7 +16,7 @@ const FEATURED_TOP = [
   "tp-productshowcasem-488", "tp-strongcopy-480", "tp-strongcopy-266", "tp-comparison-201", "tp-salem-1454", "tp-fooddrinkv2-1169",
   "tp-blackfridayv2-02", "tp-niches-1279", "tp-featuresbenefitsm-204", "tp-collagem-298", "tp-fooddrinkm-1169", "tp-featuresbenefitsm-688",
   "tp-featuresbenefitsm-4", "tp-collagem-477", "tp-productshowcasem-38", "tp-petsm-606", "tp-productshowcasem-541", "tp-dealsdiscountsm-1129",
-  "tp-productshowcasev2-787", "tp-fooddrinkv2-340", "tp-fashiontxtm-3", "tp-jeansm-1", "tp-sale-226", "tp-productshowcasem-1038",
+  "tp-productshowcasev2-787", "tp-fooddrinkv2-340", "tp-sale-226", "tp-productshowcasem-1038",
   "tp-featuresbenefitsm-12", "tp-testimonialm-431", "tp-productfocusedm-893", "tp-productshowcasem-874", "rl-reminder", "tp-fooddrinkm-340",
   "tp-collagem-1047", "tp-nichesm-358", "rl-usvsthem", "tp-featuresbenefitsm-876", "tp-homegardenm-1234", "tp-usvsthem-24",
   "rl-igquestion", "tp-techm-789", "tp-bundlesm-160", "tp-simplelayoutm-1058", "rl-offertesti", "tp-productshowcasem-1034",
@@ -29,7 +29,7 @@ const FEATURED_TOP = [
   "tp-usvsthem-228", "tp-techm-322", "rl-stathead", "tp-productshowcasem-1027", "tp-testimonialm-571", "tp-featuresbenefitsm-641",
   "rl-native", "tp-makeaclaim-465", "tp-bundlesm-1462", "tp-offerm-831", "rl-tapgoals", "tp-simplelayoutm-1370",
   "tp-productshowcasem-721", "tp-fooddrinkm-1168", "rl-demographic", "tp-collagem-487", "tp-sportsoutdoorsm-1374", "tp-petsm-1535",
-  "rl-meme", "tp-skincarem-470", "tp-fashiontxtm-8", "tp-productfocusedm-1200", "rl-warning", "tp-nichesm-999",
+  "rl-meme", "tp-skincarem-470", "tp-productfocusedm-1200", "rl-warning", "tp-nichesm-999",
   "tp-featuresbenefitsm-695", "tp-productshowcasem-1028", "rl-sorry", "tp-usvsthemm-1436", "tp-minimalisticm-1473", "tp-strongcopym-1228",
   "rl-myth", "tp-testimonialm-413", "tp-homegardenm-1244", "tp-featuresbenefitsm-954", "rl-oldnew", "tp-productshowcasem-1031",
   "tp-productfocusedm-1199", "tp-productshowcasem-762", "rl-igstory", "tp-fooddrinkm-1162", "tp-collagem-740", "tp-featuresbenefitsm-775",
@@ -276,5 +276,5 @@ const FEATURED_TOP = [
   "athos-peg", "cr-doormats", "pc-studio", "scandi-chair", "cr-kitchenscales", "caps-wall",
   "alpine-lake-push", "cr-fh-puffer", "hotel-pool", "fridge-booking", "cr-fh-velvetsuit", "van-clipboard",
 ];
-const FEATURED_LAST = [];
+const FEATURED_LAST = ["tp-fashiontxtm-3", "tp-jeansm-1"];
 export { FEATURED_TOP, FEATURED_LAST };
