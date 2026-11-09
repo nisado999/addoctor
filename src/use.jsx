@@ -75,6 +75,7 @@ function Switch({ on, onChange, label, id }) {
 }
 
 const lab = "mb-1.5 block text-xs font-semibold text-slate-700";
+const MAX_PHOTOS = 6;   // a rack or set ad needs one photo per item; keep in step with makeAd in api/worker.js
 const primaryBtn = "inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slate-900/20 transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none";
 
 /* ------------------------------ Add my logo ------------------------------ */
@@ -1046,11 +1047,11 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   const endHandle = () => { hDrag.current = null; };
 
   const addPhotos = async (files) => {
-    const ok = [...files].filter((f) => /^image\/(png|jpeg|webp)$/.test(f.type)).slice(0, 3 - photos.length);
+    const ok = [...files].filter((f) => /^image\/(png|jpeg|webp)$/.test(f.type)).slice(0, MAX_PHOTOS - photos.length);
     if (!ok.length) { notify("Use PNG, JPG or WEBP photos."); return; }
     try {
       const got = await Promise.all(ok.map(async (f) => ({ name: f.name, src: await shrinkPhoto(await readFile(f)) })));
-      setPhotos((p) => [...p, ...got].slice(0, 3));
+      setPhotos((p) => [...p, ...got].slice(0, MAX_PHOTOS));
     } catch (e) { notify("That photo could not be read."); }
   };
 
@@ -1324,7 +1325,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
 
             {!ad ? (
               <>
-                <Step n="01" done={photos.length > 0} title="Photos of your product" hint="1 to 3, plain background works best">
+                <Step n="01" done={photos.length > 0} title="Photos of your product" hint={`1 to ${MAX_PHOTOS}, plain background works best. If the ad shows several items, such as a rack of hoodies, add one photo per item`}>
                   <div className="flex flex-wrap gap-3">
                     {photos.map((p, i) => (
                       <span key={i} className="sx-thumb relative h-24 w-24 overflow-hidden rounded-xl">
@@ -1332,7 +1333,7 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
                         <button onClick={() => setPhotos((x) => x.filter((_, k) => k !== i))} aria-label={`Remove ${p.name}`} className="absolute right-1.5 top-1.5 rounded-full bg-white/95 p-1 text-slate-700 shadow transition hover:text-rose-600"><Icon.Close className="h-3 w-3" /></button>
                       </span>
                     ))}
-                    {photos.length < 3 && (
+                    {photos.length < MAX_PHOTOS && (
                       <button
                         type="button" id="make-upload" onClick={() => fileRef.current && fileRef.current.click()}
                         onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); addPhotos(e.dataTransfer.files); }}
