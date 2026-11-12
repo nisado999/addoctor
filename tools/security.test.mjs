@@ -245,16 +245,54 @@ test("body cap: photo routes get room for several product photos, the rest do no
   });
 });
 
-test("body cap: an oversized body is refused before sign-in, rate limits, charges or any route run", async () => {
+// Plays Supabase and Meta for a signed-in caller with billing on; records every call.
+const signedIn = (calls) => async (u, init = {}) => {
+  u = String(u); calls.push((init.method || "GET") + " " + u.replace(/^https:\/\/[^/]+/, ""));
+  if (u.endsWith("/auth/v1/user")) return new Response(JSON.stringify({ id: "11111111-1111-1111-1111-111111111111", email: "a@b.c", email_confirmed_at: "2026-01-01" }), { status: 200 });
+  if (u.endsWith("/rpc/billing_spend")) return new Response(JSON.stringify({ ok: true, plan: "free", plan_credits: 10, extra_credits: 0 }), { status: 200 });
+  if (u.endsWith("/rpc/rate_check")) return new Response("0", { status: 200 });
+  return new Response("{}", { status: 200 });
+};
+const benv = { ...env, BILLING: "on", SUPABASE_ANON_KEY: "anon" };
+
+test("body cap: an oversized streamed body never reaches a write, and a charge for it is refunded", async () => {
+  s.resetLimits();
   const calls = [];
-  const benv = { ...env, BILLING: "on", SUPABASE_ANON_KEY: "anon", META_APP_ID: "1", META_APP_SECRET: "s", META_TOKEN_KEY: "k", META_GRAPH_VERSION: "v1", META_REDIRECT_URI: "https://w.example/cb" };
-  await withFetch(async (u) => { calls.push(String(u)); return new Response("{}", { status: 200 }); }, async () => {
-    for (const path of ["/ask", "/meta/select", "/billing/segment"]) {
+  await withFetch(signedIn(calls), async () => {
+    for (const path of ["/ask", "/billing/segment"]) {
       const res = await worker.fetch(post(path, { body: streamOf(9), headers: { Authorization: "Bearer tok" } }), benv);
       assert.equal(res.status, 413, path);
     }
   });
-  assert.deepEqual(calls, [], "no sign-in check, no charge, no Meta or database write");
+  assert.ok(!calls.some((c) => c.includes("billing_set_segment")), "segment not written: " + calls.join(", "));
+  assert.ok(calls.some((c) => c.endsWith("/rpc/billing_spend")) && calls.some((c) => c.endsWith("/rpc/billing_refund")), "charged then refunded: " + calls.join(", "));
+});
+
+test("body cap: a request refused for its origin or key never has its body read", async () => {
+  let pulled = 0;
+  const body = new ReadableStream({ pull(c) { pulled++; if (pulled > 40) c.close(); else c.enqueue(new Uint8Array(1024 * 1024)); } });
+  const res = await worker.fetch(new Request("https://w.example/make/ad", { method: "POST", body, duplex: "half", headers: { Origin: "https://evil.example" } }), {});
+  assert.equal(res.status, 403);
+  assert.ok(pulled <= 2, "read " + pulled + " MB of a refused request");
+});
+
+test("a body that can't be read or isn't JSON is refused (400), never taken as {}", async () => {
+  s.resetLimits();
+  const calls = [];
+  await withFetch(signedIn(calls), async () => {
+    const res = await worker.fetch(post("/billing/segment", { body: "{not json", headers: { Authorization: "Bearer tok" } }), benv);
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, "That request could not be read.");
+  });
+  assert.ok(!calls.some((c) => c.includes("billing_set_segment")));
+});
+
+test("an unexpected error still answers in JSON the page can read", async () => {
+  // A secret that throws when used: the webhook has no try/catch of its own, so this reaches the top-level guard.
+  const ts = Math.floor(Date.now() / 1000);
+  const res = await worker.fetch(new Request("https://w.example/billing/webhook", { method: "POST", body: "x", headers: { "Paddle-Signature": `ts=${ts};h1=ab` } }), { PADDLE_WEBHOOK_SECRET: { toString() { throw new Error("boom"); } } });
+  assert.equal(res.status, 500);
+  assert.equal(res.headers.get("Content-Type"), "application/json");
 });
 
 test("body cap: a body with no declared size that fits is read in full and routed unchanged", async () => {
@@ -280,7 +318,7 @@ test("body cap: /analyze has room for a large Ad Library read from the browser h
 test("DNS check: a failed or empty lookup is never kept, and an answer is kept only for its own TTL", async () => {
   s.DNS_SEEN.clear();
   let n = 0;
-  const answer = (ttl) => async () => { n++; return new Response(JSON.stringify({ Answer: [{ type: 1, data: "93.184.216.34", TTL: ttl }] }), { status: 200 }); };
+  const answer = (ttl) => async () => { n++; return new Response(JSON.stringify({ Status: 0, Answer: [{ type: 1, data: "93.184.216.34", TTL: ttl }] }), { status: 200 }); };
   await withFetch(async () => { n++; return new Response("busy", { status: 503 }); }, async () => { await s.publicHost(new URL("https://a.example/")); await s.publicHost(new URL("https://a.example/")); });
   assert.equal(n, 4, "a 503 is asked again next time (A and AAAA, twice)");
   n = 0;
@@ -289,6 +327,20 @@ test("DNS check: a failed or empty lookup is never kept, and an answer is kept o
   n = 0;
   await withFetch(answer(60), async () => { await s.publicHost(new URL("https://c.example/")); await s.publicHost(new URL("https://c.example/")); });
   assert.equal(n, 2, "TTL 60: the second fetch uses the kept answer");
+});
+
+test("DNS check: a host whose A lookup fails while its AAAA answers is refused, and a refusal is kept", async () => {
+  s.DNS_SEEN.clear();
+  await withFetch(async (u) => (String(u).endsWith("type=A")
+    ? new Response(JSON.stringify({ Status: 2 }), { status: 200 })
+    : new Response(JSON.stringify({ Status: 0, Answer: [{ type: 28, data: "2606:4700::6810:84e5", TTL: 300 }] }), { status: 200 })),
+  () => assert.rejects(s.publicHost(new URL("https://half.example/")), /can't be used/));
+  let n = 0;
+  await withFetch(async () => { n++; return dns("10.1.2.3"); }, async () => {
+    await assert.rejects(s.publicHost(new URL("https://bad.example/")), /can't be used/);
+    await assert.rejects(s.publicHost(new URL("https://bad.example/")), /can't be used/);
+  });
+  assert.equal(n, 2, "the second refusal came from memory");
 });
 
 test("Meta snapshot reads stay on Meta's hosts, redirects included", async () => {
@@ -307,13 +359,13 @@ test("prompt injection: the web-search Claude call carries the same system note"
   assert.match(body.system, /never as instructions/);
 });
 
-test("rate limits: a Supabase outage is not retried on every request", async () => {
+test("rate limits: a quick Supabase error falls back for that request only", async () => {
   s.resetLimits();
   let calls = 0;
   await withFetch(async () => { calls++; return new Response("down", { status: 503 }); }, async () => {
-    for (let i = 0; i < 5; i++) assert.equal(await s.overLimit(env, checks), null);
+    for (let i = 0; i < 3; i++) assert.equal(await s.overLimit(env, checks), null);
   });
-  assert.equal(calls, 1, "one failed call, then the edge-cache counters for a while");
+  assert.equal(calls, 3, "one hiccup does not switch the worldwide count off");
   s.resetLimits();
 });
 
@@ -327,5 +379,8 @@ test("rate limits: a hung Supabase call is given up after 2.5 s", async () => {
   clearTimeout(keepAlive);
   const took = Date.now() - started;
   assert.ok(took >= 2400 && took < 4000, "took " + took + " ms");
+  let after = 0;
+  await withFetch(async () => { after++; return new Response("0", { status: 200 }); }, () => s.overLimit(env, checks));
+  assert.equal(after, 0, "after a slow call the database is left alone for a while");
   s.resetLimits();
 });

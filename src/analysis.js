@@ -233,16 +233,13 @@ var LIB = {
 };
 
 /* The one fix for the weakest vital sign: the worst leak in the same area (Hook, Clarity, Offer, CTA), or null. Every
-   leak's detail ends with what to do, so its last sentence is the action. leaks must be worst first. Reports saved in
-   the Vault by older builds have no r.fix, so the report and the copied prescription call this on their top 3 leaks. */
+   leak's detail ends with what to do, so its last sentence is the action. leaks must be worst first. (A report opened
+   from the Vault is analysed again from its saved input, so every report carries r.fix.) */
 function fixFor(weakest, leaks) {
   var l = weakest && Array.isArray(leaks) ? leaks.filter(function (x) { return x && x.title && String(x.area).toLowerCase() === weakest.key; })[0] : null;
   if (!l) return null;
   var steps = splitSentences(String(l.detail || "")).map(function (x) { return x.trim(); }).filter(Boolean);
   return { title: l.title, action: steps[steps.length - 1] || String(l.detail || "") };
-}
-function startHere(r) {
-  return r && r.fix && r.fix.title ? r.fix : fixFor(r && r.weakest, r && r.leaks);
 }
 
 function analyze(input) {
@@ -416,8 +413,7 @@ function prescriptionText(input, r) {
   L.push("AdDoctor: The Doctor's Prescription");
   L.push((input.brand ? input.brand + " | " : "") + (input.type === "video" ? "Short-Form Video" : "Static Image"));
   L.push("Ad Health Score: " + r.score + "/100 (" + r.status + ")");
-  var fix = startHere(r);
-  if (fix) L.push("Start here: " + fix.title + ". " + fix.action);
+  if (r.fix) L.push("Start here: " + r.fix.title + ". " + r.fix.action);
   L.push("");
   L.push("VITAL SIGNS");
   r.vitals.forEach(function (v) {
@@ -440,4 +436,4 @@ function prescriptionText(input, r) {
 }
 
 
-export { STOP_RE, GENERIC_RE, JARGON_RE, OUTCOME_RE, OFFER_RE, RISK_RE, CTA_RE, URGENCY_RE, WEAK_CTA_RE, clamp, matches, clip, splitSentences, STOP_WORDS, NAME_SKIP, stem, tokens, nameTokens, ratioInfo, scoreCreative, alignment, detectCategory, LIB, analyze, prescriptionText, fixFor, startHere };
+export { STOP_RE, GENERIC_RE, JARGON_RE, OUTCOME_RE, OFFER_RE, RISK_RE, CTA_RE, URGENCY_RE, WEAK_CTA_RE, clamp, matches, clip, splitSentences, STOP_WORDS, NAME_SKIP, stem, tokens, nameTokens, ratioInfo, scoreCreative, alignment, detectCategory, LIB, analyze, prescriptionText };

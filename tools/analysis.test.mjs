@@ -1,7 +1,7 @@
 // Tests for the Examine Ad engine (src/analysis.js). Run: npm test.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyze, prescriptionText, startHere, splitSentences } from "../src/analysis.js";
+import { analyze, prescriptionText, splitSentences } from "../src/analysis.js";
 
 // The three "Quick sample loaders" from src/data.jsx (copied: data.jsx is JSX, which Node can't import).
 const SKIN = { brand: "Lumen Glow", type: "static", headline: "Glowing skin starts with vitamin C", copy: "Dull skin? Our vitamin C serum evens tone in 4 weeks, with 15% L-ascorbic acid. Apply two drops each morning under your SPF. Free shipping on every order. Shop at lumenglow.com." };
@@ -100,13 +100,4 @@ test("every leak ends with something to do, so the Start here action is always a
   assert.ok(seen.size >= 15, "covers most leaks: " + [...seen.keys()].join(", "));
   const DO = /\b(lead|add|move|replace|name|put|set|re-crop|export|cut|re-light|re-grade|upload|repeat|build|keep)\b/i;
   for (const [title, last] of seen) assert.match(last, DO, `"${title}" ends with "${last}"`);
-});
-
-test("a report saved before r.fix existed still gets its Start here, on screen and in the copied text", () => {
-  const r = analyze(APPAREL);
-  delete r.fix;
-  assert.equal(startHere(r).title, "Soft call to action");
-  assert.ok(prescriptionText(APPAREL, r).includes("Start here: Soft call to action."));
-  assert.equal(startHere({ weakest: { key: "cta" }, leaks: [] }), null);
-  assert.equal(startHere(null), null);
 });

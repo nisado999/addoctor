@@ -503,8 +503,9 @@ function safeUrl(s) {
 }
 
 // A name is checked again by what it points to (DNS over HTTPS), so a public-looking name set to a private address
-// (127.0.0.1.nip.io, or an attacker's own domain) is refused. An answer is kept per Worker instance for its own TTL, at
-// most five minutes, so a name with a TTL of 0 is looked up before every fetch; a failed or empty lookup is never kept.
+// (127.0.0.1.nip.io, or an attacker's own domain) is refused. A pass is kept per Worker instance for its own TTL, at most
+// five minutes, so a name with a TTL of 0 is looked up before every fetch; a refusal is kept at least a minute; a failed
+// or empty lookup is never kept, and a host whose A or AAAA lookup fails while the other answers is refused.
 // The big ad-image CDNs are skipped, so reading 16 creatives does not cost 32 extra requests. A lookup that fails is not
 // a refusal: the platform rule above still applies. This is a second lock, not the only one: the fetch makes its own
 // lookup, so a name that changes its answer between the two (DNS rebinding) is stopped by the platform, not here.
@@ -514,19 +515,30 @@ async function publicHost(u) {
   if (v4Parts(host) || AD_IMG_HOST.test(host)) return;
   const seen = DNS_SEEN.get(host);
   if (!seen || seen.exp <= Date.now()) {
-    let answers;
+    let looks;
     try {
-      answers = (await Promise.all(["A", "AAAA"].map(async (type) => {
+      looks = await Promise.all(["A", "AAAA"].map(async (type) => {
         const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=${type}`, { headers: { accept: "application/dns-json" } });
         const j = r.ok ? await r.json().catch(() => null) : null;
-        return (j && Array.isArray(j.Answer) ? j.Answer : []).filter((a) => a.type === 1 || a.type === 28);
-      }))).flat();
+        // Status 0 (NOERROR) and 3 (NXDOMAIN) are real answers; anything else (SERVFAIL, REFUSED) is a failed lookup.
+        if (!j || (j.Status !== 0 && j.Status !== 3)) return null;
+        return (Array.isArray(j.Answer) ? j.Answer : []).filter((a) => a.type === 1 || a.type === 28);
+      }));
     } catch (e) { return; }
-    if (!answers.length) return;   // nothing came back: not kept, and the fetch itself will fail to resolve
+    const failed = looks.filter((x) => x === null).length;
+    if (failed === looks.length) return;   // DNS over HTTPS itself is not answering: not a refusal, and not kept
+    // One record type answered and the other failed: refuse rather than judge the host on half of its addresses
+    // (a name can fail its A lookup on purpose while its AAAA looks public).
+    if (failed) throw new Error("That address can't be used");
+    const answers = looks.flat();
+    if (!answers.length) return;   // no address at all: the fetch will not resolve either
     const ok = answers.every((a) => publicIp(String(a.data)));
-    if (!ok) throw new Error("That address can't be used");
     const ttl = Math.min(300, ...answers.map((a) => Math.max(0, Number(a.TTL) || 0)));
-    if (ttl > 0) { if (DNS_SEEN.size > 500) DNS_SEEN.clear(); DNS_SEEN.set(host, { ok, exp: Date.now() + ttl * 1000 }); }
+    if (DNS_SEEN.size > 500) DNS_SEEN.clear();
+    // A refusal is kept at least a minute (refusing from memory is always safe); a pass only for its own TTL.
+    if (!ok) DNS_SEEN.set(host, { ok, exp: Date.now() + Math.max(60, ttl) * 1000 });
+    else if (ttl > 0) DNS_SEEN.set(host, { ok, exp: Date.now() + ttl * 1000 });
+    if (!ok) throw new Error("That address can't be used");
     return;
   }
   if (!seen.ok) throw new Error("That address can't be used");
@@ -1769,10 +1781,9 @@ async function bump(key, ttl) {
 /* Rate limits. checks is a list of [key, seconds, limit, message, code], tested in order; the first one over its
    limit is returned, or null when all pass. The counters live in Supabase (supabase/rate_limits.sql), so they are one
    count worldwide and every step is atomic, however many data centres a burst comes through. Until that file has been
-   run, or while Supabase can't be reached, the edge-cache counters above stand in. A failed call is not retried on
-   every request: the database is left alone for a while (10 minutes when the function or the key is wrong, 1 minute
-   after an error or a slow answer), and a call that takes over 2.5 s is given up, so an outage adds no wait to paid
-   requests. */
+   run, or while Supabase can't be reached, the edge-cache counters above stand in. A call that takes over 2.5 s is
+   given up, and after a slow or unreachable database it is left alone for a minute (10 when the function or the key is
+   wrong), so an outage adds no wait to paid requests. A quick error falls back for that one request only. */
 let limitsDbOffUntil = 0;
 async function overLimit(env, checks) {
   if (!checks.length) return null;
@@ -1785,8 +1796,9 @@ async function overLimit(env, checks) {
         signal: AbortSignal.timeout(2500),
       });
       if (r.ok) { const i = Number(await r.json()); return i > 0 ? checks[i - 1] : null; }
-      // 404: the function is not there yet; 401/403: the key is wrong. Neither fixes itself within a minute.
-      limitsDbOffUntil = Date.now() + ([401, 403, 404].includes(r.status) ? 600000 : 60000);
+      // 404: the function is not there yet; 401/403: the key is wrong. Neither fixes itself soon. Any other quick
+      // failure falls back for this request only, so one hiccup does not switch the worldwide count off for everyone.
+      if ([401, 403, 404].includes(r.status)) limitsDbOffUntil = Date.now() + 600000;
       console.log("rate_check failed", r.status);
     } catch (e) { limitsDbOffUntil = Date.now() + 60000; console.log("rate_check unreachable or slow"); }
   }
@@ -1916,7 +1928,7 @@ async function billingRoute(env, req, u) {
   if (!who) throw Object.assign(new Error("Sign in first."), { status: 401, code: "signin_required" });
   if (p === "/billing/me" && req.method === "GET") return json(env, { ...accountView(await dbRpc(env, "billing_refresh", { uid: who.id })), owner: isOwner(env, who) });
   if (p === "/billing/segment" && req.method === "POST") {
-    const b = await req.json().catch(() => ({}));
+    const b = await readBody(req);
     await dbRpc(env, "billing_set_segment", { uid: who.id, seg: String(b.segment || "") });
     return json(env, { ok: true });
   }
@@ -2278,52 +2290,54 @@ async function metaRoute(env, req, u, f = fetch) {
   }
   if (!conn || expired) throw userError("Connect Meta first.", 422, "meta_reconnect");
   if (p === "/meta/assets" && req.method === "GET") return json(env, await listAssets(env, conn.token, f));
-  if (p === "/meta/select" && req.method === "POST") { await selectAssets(env, who.id, conn, await req.json().catch(() => ({})), f); return json(env, { ok: true }); }
+  if (p === "/meta/select" && req.method === "POST") { await selectAssets(env, who.id, conn, await readBody(req), f); return json(env, { ok: true }); }
   if (p === "/meta/launch" && req.method === "POST") {
     if (await overLimit(env, [[`meta/${who.id}/${Math.floor(Date.now() / 3600000)}`, 3600, 10]])) throw userError("That is a lot of launches in one hour. Try again later.", 429);
-    return json(env, await launchPaused(env, conn, await req.json().catch(() => ({})), f));
+    return json(env, await launchPaused(env, conn, await readBody(req), f));
   }
   if (p === "/meta/activate" && req.method === "POST") {
-    const b = await req.json().catch(() => ({}));
+    const b = await readBody(req);
     await activateLaunch(env, conn, String(b.requestId || ""), f);
     return json(env, { ok: true });
   }
   return json(env, { error: "not found" }, 404);
 }
 
-/* Request bodies are capped before anything reads them, so one huge upload can't exhaust the Worker's memory, which
-   every request on that instance shares. Routes that carry photos (up to 6 product shots, a template and a base image,
-   each a JPEG of at most 1400-1600 px sent as a data URL: about 17 MB at worst) and /analyze (up to 1,200 ads posted
-   by the browser helper) get 32 MB; the rest get 8 MB. A Content-Length over the cap is refused at once. A body sent
-   without one is read here, up to the cap, before any route runs: a route never sees a cut-off body, so none can act
-   on a half-read request (several fall back to {} when reading fails). */
+/* Request bodies are capped, so one huge upload can't exhaust the Worker's memory, which every request on that instance
+   shares. Routes that carry photos (up to 6 product shots, a template and a base image, each a JPEG of at most
+   1400-1600 px sent as a data URL: about 17 MB at worst) and /analyze (up to 1,200 ads posted by the browser helper) get
+   32 MB; the rest get 8 MB. A Content-Length over the cap is refused at once. A body sent without one is counted as it
+   streams, only when a route reads it (so a request refused for its origin, key or sign-in is never read at all); if it
+   runs over, the read fails and the answer becomes the 413 (see the default export). Routes read bodies with
+   readBody(), which fails on a cut-off or broken body instead of carrying on with {}. */
 const MB = 1024 * 1024;
 const bodyCap = (path) => (/^\/(make\/|pack\/|analyze$)/.test(path) ? 32 : 8) * MB;
-// Resolves to the request to route (the body read in full when it had no Content-Length), or null when it is too large.
-async function capBody(req) {
+function capBody(req) {
+  const state = { over: false };
   const max = bodyCap(new URL(req.url).pathname);
   const len = Number(req.headers.get("content-length"));
-  if (req.headers.has("content-length") && Number.isFinite(len)) return len > max ? null : req;   // the runtime holds a body to its declared length
-  if (!req.body || req.method === "GET" || req.method === "HEAD") return req;
-  const reader = req.body.getReader(), parts = [];
-  let size = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.byteLength;
-    if (size > max) { reader.cancel().catch(() => {}); return null; }
-    parts.push(value);
-  }
-  const body = new Uint8Array(size);
-  let at = 0;
-  for (const p of parts) { body.set(p, at); at += p.byteLength; }
-  return new Request(req, { body });
+  if (req.headers.has("content-length") && Number.isFinite(len)) { state.over = len > max; return { req, state }; }   // the runtime holds a body to its declared length
+  if (!req.body || req.method === "GET" || req.method === "HEAD") return { req, state };
+  let seen = 0;
+  const body = req.body.pipeThrough(new TransformStream({
+    transform(chunk, ctl) {
+      seen += chunk.byteLength;
+      if (seen > max) { state.over = true; ctl.error(new Error("Request body too large")); } else ctl.enqueue(chunk);
+    },
+  }));
+  return { req: new Request(req, { body, duplex: "half" }), state };
 }
 const tooLarge = (req, rawEnv) => {
   const origin = allowedOrigin(req, rawEnv);
   const env = Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
   return json(env, { error: "That upload is too large. Try fewer or smaller photos.", code: "too_large" }, 413);
 };
+// A JSON body: {} when there is none, an error (never {}) when it can't be read or isn't JSON.
+async function readBody(req) {
+  const text = await req.text();
+  if (!text.trim()) return {};
+  try { return JSON.parse(text); } catch (e) { throw userError("That request could not be read.", 400); }
+}
 
 async function handle(req, rawEnv, hooks) {
     // Meta calls these two itself: no Origin header, no sign-in header.
@@ -2350,11 +2364,11 @@ async function handle(req, rawEnv, hooks) {
     }
     if (u.pathname.startsWith("/billing/")) {
       try { return await billingRoute(env, req, u); }
-      catch (e) { return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String((e && e.message) || e).slice(0, 240) }, e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500); }
+      catch (e) { return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String((e && e.message) || e).slice(0, 240) }, e && [400, 401, 403, 413, 422, 429, 502].includes(e.status) ? e.status : 500); }
     }
     if (u.pathname.startsWith("/meta/")) {
       try { return await metaRoute(env, req, u); }
-      catch (e) { return json(env, e && e.code ? { error: String(e.message).slice(0, 300), code: e.code } : { error: String((e && e.message) || e).slice(0, 240) }, e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500); }
+      catch (e) { return json(env, e && e.code ? { error: String(e.message).slice(0, 300), code: e.code } : { error: String((e && e.message) || e).slice(0, 240) }, e && [400, 401, 403, 413, 422, 429, 502].includes(e.status) ? e.status : 500); }
     }
     let who = null;
     if (PAID.test(u.pathname)) {
@@ -2550,7 +2564,7 @@ async function handle(req, rawEnv, hooks) {
       }
       return json(env, { error: "not found" }, 404);
     } catch (e) {
-      const st = e && [401, 403, 422, 429, 502].includes(e.status) ? e.status : 500;
+      const st = e && [400, 401, 403, 413, 422, 429, 502].includes(e.status) ? e.status : 500;
       return json(env, e && e.code ? { error: String(e.message).slice(0, 240), code: e.code } : { error: String(e.message || e).slice(0, 240) }, st);
     }
 }
@@ -2563,9 +2577,16 @@ export const metaTest = { PAID, readBrand, sitemapPages, signState, verifyState,
 export default {
   async fetch(req, rawEnv) {
     const hooks = {};
-    const capped = await capBody(req);
-    if (!capped) return tooLarge(req, rawEnv);
-    const res = await handle(capped, rawEnv, hooks);
+    const cap = capBody(req);
+    if (cap.state.over) return tooLarge(req, rawEnv);
+    let res;
+    try { res = await handle(cap.req, rawEnv, hooks); }
+    catch (e) {
+      // Nothing may escape as the runtime's own error page, which carries no CORS header for the site to read.
+      console.log("unhandled", String((e && e.message) || e).slice(0, 200));
+      res = json(Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: allowedOrigin(req, rawEnv) || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() }), { error: "Something went wrong. Try again." }, 500);
+    }
+    if (cap.state.over) res = tooLarge(req, rawEnv);   // the read ran over the cap, whatever the route made of that
     // A charged action that did not succeed costs nothing: give the credits back (safe to repeat).
     if (hooks.charge && res.status >= 400) {
       try { await dbRpc(rawEnv, "billing_refund", { uid: hooks.charge.uid, ref_id: hooks.charge.ref }); } catch (e) { console.log("refund failed", hooks.charge.ref); }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { SAMPLES } from "./data";
 import { Icon, Creative, pill, Mascot } from "./ui";
 import { readAsset, renderSampleAsset, AssetZone } from "./asset";
-import { analyze, prescriptionText, startHere } from "./analysis.js";
+import { analyze, prescriptionText } from "./analysis.js";
 import { TONE, copyText, inputKey, field } from "./shared.js";
 
 /* --------------------------- Helpers ---------------------------------- */
@@ -103,7 +103,7 @@ function HookParts({ parts, asset }) {
 function Report({ input, r }) {
   const on = useMounted();
   const tone = TONE[r.tone];
-  const fix = startHere(r);
+  const fix = r.fix;
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 md:grid-cols-[minmax(0,300px)_1fr]">
