@@ -38,8 +38,10 @@ const field =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 sm:text-sm placeholder:text-slate-400 transition focus:border-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10";
 
 // Set VITE_ADDOCTOR_API (and optionally VITE_ADDOCTOR_KEY) in .env, see README.
-const SPY_API_RAW = import.meta.env.VITE_ADDOCTOR_API || "";
-const SPY_API_KEY_RAW = import.meta.env.VITE_ADDOCTOR_KEY || "";
+// import.meta.env exists only under Vite; plain Node (npm test) has none, so the engine modules can be tested there.
+const ENV = import.meta.env || {};
+const SPY_API_RAW = ENV.VITE_ADDOCTOR_API || "";
+const SPY_API_KEY_RAW = ENV.VITE_ADDOCTOR_KEY || "";
 const SPY_API = (typeof window !== "undefined" && window.ADDOCTOR_API) || (SPY_API_RAW.indexOf("__") === 0 ? "" : SPY_API_RAW.replace(/\/+$/, ""));
 const SPY_KEY = (typeof window !== "undefined" && window.ADDOCTOR_KEY) || (SPY_API_KEY_RAW.indexOf("__") === 0 ? "" : SPY_API_KEY_RAW);
 
