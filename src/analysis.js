@@ -358,6 +358,7 @@ function analyze(input) {
   leak("Hook", 20, "Only one angle is being tested", "Even a healthy ad fatigues. Build 3 to 5 angles (pain point, outcome, social proof, contrarian) and test them against each other.");
   leak("Clarity", 18, "Proof can sit higher", "Put one verified customer quote or a hard number in the first line of copy, before the feature list.");
   leaks.sort(function (a, b) { return b.sev - a.sev; });
+  var allLeaks = leaks;   // every leak found, worst first; the report lists the top 3
   leaks = leaks.slice(0, 3);
 
   /* Prescription */
@@ -379,6 +380,11 @@ function analyze(input) {
     return v;
   });
   var weakest = vitals.slice().sort(function (a, b) { return a.value - b.value; })[0];
+  /* The one fix for the weakest vital sign: the worst leak in the same area, taken from all the leaks so it is there
+     even when that area did not make the top 3. A leak's last sentence is what to do about it. */
+  var fixLeak = allLeaks.filter(function (l) { return l.area.toLowerCase() === weakest.key; })[0];
+  var fixSteps = fixLeak ? splitSentences(fixLeak.detail).map(function (x) { return x.trim(); }).filter(Boolean) : [];
+  var fix = fixLeak ? { title: fixLeak.title, action: fixSteps[fixSteps.length - 1] || fixLeak.detail } : null;
 
   return {
     score: score,
@@ -386,6 +392,7 @@ function analyze(input) {
     tone: scoreTone(score),
     vitals: vitals,
     weakest: weakest,
+    fix: fix,
     leaks: leaks,
     headlines: headlines,
     hooks: hooks,
@@ -399,6 +406,7 @@ function prescriptionText(input, r) {
   L.push("AdDoctor: The Doctor's Prescription");
   L.push((input.brand ? input.brand + " | " : "") + (input.type === "video" ? "Short-Form Video" : "Static Image"));
   L.push("Ad Health Score: " + r.score + "/100 (" + r.status + ")");
+  if (r.fix) L.push("Start here: " + r.fix.title + ". " + r.fix.action);
   L.push("");
   L.push("VITAL SIGNS");
   r.vitals.forEach(function (v) {

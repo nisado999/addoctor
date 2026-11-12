@@ -36,6 +36,8 @@ export default {
       fontFamily: {
         sans: ['"Inter Tight"', '"Inter Tight Fallback"', '"Inter Tight Fallback Android"', "ui-sans-serif", "system-ui", "-apple-system", '"Segoe UI"', "sans-serif"],
         display: ['"Archivo"', '"Archivo Fallback"', '"Archivo Fallback Android"', '"Inter Tight"', "system-ui", "sans-serif"],
+        // Doc's handwriting (Caveat 600, loaded in main.jsx). Only for short notes: a few words, never body text.
+        hand: ['"Caveat"', '"Segoe Script"', "cursive"],
       },
       /* The whole app is drawn in two families: a warm stone neutral (under the name slate, so every screen and
          dialog picks it up) and one electric accent (under blue, close to the logo's blue but louder). */
