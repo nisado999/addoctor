@@ -416,7 +416,7 @@ function drawBadges(ctx, c, x, y, maxW) {
 /* Option pills (sizes, perks). Draws upward from bottomY. */
 function drawPillsRow(ctx, c, bottomY) {
   if (!c.pills.length) return bottomY;
-  const th = c.theme, gap = 16, h = 84;
+  const gap = 16, h = 84;
   ctx.font = `700 38px ${F_BODY}`;
   const rows = [[]]; let rw = 0;
   c.pills.forEach((t2) => {
@@ -497,7 +497,6 @@ function layoutMyth(ctx, c, H) {
 function layoutReview(ctx, c, H) {
   const W = VW - 2 * P;
   photoBg(ctx, c, H);
-  const art = c.t.art;
   const quotes = c.reviews.slice(0, 3);
   const bw = W - 60, gap = 22, padX = 44;
   const cards = quotes.map((qt) => {
@@ -797,7 +796,7 @@ function layoutIngr(ctx, c, H) {
 
 /* Ugly marker ad: handwritten, highlighter strokes, red arrow */
 function layoutMarker(ctx, c, H) {
-  const th = c.theme, W = VW - 2 * P;
+  const W = VW - 2 * P;
   ctx.fillStyle = "#fffdf0"; ctx.fillRect(0, 0, VW, H);
   ctx.strokeStyle = "rgba(15,23,42,.05)"; ctx.lineWidth = 2;
   for (let y = 260; y < H; y += 62) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(VW, y); ctx.stroke(); }
@@ -805,7 +804,6 @@ function layoutMarker(ctx, c, H) {
   ctx.font = `700 ${f.size}px ${F_HAND}`;
   const sp = ctx.measureText(" ").width, y0 = 190;
   f.lines.forEach((line, i) => {
-    const lw = line.reduce((t2, wd) => t2 + ctx.measureText(wd.w).width, 0) + sp * (line.length - 1);
     let x = P; const by = y0 + i * f.size * f.lh + f.size * 0.82;
     line.forEach((wd) => {
       const ww = ctx.measureText(wd.w).width;
@@ -904,7 +902,7 @@ function layoutTweet(ctx, c, H) {
 function layoutDM(ctx, c, H) {
   photoBg(ctx, c, H);
   const hb = headline(ctx, c, 200, { maxLines: 3, max: 100, min: 54 });
-  const W = VW - 2 * P, bw = 700;
+  const bw = 700;
   const rf = fitOne(ctx, c.recv, { weight: 500, family: F_BODY, maxW: bw - 80, maxLines: 3, max: 46, min: 30, lh: 1.24 });
   const sf = fitOne(ctx, c.sent, { weight: 500, family: F_BODY, maxW: bw - 80, maxLines: 4, max: 46, min: 30, lh: 1.24 });
   const rh = rf.lines.length * rf.size * rf.lh + 64, sh = sf.lines.length * sf.size * sf.lh + 64;
@@ -1196,10 +1194,11 @@ function StudioModal({ tpl, onClose, notify }) {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     if (closeRef.current) closeRef.current.focus();
+    const pending = timers.current;   // only ever pushed to, never replaced, so this is the live list
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
-      timers.current.forEach(clearTimeout);
+      pending.forEach(clearTimeout);
     };
   }, [onClose]);
 
@@ -1215,6 +1214,9 @@ function StudioModal({ tpl, onClose, notify }) {
   useEffect(() => {
     if (canvasRef.current) { const cfg = buildConfig(tpl, inputs, cur); renderCreative(canvasRef.current, cfg, 720); cfgRef.current = cfg; }
     if (seed >= 0) variants.forEach((v, i) => { const el = thumbRefs.current[i]; if (el) renderCreative(el, buildConfig(tpl, inputs, v), 220); });
+    // Keyed on what inputs and cur are made of (inputs is a new object every render, cur comes from variants + sel):
+    // listing inputs itself would redraw both canvases on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tpl, brand, hook, img, pos, badge, sub, pills, logo, headText, subText, oldWay, variants, sel, fonts, seed]);
 
   const onFile = (file) => {

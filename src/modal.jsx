@@ -299,10 +299,11 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     if (closeRef.current) closeRef.current.focus();
+    const pending = timers.current;   // only ever pushed to, never replaced, so this is the live list
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
-      timers.current.forEach((t) => (clearTimeout(t), clearInterval(t)));
+      pending.forEach((t) => (clearTimeout(t), clearInterval(t)));
     };
   }, [onClose]);
 

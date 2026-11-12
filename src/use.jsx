@@ -737,6 +737,9 @@ async function bakeLayers(src, layers) {
   return c.toDataURL("image/png");
 }
 const FREE_CHANGES = 2;   // keep in step with FREE_EDITS in api/worker.js
+// The steps shown while an ad is being made, one every 9 seconds.
+const PHASES = ["Reading your product photo", "Matching light and shadow", "Placing it in the scene", "Adding the finishing touches"];
+
 function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   useModal(onClose);
   const isVideo = !!TEMPLATE_VIDS[tpl.id];
@@ -867,7 +870,6 @@ function ProductModal({ tpl, onClose, onBack, notify, onSpend }) {
   /* ---- motion (GSAP). Scoped to this window and reverted on close; reduced-motion users get none of it. ---- */
   const root = useRef(null), panelRef = useRef(null), stageRef = useRef(null), beamRef = useRef(null), barRef = useRef(null), goRef = useRef(null);
   const [phase, setPhase] = useState(0);
-  const PHASES = ["Reading your product photo", "Matching light and shadow", "Placing it in the scene", "Adding the finishing touches"];
   useEffect(() => {
     if (!busy || ad) { setPhase(0); return undefined; }
     const t = setInterval(() => setPhase((p) => Math.min(p + 1, PHASES.length - 1)), 9000);

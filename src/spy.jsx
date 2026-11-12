@@ -641,7 +641,7 @@ function SpyView({ onRebuild, onExamine, notify, seed = "" }) {
   useEffect(() => {
     const own = !!builtLink.current && builtLink.current === libRaw;
     if (libOk) { setCountry(lib.country || ""); if (lib.name) setBrand(lib.name); if (!own && lib.from) setFrom(lib.from); if (!own && lib.to) setTo(lib.to); }
-  }, [lib]);
+  }, [lib, libOk, libRaw]);   // lib is memoised on libRaw and libOk comes from lib, so these change together
 
   const finish = (source, ads, slide, insights, b, more) => {
     const tagged = ads.map(spyTag);

@@ -10,7 +10,6 @@ import SplitText from "./components/bits/SplitText/SplitText.jsx";
    drifting across the page, and four flat links into the tools. No cards, no tints, no made-up figures: the only
    numbers are counted from the gallery itself. */
 
-const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 const COUNT = TEMPLATES.length;
 const RANK = new Map(FEATURED_TOP.map((id, i) => [id, i]));
 // The carousel is the top of the Featured order: my best generated ads (see featuredOrder.js).
