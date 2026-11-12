@@ -287,6 +287,25 @@ test("a body that can't be read or isn't JSON is refused (400), never taken as {
   assert.ok(!calls.some((c) => c.includes("billing_set_segment")));
 });
 
+test("every route reads only a JSON object: null, a number, an array or broken JSON get 400", async () => {
+  await withFetch(async () => { throw new Error("no outside calls expected"); }, async () => {
+    for (const body of ["null", "42", "[1,2]", '"text"', "{not json"]) {
+      const res = await worker.fetch(post("/ask", { body }), {});
+      assert.equal(res.status, 400, body);
+    }
+  });
+});
+
+test("the credit peek refuses a broken or oversized body before anything is charged", async () => {
+  s.resetLimits();
+  const calls = [];
+  await withFetch(signedIn(calls), async () => {
+    assert.equal((await worker.fetch(post("/make/ad", { body: "{not json", headers: { Authorization: "Bearer tok" } }), benv)).status, 400);
+    assert.equal((await worker.fetch(post("/make/ad", { body: streamOf(33), headers: { Authorization: "Bearer tok" } }), benv)).status, 413);
+  });
+  assert.ok(!calls.some((c) => c.includes("billing_spend")), "nothing charged: " + calls.join(", "));
+});
+
 test("an unexpected error still answers in JSON the page can read", async () => {
   // A secret that throws when used: the webhook has no try/catch of its own, so this reaches the top-level guard.
   const ts = Math.floor(Date.now() / 1000);
@@ -329,18 +348,33 @@ test("DNS check: a failed or empty lookup is never kept, and an answer is kept o
   assert.equal(n, 2, "TTL 60: the second fetch uses the kept answer");
 });
 
-test("DNS check: a host whose A lookup fails while its AAAA answers is refused, and a refusal is kept", async () => {
+test("DNS check: a partial lookup is judged on what came back and never kept; a refusal is kept", async () => {
   s.DNS_SEEN.clear();
-  await withFetch(async (u) => (String(u).endsWith("type=A")
+  const half = (aaaa) => async (u) => (String(u).endsWith("type=A")
     ? new Response(JSON.stringify({ Status: 2 }), { status: 200 })
-    : new Response(JSON.stringify({ Status: 0, Answer: [{ type: 28, data: "2606:4700::6810:84e5", TTL: 300 }] }), { status: 200 })),
-  () => assert.rejects(s.publicHost(new URL("https://half.example/")), /can't be used/));
+    : new Response(JSON.stringify({ Status: 0, Answer: [{ type: 28, data: aaaa, TTL: 300 }] }), { status: 200 }));
+  await withFetch(half("2606:4700::6810:84e5"), () => s.publicHost(new URL("https://v6shop.example/")));
+  assert.ok(!s.DNS_SEEN.has("v6shop.example"), "a real shop with a broken A record still works, and nothing is kept");
+  await withFetch(half("fd00::7"), () => assert.rejects(s.publicHost(new URL("https://half.example/")), /can't be used/));
+  await withFetch(async (u) => { if (String(u).endsWith("type=A")) throw new Error("reset"); return dns("10.9.9.9"); },
+    () => assert.rejects(s.publicHost(new URL("https://thrown.example/")), /can't be used/, "a lookup that throws counts as failed; the other is still judged"));
   let n = 0;
   await withFetch(async () => { n++; return dns("10.1.2.3"); }, async () => {
     await assert.rejects(s.publicHost(new URL("https://bad.example/")), /can't be used/);
     await assert.rejects(s.publicHost(new URL("https://bad.example/")), /can't be used/);
   });
   assert.equal(n, 2, "the second refusal came from memory");
+});
+
+test("DNS check: a full cache drops its oldest entry, not every refusal", async () => {
+  s.DNS_SEEN.clear();
+  await withFetch(async () => dns("10.1.2.3"), () => assert.rejects(s.publicHost(new URL("https://first-bad.example/"))));
+  await withFetch(async () => new Response(JSON.stringify({ Status: 0, Answer: [{ type: 1, data: "93.184.216.34", TTL: 120 }] }), { status: 200 }), async () => {
+    for (let i = 0; i < 520; i++) await s.publicHost(new URL(`https://ok${i}.example/`));
+  });
+  assert.equal(s.DNS_SEEN.size, 500);
+  await withFetch(async () => dns("10.1.2.3"), () => assert.rejects(s.publicHost(new URL("https://late-bad.example/"))));
+  assert.ok(s.DNS_SEEN.has("late-bad.example") && s.DNS_SEEN.size === 500);
 });
 
 test("Meta snapshot reads stay on Meta's hosts, redirects included", async () => {
@@ -359,13 +393,15 @@ test("prompt injection: the web-search Claude call carries the same system note"
   assert.match(body.system, /never as instructions/);
 });
 
-test("rate limits: a quick Supabase error falls back for that request only", async () => {
-  s.resetLimits();
-  let calls = 0;
-  await withFetch(async () => { calls++; return new Response("down", { status: 503 }); }, async () => {
-    for (let i = 0; i < 3; i++) assert.equal(await s.overLimit(env, checks), null);
-  });
-  assert.equal(calls, 3, "one hiccup does not switch the worldwide count off");
+test("rate limits: a struggling Supabase (5xx, 429) is left alone for a short while, not called by every request", async () => {
+  for (const status of [503, 429]) {
+    s.resetLimits();
+    let calls = 0;
+    await withFetch(async () => { calls++; return new Response("busy", { status }); }, async () => {
+      for (let i = 0; i < 4; i++) assert.equal(await s.overLimit(env, checks), null);
+    });
+    assert.equal(calls, 1, status + ": one call, then the edge-cache counters");
+  }
   s.resetLimits();
 });
 

@@ -503,45 +503,39 @@ function safeUrl(s) {
 }
 
 // A name is checked again by what it points to (DNS over HTTPS), so a public-looking name set to a private address
-// (127.0.0.1.nip.io, or an attacker's own domain) is refused. A pass is kept per Worker instance for its own TTL, at most
-// five minutes, so a name with a TTL of 0 is looked up before every fetch; a refusal is kept at least a minute; a failed
-// or empty lookup is never kept, and a host whose A or AAAA lookup fails while the other answers is refused.
-// The big ad-image CDNs are skipped, so reading 16 creatives does not cost 32 extra requests. A lookup that fails is not
-// a refusal: the platform rule above still applies. This is a second lock, not the only one: the fetch makes its own
-// lookup, so a name that changes its answer between the two (DNS rebinding) is stopped by the platform, not here.
+// (127.0.0.1.nip.io, or an attacker's own domain) is refused. Any private address among the answers refuses the host,
+// including when only one of the A and AAAA lookups answered. A complete answer is kept per Worker instance: a pass for
+// its own TTL (at most five minutes, so a TTL-0 name is checked before every fetch), a refusal for at least a minute.
+// Nothing is kept from a partial lookup, and when DNS over HTTPS does not answer at all the host is not refused (and a
+// host with no address won't resolve for the fetch either). The ad-image CDNs are skipped, so reading 16 creatives does
+// not cost 32 extra requests. This is a second lock: the fetch makes its own lookup, so a name that answers differently
+// to the two (DNS rebinding, or failing one lookup on purpose) is stopped by Cloudflare's own rule, not here.
 const DNS_SEEN = new Map();
+const keepDns = (host, entry) => {
+  if (DNS_SEEN.size >= 500) DNS_SEEN.delete(DNS_SEEN.keys().next().value);   // drop the oldest, keep the rest
+  DNS_SEEN.set(host, entry);
+};
 async function publicHost(u) {
   const host = u.hostname.replace(/\.+$/, "").toLowerCase();
   if (v4Parts(host) || AD_IMG_HOST.test(host)) return;
   const seen = DNS_SEEN.get(host);
-  if (!seen || seen.exp <= Date.now()) {
-    let looks;
+  if (seen && seen.exp > Date.now()) { if (!seen.ok) throw new Error("That address can't be used"); return; }
+  const looks = await Promise.all(["A", "AAAA"].map(async (type) => {
     try {
-      looks = await Promise.all(["A", "AAAA"].map(async (type) => {
-        const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=${type}`, { headers: { accept: "application/dns-json" } });
-        const j = r.ok ? await r.json().catch(() => null) : null;
-        // Status 0 (NOERROR) and 3 (NXDOMAIN) are real answers; anything else (SERVFAIL, REFUSED) is a failed lookup.
-        if (!j || (j.Status !== 0 && j.Status !== 3)) return null;
-        return (Array.isArray(j.Answer) ? j.Answer : []).filter((a) => a.type === 1 || a.type === 28);
-      }));
-    } catch (e) { return; }
-    const failed = looks.filter((x) => x === null).length;
-    if (failed === looks.length) return;   // DNS over HTTPS itself is not answering: not a refusal, and not kept
-    // One record type answered and the other failed: refuse rather than judge the host on half of its addresses
-    // (a name can fail its A lookup on purpose while its AAAA looks public).
-    if (failed) throw new Error("That address can't be used");
-    const answers = looks.flat();
-    if (!answers.length) return;   // no address at all: the fetch will not resolve either
-    const ok = answers.every((a) => publicIp(String(a.data)));
-    const ttl = Math.min(300, ...answers.map((a) => Math.max(0, Number(a.TTL) || 0)));
-    if (DNS_SEEN.size > 500) DNS_SEEN.clear();
-    // A refusal is kept at least a minute (refusing from memory is always safe); a pass only for its own TTL.
-    if (!ok) DNS_SEEN.set(host, { ok, exp: Date.now() + Math.max(60, ttl) * 1000 });
-    else if (ttl > 0) DNS_SEEN.set(host, { ok, exp: Date.now() + ttl * 1000 });
-    if (!ok) throw new Error("That address can't be used");
-    return;
-  }
-  if (!seen.ok) throw new Error("That address can't be used");
+      const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=${type}`, { headers: { accept: "application/dns-json" } });
+      const j = r.ok ? await r.json().catch(() => null) : null;
+      // Status 0 (NOERROR) and 3 (NXDOMAIN) are real answers; anything else (SERVFAIL, REFUSED) is a failed lookup.
+      if (!j || (j.Status !== 0 && j.Status !== 3)) return null;
+      return (Array.isArray(j.Answer) ? j.Answer : []).filter((a) => a.type === 1 || a.type === 28);
+    } catch (e) { return null; }
+  }));
+  const answers = looks.filter(Boolean).flat();
+  if (!answers.length) return;
+  const ok = answers.every((a) => publicIp(String(a.data)));
+  const ttl = Math.min(300, ...answers.map((a) => Math.max(0, Number(a.TTL) || 0)));
+  if (!ok) keepDns(host, { ok, exp: Date.now() + Math.max(60, ttl) * 1000 });
+  else if (ttl > 0 && looks.every(Boolean)) keepDns(host, { ok, exp: Date.now() + ttl * 1000 });
+  if (!ok) throw new Error("That address can't be used");
 }
 
 // Every request to a link from outside goes through here. Redirects are followed by hand, so each hop is checked
@@ -1782,8 +1776,8 @@ async function bump(key, ttl) {
    limit is returned, or null when all pass. The counters live in Supabase (supabase/rate_limits.sql), so they are one
    count worldwide and every step is atomic, however many data centres a burst comes through. Until that file has been
    run, or while Supabase can't be reached, the edge-cache counters above stand in. A call that takes over 2.5 s is
-   given up, and after a slow or unreachable database it is left alone for a minute (10 when the function or the key is
-   wrong), so an outage adds no wait to paid requests. A quick error falls back for that one request only. */
+   given up. Afterwards the database is left alone for a while, so an outage adds no wait to paid requests: a minute
+   after a slow or unreachable call, 15 s after a 429 or 5xx, 10 minutes when the function or the key is wrong. */
 let limitsDbOffUntil = 0;
 async function overLimit(env, checks) {
   if (!checks.length) return null;
@@ -1796,9 +1790,10 @@ async function overLimit(env, checks) {
         signal: AbortSignal.timeout(2500),
       });
       if (r.ok) { const i = Number(await r.json()); return i > 0 ? checks[i - 1] : null; }
-      // 404: the function is not there yet; 401/403: the key is wrong. Neither fixes itself soon. Any other quick
-      // failure falls back for this request only, so one hiccup does not switch the worldwide count off for everyone.
+      // 404: the function is not there yet; 401/403: the key is wrong. Neither fixes itself soon. A 429 or 5xx means the
+      // database is struggling: leave it alone for 15 s, short enough that one hiccup barely loosens the worldwide count.
       if ([401, 403, 404].includes(r.status)) limitsDbOffUntil = Date.now() + 600000;
+      else if (r.status === 429 || r.status >= 500) limitsDbOffUntil = Date.now() + 15000;
       console.log("rate_check failed", r.status);
     } catch (e) { limitsDbOffUntil = Date.now() + 60000; console.log("rate_check unreachable or slow"); }
   }
@@ -2292,8 +2287,9 @@ async function metaRoute(env, req, u, f = fetch) {
   if (p === "/meta/assets" && req.method === "GET") return json(env, await listAssets(env, conn.token, f));
   if (p === "/meta/select" && req.method === "POST") { await selectAssets(env, who.id, conn, await readBody(req), f); return json(env, { ok: true }); }
   if (p === "/meta/launch" && req.method === "POST") {
+    const b = await readBody(req);   // read first: a broken or oversized request does not use up a launch
     if (await overLimit(env, [[`meta/${who.id}/${Math.floor(Date.now() / 3600000)}`, 3600, 10]])) throw userError("That is a lot of launches in one hour. Try again later.", 429);
-    return json(env, await launchPaused(env, conn, await readBody(req), f));
+    return json(env, await launchPaused(env, conn, b, f));
   }
   if (p === "/meta/activate" && req.method === "POST") {
     const b = await readBody(req);
@@ -2327,16 +2323,19 @@ function capBody(req) {
   }));
   return { req: new Request(req, { body, duplex: "half" }), state };
 }
-const tooLarge = (req, rawEnv) => {
-  const origin = allowedOrigin(req, rawEnv);
-  const env = Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
-  return json(env, { error: "That upload is too large. Try fewer or smaller photos.", code: "too_large" }, 413);
-};
-// A JSON body: {} when there is none, an error (never {}) when it can't be read or isn't JSON.
+// The env every answer is built with: json() reads ALLOW_ORIGIN for the CORS header, so give it the one origin that
+// matched, or the first configured one.
+const corsEnv = (rawEnv, origin) => Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
+const tooLarge = (req, rawEnv) => json(corsEnv(rawEnv, allowedOrigin(req, rawEnv)), { error: "That upload is too large. Try fewer or smaller photos.", code: "too_large" }, 413);
+// A JSON object body: {} when there is none; 400 when it is not a JSON object; the read error itself when it can't be
+// read (a cut-off or oversized stream). Never {} for a body that was there.
 async function readBody(req) {
   const text = await req.text();
   if (!text.trim()) return {};
-  try { return JSON.parse(text); } catch (e) { throw userError("That request could not be read.", 400); }
+  let b;
+  try { b = JSON.parse(text); } catch (e) { b = null; }
+  if (!b || typeof b !== "object" || Array.isArray(b)) throw userError("That request could not be read.", 400);
+  return b;
 }
 
 async function handle(req, rawEnv, hooks) {
@@ -2346,8 +2345,7 @@ async function handle(req, rawEnv, hooks) {
       if (req.method === "POST" && pu.pathname === "/meta/data-deletion") return metaDeletion(Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: "*" }), req); }
     if (req.method === "POST" && new URL(req.url).pathname === "/billing/webhook") return paddleWebhook(Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: "*" }), req);
     const origin = allowedOrigin(req, rawEnv);
-    // json() reads ALLOW_ORIGIN for the CORS header; give it the one origin that matched.
-    const env = Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
+    const env = corsEnv(rawEnv, origin);
     if (req.method === "OPTIONS") return json(env, {});
     if (!origin) return json(env, { error: "This site is not allowed to use the AdDoctor API." }, 403);
     // Crash reports from src/report.js (sent as a beacon, so before the X-App-Key check: a beacon has no headers).
@@ -2406,7 +2404,7 @@ async function handle(req, rawEnv, hooks) {
       if (!isOwner(env, who)) {
         try {
           let peek = {};
-          if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/make/improve" || u.pathname === "/pack/image")) peek = await req.clone().json().catch(() => ({}));
+          if (req.method === "POST" && (u.pathname === "/make/ad" || u.pathname === "/make/improve" || u.pathname === "/pack/image")) peek = await readBody(req.clone());
           const feature = proOnly(u.pathname, peek);
           if (feature) {
             const a = await dbRpc(env, "billing_refresh", { uid: who.id });
@@ -2426,14 +2424,14 @@ async function handle(req, rawEnv, hooks) {
             const a = await dbRpc(env, "billing_refresh", { uid: who.id });
             if (a.plan_credits + a.extra_credits < START_NEEDS) return json(env, { error: `A competitor analysis uses ${START_NEEDS} credits and you have ${a.plan_credits + a.extra_credits}. Top up or upgrade your plan.`, code: "no_credits", needed: START_NEEDS }, 402);
           }
-        } catch (e) { return json(env, { error: String((e && e.message) || e).slice(0, 240) }, 502); }
+        } catch (e) { return json(env, { error: String((e && e.message) || e).slice(0, 240) }, e && [400, 413].includes(e.status) ? e.status : 502); }
       }
     }
     const apify = (path) => `https://api.apify.com/v2/${path}${path.includes("?") ? "&" : "?"}token=${env.APIFY_TOKEN}`;
     try {
       // 1. start a crawl
       if (u.pathname === "/start" && req.method === "POST") {
-        const b = await req.json();
+        const b = await readBody(req);
         const id = String(b.page_id || "").replace(/\D/g, "");
         if (!id) return json(env, { error: "page_id required" }, 400);
         const country = String(b.country || "ALL").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "ALL";
@@ -2452,7 +2450,7 @@ async function handle(req, rawEnv, hooks) {
       }
       // 1b. read the next few pages of a ScrapeCreators run; the page calls this until "cursor" comes back empty
       if (u.pathname === "/page" && req.method === "POST") {
-        const b = await req.json();
+        const b = await readBody(req);
         const run = String(b.run || "").replace(/[^A-Za-z0-9]/g, "");
         const q = (await runOpen(env, run, who && who.id)) || {};
         if (q.src !== "sc" || !env.SCRAPECREATORS_KEY) return json(env, { error: "This read has expired or can't be read in pages. Start the analysis again." }, 400);
@@ -2473,7 +2471,7 @@ async function handle(req, rawEnv, hooks) {
       }
       // 3. read the ads and write the analysis
       if (u.pathname === "/analyze" && req.method === "POST") {
-        const b = await req.json();
+        const b = await readBody(req);
         const run = String(b.run || "").replace(/[^A-Za-z0-9]/g, "");
         let ads, raw = 0, official = false;
         const dedupe = (items) => { const seen = new Set(); return items.map(normalize).filter((a) => (a.headline || a.body) && a.libId && !seen.has(a.libId) && seen.add(a.libId)); };
@@ -2510,10 +2508,10 @@ async function handle(req, rawEnv, hooks) {
         return json(env, { count: ads.length, brand, ads, slide, insights, report, creatives, aiError, vision, from, to });
       }
       // 4. one creative broken down (hook, problem, solution, proof, offer, awareness stage)
-      if (u.pathname === "/creative" && req.method === "POST") return json(env, await creativeBreakdown(env, await req.json()));
+      if (u.pathname === "/creative" && req.method === "POST") return json(env, await creativeBreakdown(env, await readBody(req)));
       // a saved ad keeps its picture: Meta's image links expire, so the page asks for the bytes once and keeps a small copy
       if (u.pathname === "/thumb" && req.method === "POST") {
-        const b = await req.json();
+        const b = await readBody(req);
         let host = "";
         try { host = new URL(String(b.img || "")).hostname; } catch (e) { /* handled below */ }
         if (!AD_IMG_HOST.test(host)) throw bad("That creative image can't be read");
@@ -2521,20 +2519,20 @@ async function handle(req, rawEnv, hooks) {
         return json(env, { mime: ref.mime, data: ref.data });
       }
       // 5. find an advertiser by name, and 6. ask a question about the ads already read
-      if (u.pathname === "/brands" && req.method === "POST") return json(env, await brandSearch(env, await req.json()));
-      if (u.pathname === "/spy/find" && req.method === "POST") return json(env, await platformFind(env, await req.json()));
-      if (u.pathname === "/spy/read" && req.method === "POST") return json(env, await platformRead(env, await req.json()));
-      if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await req.json()));
-      if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await req.json()));
-      if (u.pathname === "/rivals" && req.method === "POST") return json(env, await findRivals(env, await req.json()));
-      if (u.pathname === "/angles/find" && req.method === "POST") return json(env, await findAngles(env, await req.json()));
-      if (u.pathname === "/library" && req.method === "POST") return json(env, await winningAds(env, await req.json()));
-      if (u.pathname === "/brand/read" && req.method === "POST") return json(env, await readBrand(env, await req.json()));
+      if (u.pathname === "/brands" && req.method === "POST") return json(env, await brandSearch(env, await readBody(req)));
+      if (u.pathname === "/spy/find" && req.method === "POST") return json(env, await platformFind(env, await readBody(req)));
+      if (u.pathname === "/spy/read" && req.method === "POST") return json(env, await platformRead(env, await readBody(req)));
+      if (u.pathname === "/organic" && req.method === "POST") return json(env, await organicPosts(env, await readBody(req)));
+      if (u.pathname === "/ask" && req.method === "POST") return json(env, await askAds(env, await readBody(req)));
+      if (u.pathname === "/rivals" && req.method === "POST") return json(env, await findRivals(env, await readBody(req)));
+      if (u.pathname === "/angles/find" && req.method === "POST") return json(env, await findAngles(env, await readBody(req)));
+      if (u.pathname === "/library" && req.method === "POST") return json(env, await winningAds(env, await readBody(req)));
+      if (u.pathname === "/brand/read" && req.method === "POST") return json(env, await readBrand(env, await readBody(req)));
       // what this server can do, so the page can offer the right way to read the Ad Library
       if (u.pathname === "/caps") return json(env, { source: spySource(env), posted: true, vision: true, features: ["creative", "ask", "rivals", "brandread", ...(env.SCRAPECREATORS_KEY ? ["brands", "organic", "library", "spymore"] : [])] });
       // ---- Social Pack ----
       if (u.pathname.startsWith("/pack/") && req.method === "POST") {
-        const b = await req.json();
+        const b = await readBody(req);
         if (u.pathname === "/pack/store") return json(env, await packStore(env, b));
         if (u.pathname === "/pack/brief") return json(env, { brief: await packBrief(env, b) });
         if (u.pathname === "/pack/posts") return json(env, { posts: await packPosts(env, b) });
@@ -2547,7 +2545,7 @@ async function handle(req, rawEnv, hooks) {
       }
       // ---- an ad from a template and a product photo ----
       if (u.pathname.startsWith("/make/") && req.method === "POST") {
-        const b = await req.json();
+        const b = await readBody(req);
         if (u.pathname === "/make/ad") {
           const out = await makeAd(env, b);
           if (!b.base) out.grant = await signGrant(env, who ? who.id : "anon");
@@ -2584,7 +2582,7 @@ export default {
     catch (e) {
       // Nothing may escape as the runtime's own error page, which carries no CORS header for the site to read.
       console.log("unhandled", String((e && e.message) || e).slice(0, 200));
-      res = json(Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: allowedOrigin(req, rawEnv) || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() }), { error: "Something went wrong. Try again." }, 500);
+      res = json(corsEnv(rawEnv, allowedOrigin(req, rawEnv)), { error: "Something went wrong. Try again." }, 500);
     }
     if (cap.state.over) res = tooLarge(req, rawEnv);   // the read ran over the cap, whatever the route made of that
     // A charged action that did not succeed costs nothing: give the credits back (safe to repeat).
