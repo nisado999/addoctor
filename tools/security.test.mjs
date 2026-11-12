@@ -204,3 +204,59 @@ test("prompt injection: every Claude call says that copied website and ad text i
 test("API answers carry nosniff", () => {
   assert.equal(s.json({}, { ok: 1 }).headers.get("X-Content-Type-Options"), "nosniff");
 });
+
+/* ---------------- Request size ---------------- */
+
+const ORIGIN = { Origin: "http://localhost:5173" };
+// A body of `mb` megabytes sent as a stream, so it carries no Content-Length and is only counted as it arrives.
+const streamOf = (mb) => {
+  let left = mb;
+  return new ReadableStream({ pull(c) { if (left-- > 0) c.enqueue(new Uint8Array(1024 * 1024).fill(32)); else c.close(); } });
+};
+const post = (path, init) => new Request("https://w.example" + path, { method: "POST", duplex: "half", ...init, headers: { ...ORIGIN, "content-type": "application/json", ...(init.headers || {}) } });
+
+test("body cap: a declared size over the limit is refused before anything runs", async () => {
+  let calls = 0;
+  await withFetch(async () => { calls++; return new Response("{}", { status: 200 }); }, async () => {
+    const res = await worker.fetch(post("/ask", { body: "{}", headers: { "content-length": String(9 * 1024 * 1024) } }), {});
+    assert.equal(res.status, 413);
+    assert.equal((await res.json()).code, "too_large");
+    assert.equal(res.headers.get("Access-Control-Allow-Origin"), "http://localhost:5173", "the page can read the answer");
+  });
+  assert.equal(calls, 0, "no rate-limit, sign-in or AI call was made");
+});
+
+test("body cap: a body with no declared size is counted as it streams in", async () => {
+  await withFetch(async () => { throw new Error("no outside calls expected"); }, async () => {
+    const res = await worker.fetch(post("/ask", { body: streamOf(9) }), {});
+    assert.equal(res.status, 413);
+  });
+});
+
+test("body cap: photo routes get room for several product photos, the rest do not", async () => {
+  await withFetch(async () => { throw new Error("offline"); }, async () => {
+    const photos = await worker.fetch(post("/make/ad", { body: "{}", headers: { "content-length": String(20 * 1024 * 1024) } }), {});
+    assert.notEqual(photos.status, 413);
+    const text = await worker.fetch(post("/ask", { body: "{}", headers: { "content-length": String(20 * 1024 * 1024) } }), {});
+    assert.equal(text.status, 413);
+    assert.equal((await worker.fetch(post("/make/ad", { body: "{}", headers: { "content-length": String(40 * 1024 * 1024) } }), {})).status, 413);
+  });
+});
+
+test("body cap: credits charged for a request whose body then overflows are given back", async () => {
+  const calls = [];
+  const benv = { ...env, BILLING: "on", SUPABASE_ANON_KEY: "anon" };
+  await withFetch(async (u) => {
+    u = String(u); calls.push(u.replace("https://sb.example", ""));
+    if (u.endsWith("/auth/v1/user")) return new Response(JSON.stringify({ id: "11111111-1111-1111-1111-111111111111", email: "a@b.c", email_confirmed_at: "2026-01-01" }), { status: 200 });
+    if (u.endsWith("/rpc/rate_check")) return new Response("0", { status: 200 });
+    if (u.endsWith("/rpc/billing_spend")) return new Response(JSON.stringify({ ok: true, plan: "free", plan_credits: 10, extra_credits: 0 }), { status: 200 });
+    if (u.endsWith("/rpc/billing_refund")) return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    throw new Error("unexpected " + u);
+  }, async () => {
+    const res = await worker.fetch(post("/ask", { body: streamOf(9), headers: { Authorization: "Bearer tok" } }), benv);
+    assert.equal(res.status, 413);
+  });
+  assert.ok(calls.some((c) => c.endsWith("/rpc/billing_spend")), calls.join(", "));
+  assert.ok(calls.some((c) => c.endsWith("/rpc/billing_refund")), "refunded: " + calls.join(", "));
+});

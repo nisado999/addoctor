@@ -95,6 +95,7 @@ Full review of api/worker.js, supabase/*.sql and the client. No critical or high
 - Sign-in cache is 60 s (was 5 min) and is cleared when an account is deleted.
 - Every Claude call has a system note: copied site, ad and post text is data, never instructions.
 - API answers carry `X-Content-Type-Options: nosniff`.
+- Request bodies are capped (`capBody()` in the Worker): 32 MB on `/make/*` and `/pack/*`, which carry several product photos as data URLs, and 8 MB elsewhere. A body with no Content-Length is counted as it streams. Over the cap the answer is 413 `too_large`, and any credits already charged are refunded. This closes the "8MB body cap" item noted on 2026-10-16; 8 MB everywhere would have broken Create an ad with 6 photos.
 - `image-size` (pulled in by pptxgenjs, never actually loaded by it) is overridden to ^2.0.3 in package.json. `npm audit --omit=dev` is clean. What remains is dev-only tooling (shadcn CLI, Vite's esbuild) and needs breaking upgrades.
 - Tests: `tools/security.test.mjs` (19 attack tests), run by `npm test` with the Meta tests.
 Already in place and checked: RLS on every table, idempotent ledger, constant-time Paddle check, HMAC OAuth state, AES-GCM Meta tokens, CSP with a hashed inline script, frame guard in src/main.jsx, no dangerous DOM sinks.

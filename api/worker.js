@@ -2277,6 +2277,34 @@ async function metaRoute(env, req, u, f = fetch) {
   return json(env, { error: "not found" }, 404);
 }
 
+/* Request bodies are capped before anything reads them, so one huge upload can't exhaust the Worker's memory, which
+   every request on that instance shares. Routes that carry photos (up to 6 product shots, a template and a base image,
+   each a JPEG of at most 1400-1600 px sent as a data URL: about 17 MB at worst) get 32 MB; the rest get 8 MB.
+   A Content-Length over the cap is refused at once. A body sent without one is counted as it streams in; if it runs
+   over, whatever the route answered is replaced by the 413 (see the default export). */
+const MB = 1024 * 1024;
+const bodyCap = (path) => (/^\/(make|pack)\//.test(path) ? 32 : 8) * MB;
+function capBody(req) {
+  const state = { over: false };
+  const max = bodyCap(new URL(req.url).pathname);
+  const len = Number(req.headers.get("content-length"));
+  if (req.headers.has("content-length") && Number.isFinite(len)) { state.over = len > max; return { req, state }; }   // the runtime holds a body to its declared length
+  if (!req.body || req.method === "GET" || req.method === "HEAD") return { req, state };
+  let seen = 0;
+  const body = req.body.pipeThrough(new TransformStream({
+    transform(chunk, ctl) {
+      seen += chunk.byteLength;
+      if (seen > max) { state.over = true; ctl.error(new Error("Request body too large")); } else ctl.enqueue(chunk);
+    },
+  }));
+  return { req: new Request(req, { body, duplex: "half" }), state };
+}
+const tooLarge = (req, rawEnv) => {
+  const origin = allowedOrigin(req, rawEnv);
+  const env = Object.assign(Object.create(rawEnv), { ALLOW_ORIGIN: origin || String(rawEnv.ALLOW_ORIGIN || "").split(",")[0].trim() });
+  return json(env, { error: "That upload is too large. Try fewer or smaller photos.", code: "too_large" }, 413);
+};
+
 async function handle(req, rawEnv, hooks) {
     // Meta calls these two itself: no Origin header, no sign-in header.
     { const pu = new URL(req.url);
@@ -2292,7 +2320,7 @@ async function handle(req, rawEnv, hooks) {
     // Written to the Worker's log only, which Cloudflare keeps for a few days; never stored anywhere else.
     if (req.method === "POST" && new URL(req.url).pathname === "/log") {
       const ip = req.headers.get("CF-Connecting-IP") || "unknown";
-      if ((await bump(`log/${ip}/${Math.floor(Date.now() / 3600000)}`, 3600)) <= 30) console.log("client error", (await req.text()).slice(0, 4000));
+      if ((await bump(`log/${ip}/${Math.floor(Date.now() / 3600000)}`, 3600)) <= 30) console.log("client error", (await req.text().catch(() => "")).slice(0, 4000));
       return json(env, { ok: true });
     }
     if (env.APP_KEY && !sameText(req.headers.get("X-App-Key"), env.APP_KEY)) return json(env, { error: "unauthorized" }, 401);
@@ -2515,7 +2543,11 @@ export const metaTest = { PAID, readBrand, sitemapPages, signState, verifyState,
 export default {
   async fetch(req, rawEnv) {
     const hooks = {};
-    const res = await handle(req, rawEnv, hooks);
+    const cap = capBody(req);
+    if (cap.state.over) return tooLarge(req, rawEnv);
+    let res;
+    try { res = await handle(cap.req, rawEnv, hooks); } catch (e) { if (!cap.state.over) throw e; }
+    if (cap.state.over) res = tooLarge(req, rawEnv);
     // A charged action that did not succeed costs nothing: give the credits back (safe to repeat).
     if (hooks.charge && res.status >= 400) {
       try { await dbRpc(rawEnv, "billing_refund", { uid: hooks.charge.uid, ref_id: hooks.charge.ref }); } catch (e) { console.log("refund failed", hooks.charge.ref); }
