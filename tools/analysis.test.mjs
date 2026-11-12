@@ -1,7 +1,7 @@
 // Tests for the Examine Ad engine (src/analysis.js). Run: npm test.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyze, prescriptionText } from "../src/analysis.js";
+import { analyze, prescriptionText, startHere, splitSentences } from "../src/analysis.js";
 
 // The three "Quick sample loaders" from src/data.jsx (copied: data.jsx is JSX, which Node can't import).
 const SKIN = { brand: "Lumen Glow", type: "static", headline: "Glowing skin starts with vitamin C", copy: "Dull skin? Our vitamin C serum evens tone in 4 weeks, with 15% L-ascorbic acid. Apply two drops each morning under your SPF. Free shipping on every order. Shop at lumenglow.com." };
@@ -79,4 +79,34 @@ test("analyze does not change the input it is given", () => {
   const before = JSON.stringify(input);
   analyze(input);
   assert.equal(JSON.stringify(input), before);
+});
+
+test("every leak ends with something to do, so the Start here action is always an instruction", () => {
+  const VIDEO_LONG = { w: 1920, h: 1080, lumStd: 70, lumMean: 15, sat: 0.4, kind: "video", dur: 58, tags: [] };
+  const TINY = { w: 400, h: 500, lumStd: 50, lumMean: 120, sat: 0.2, kind: "image", tags: ["bottle"], tagSource: "file" };
+  const inputs = [SKIN, GYM, APPAREL, STRONG, EMPTY, { ...APPAREL, asset: FLAT_JACKET },
+    { brand: "Glow", type: "static", headline: "Introducing our new serum", copy: "Our revolutionary, innovative serum leverages cutting-edge synergy. Learn more." },
+    { brand: "Fit", type: "video", headline: "Best premium shaker", copy: "Fit is here.", asset: VIDEO_LONG },
+    { brand: "Tea", type: "static", headline: "Tea", copy: "We make tea. ".repeat(40), asset: TINY },
+    { brand: "Mat", type: "static", headline: "Yoga mats that grip", copy: "Discover our mats, made for every practice and every home studio." }];
+  const seen = new Map();
+  for (const input of inputs) {
+    const r = analyze(input);
+    for (const l of [...r.leaks, ...(r.fix ? [{ title: r.fix.title, detail: r.fix.action }] : [])]) {
+      const steps = splitSentences(l.detail).map((x) => x.trim()).filter(Boolean);
+      seen.set(l.title, steps[steps.length - 1]);
+    }
+  }
+  assert.ok(seen.size >= 15, "covers most leaks: " + [...seen.keys()].join(", "));
+  const DO = /\b(lead|add|move|replace|name|put|set|re-crop|export|cut|re-light|re-grade|upload|repeat|build|keep)\b/i;
+  for (const [title, last] of seen) assert.match(last, DO, `"${title}" ends with "${last}"`);
+});
+
+test("a report saved before r.fix existed still gets its Start here, on screen and in the copied text", () => {
+  const r = analyze(APPAREL);
+  delete r.fix;
+  assert.equal(startHere(r).title, "Soft call to action");
+  assert.ok(prescriptionText(APPAREL, r).includes("Start here: Soft call to action."));
+  assert.equal(startHere({ weakest: { key: "cta" }, leaks: [] }), null);
+  assert.equal(startHere(null), null);
 });

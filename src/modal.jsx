@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { SAMPLES } from "./data";
 import { Icon, Creative, pill, Mascot } from "./ui";
 import { readAsset, renderSampleAsset, AssetZone } from "./asset";
-import { analyze, prescriptionText, splitSentences } from "./analysis.js";
+import { analyze, prescriptionText, startHere } from "./analysis.js";
 import { TONE, copyText, inputKey, field } from "./shared.js";
 
 /* --------------------------- Helpers ---------------------------------- */
@@ -100,21 +100,10 @@ function HookParts({ parts, asset }) {
   );
 }
 
-/* The one fix for the weakest vital sign. analyze() works it out from every leak (r.fix); a report saved in the Vault
-   before that existed only has its top 3 leaks, so the same is looked for there. Null when there is nothing to show. */
-function firstFix(r) {
-  if (r && r.fix && r.fix.title) return r.fix;
-  // Reports saved in the Vault by older builds may lack a field, so nothing here may assume one is there.
-  const l = r && r.weakest && Array.isArray(r.leaks) && r.leaks.find((x) => x && String(x.area).toLowerCase() === r.weakest.key);
-  if (!l || !l.title) return null;
-  const parts = splitSentences(String(l.detail || "")).map((x) => x.trim()).filter(Boolean);
-  return { title: l.title, action: parts[parts.length - 1] || l.detail };
-}
-
 function Report({ input, r }) {
   const on = useMounted();
   const tone = TONE[r.tone];
-  const fix = firstFix(r);
+  const fix = startHere(r);
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 md:grid-cols-[minmax(0,300px)_1fr]">
