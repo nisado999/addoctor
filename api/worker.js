@@ -240,13 +240,13 @@ async function readCreatives(ads) {
   const vision = { tried: top.length, pages: 0, found: 0, images: 0, note: "" };
   const out = await Promise.all(top.map(async (g) => {
     try {
-      const r = await fetch(g.a.snap, { headers: { "user-agent": "Mozilla/5.0", accept: "text/html" } });
+      const { r } = await fetchOutside(g.a.snap, { headers: { "user-agent": "Mozilla/5.0", accept: "text/html" } }, { hostOk: AD_IMG_HOST, hops: 3 });
       if (!r.ok) { vision.note = vision.note || "preview page " + r.status; return null; }
       vision.pages++;
       const src = snapImage(await r.text());
       if (!src) { vision.note = vision.note || "no image in preview page"; return null; }
       vision.found++;
-      const ir = await fetch(src);
+      const { r: ir } = await fetchOutside(src, {}, { hostOk: AD_IMG_HOST, hops: 3 });
       const type = (ir.headers.get("content-type") || "").split(";")[0];
       if (!ir.ok || !/^image\/(jpeg|png|webp|gif)$/.test(type)) { vision.note = vision.note || "image " + ir.status + " " + type; return null; }
       const buf = await ir.arrayBuffer();
@@ -482,7 +482,11 @@ function publicV6(w) {
   if (w.slice(0, 6).every((x) => x === 0)) return !(w[6] === 0 && w[7] <= 1) && v4(w[6], w[7]);   // ::, ::1 and IPv4-compatible
   if (w.slice(0, 5).every((x) => x === 0) && w[5] === 0xffff) return v4(w[6], w[7]);                 // ::ffff:a.b.c.d
   if (w[0] === 0x64 && w[1] === 0xff9b && w.slice(2, 6).every((x) => x === 0)) return v4(w[6], w[7]); // NAT64
+  if (w.slice(0, 4).every((x) => x === 0) && w[4] === 0xffff && w[5] === 0) return v4(w[6], w[7]);  // ::ffff:0:a.b.c.d (SIIT)
   if (w[0] === 0x2002) return v4(w[1], w[2]);                                                          // 6to4
+  if (w[0] === 0x64 && w[1] === 0xff9b && w[2] === 1) return false;                                    // local-use NAT64, 64:ff9b:1::/48
+  if (w[0] === 0x2001 && w[1] === 0) return false;                                                     // Teredo, 2001::/32
+  if (w[0] === 0x100 && w.slice(1, 4).every((x) => x === 0)) return false;                             // discard-only, 100::/64
   return !((w[0] & 0xfe00) === 0xfc00 || (w[0] & 0xffc0) === 0xfe80 || (w[0] & 0xffc0) === 0xfec0 || (w[0] & 0xff00) === 0xff00 || (w[0] === 0x2001 && w[1] === 0x0db8));
 }
 const publicIp = (ip) => (String(ip).includes(":") ? publicV6(v6Words(ip)) : !!v4Parts(ip) && publicV4(v4Parts(ip)));
@@ -499,27 +503,33 @@ function safeUrl(s) {
 }
 
 // A name is checked again by what it points to (DNS over HTTPS), so a public-looking name set to a private address
-// (127.0.0.1.nip.io, or an attacker's own domain) is refused. Answers are kept for five minutes per Worker instance.
-// The big ad-image CDNs are skipped, so reading 16 creatives does not cost 32 extra requests. A lookup that fails
-// is not a refusal: the platform rule above still applies.
+// (127.0.0.1.nip.io, or an attacker's own domain) is refused. An answer is kept per Worker instance for its own TTL, at
+// most five minutes, so a name with a TTL of 0 is looked up before every fetch; a failed or empty lookup is never kept.
+// The big ad-image CDNs are skipped, so reading 16 creatives does not cost 32 extra requests. A lookup that fails is not
+// a refusal: the platform rule above still applies. This is a second lock, not the only one: the fetch makes its own
+// lookup, so a name that changes its answer between the two (DNS rebinding) is stopped by the platform, not here.
 const DNS_SEEN = new Map();
 async function publicHost(u) {
   const host = u.hostname.replace(/\.+$/, "").toLowerCase();
   if (v4Parts(host) || AD_IMG_HOST.test(host)) return;
   const seen = DNS_SEEN.get(host);
   if (!seen || seen.exp <= Date.now()) {
-    let ips;
+    let answers;
     try {
-      ips = (await Promise.all(["A", "AAAA"].map(async (type) => {
+      answers = (await Promise.all(["A", "AAAA"].map(async (type) => {
         const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(host)}&type=${type}`, { headers: { accept: "application/dns-json" } });
         const j = r.ok ? await r.json().catch(() => null) : null;
-        return (j && Array.isArray(j.Answer) ? j.Answer : []).filter((a) => a.type === 1 || a.type === 28).map((a) => String(a.data));
+        return (j && Array.isArray(j.Answer) ? j.Answer : []).filter((a) => a.type === 1 || a.type === 28);
       }))).flat();
     } catch (e) { return; }
-    if (DNS_SEEN.size > 500) DNS_SEEN.clear();
-    DNS_SEEN.set(host, { ok: ips.every(publicIp), exp: Date.now() + 300000 });
+    if (!answers.length) return;   // nothing came back: not kept, and the fetch itself will fail to resolve
+    const ok = answers.every((a) => publicIp(String(a.data)));
+    if (!ok) throw new Error("That address can't be used");
+    const ttl = Math.min(300, ...answers.map((a) => Math.max(0, Number(a.TTL) || 0)));
+    if (ttl > 0) { if (DNS_SEEN.size > 500) DNS_SEEN.clear(); DNS_SEEN.set(host, { ok, exp: Date.now() + ttl * 1000 }); }
+    return;
   }
-  if (!DNS_SEEN.get(host).ok) throw new Error("That address can't be used");
+  if (!seen.ok) throw new Error("That address can't be used");
 }
 
 // Every request to a link from outside goes through here. Redirects are followed by hand, so each hop is checked
@@ -1422,7 +1432,7 @@ async function winningAds(env, b) {
 // for the same buyer. Each one is matched to its Ad Library page so the page can open Competitor Spy on it.
 async function askClaudeSearch(env, prompt, maxTokens = 3000) {
   const call = async (withSearch) => {
-    const body = { model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] };
+    const body = { model: env.MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, system: UNTRUSTED_NOTE, messages: [{ role: "user", content: prompt }] };
     if (withSearch) body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }];
     const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "x-api-key": env.ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
@@ -1759,7 +1769,10 @@ async function bump(key, ttl) {
 /* Rate limits. checks is a list of [key, seconds, limit, message, code], tested in order; the first one over its
    limit is returned, or null when all pass. The counters live in Supabase (supabase/rate_limits.sql), so they are one
    count worldwide and every step is atomic, however many data centres a burst comes through. Until that file has been
-   run, or while Supabase can't be reached, the edge-cache counters above stand in. */
+   run, or while Supabase can't be reached, the edge-cache counters above stand in. A failed call is not retried on
+   every request: the database is left alone for a while (10 minutes when the function or the key is wrong, 1 minute
+   after an error or a slow answer), and a call that takes over 2.5 s is given up, so an outage adds no wait to paid
+   requests. */
 let limitsDbOffUntil = 0;
 async function overLimit(env, checks) {
   if (!checks.length) return null;
@@ -1769,12 +1782,13 @@ async function overLimit(env, checks) {
         method: "POST",
         headers: { apikey: env.SUPABASE_SERVICE_ROLE, Authorization: "Bearer " + env.SUPABASE_SERVICE_ROLE, "content-type": "application/json" },
         body: JSON.stringify({ keys: checks.map((c) => c[0]), ttls: checks.map((c) => c[1]), limits: checks.map((c) => c[2]) }),
+        signal: AbortSignal.timeout(2500),
       });
       if (r.ok) { const i = Number(await r.json()); return i > 0 ? checks[i - 1] : null; }
-      // 404: the function is not there yet. Look again in ten minutes rather than on every request.
-      if (r.status === 404) limitsDbOffUntil = Date.now() + 600000;
+      // 404: the function is not there yet; 401/403: the key is wrong. Neither fixes itself within a minute.
+      limitsDbOffUntil = Date.now() + ([401, 403, 404].includes(r.status) ? 600000 : 60000);
       console.log("rate_check failed", r.status);
-    } catch (e) { console.log("rate_check unreachable"); }
+    } catch (e) { limitsDbOffUntil = Date.now() + 60000; console.log("rate_check unreachable or slow"); }
   }
   for (const c of checks) if ((await bump(c[0], c[1])) > c[2]) return c;
   return null;
@@ -2279,25 +2293,31 @@ async function metaRoute(env, req, u, f = fetch) {
 
 /* Request bodies are capped before anything reads them, so one huge upload can't exhaust the Worker's memory, which
    every request on that instance shares. Routes that carry photos (up to 6 product shots, a template and a base image,
-   each a JPEG of at most 1400-1600 px sent as a data URL: about 17 MB at worst) get 32 MB; the rest get 8 MB.
-   A Content-Length over the cap is refused at once. A body sent without one is counted as it streams in; if it runs
-   over, whatever the route answered is replaced by the 413 (see the default export). */
+   each a JPEG of at most 1400-1600 px sent as a data URL: about 17 MB at worst) and /analyze (up to 1,200 ads posted
+   by the browser helper) get 32 MB; the rest get 8 MB. A Content-Length over the cap is refused at once. A body sent
+   without one is read here, up to the cap, before any route runs: a route never sees a cut-off body, so none can act
+   on a half-read request (several fall back to {} when reading fails). */
 const MB = 1024 * 1024;
-const bodyCap = (path) => (/^\/(make|pack)\//.test(path) ? 32 : 8) * MB;
-function capBody(req) {
-  const state = { over: false };
+const bodyCap = (path) => (/^\/(make\/|pack\/|analyze$)/.test(path) ? 32 : 8) * MB;
+// Resolves to the request to route (the body read in full when it had no Content-Length), or null when it is too large.
+async function capBody(req) {
   const max = bodyCap(new URL(req.url).pathname);
   const len = Number(req.headers.get("content-length"));
-  if (req.headers.has("content-length") && Number.isFinite(len)) { state.over = len > max; return { req, state }; }   // the runtime holds a body to its declared length
-  if (!req.body || req.method === "GET" || req.method === "HEAD") return { req, state };
-  let seen = 0;
-  const body = req.body.pipeThrough(new TransformStream({
-    transform(chunk, ctl) {
-      seen += chunk.byteLength;
-      if (seen > max) { state.over = true; ctl.error(new Error("Request body too large")); } else ctl.enqueue(chunk);
-    },
-  }));
-  return { req: new Request(req, { body, duplex: "half" }), state };
+  if (req.headers.has("content-length") && Number.isFinite(len)) return len > max ? null : req;   // the runtime holds a body to its declared length
+  if (!req.body || req.method === "GET" || req.method === "HEAD") return req;
+  const reader = req.body.getReader(), parts = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) { reader.cancel().catch(() => {}); return null; }
+    parts.push(value);
+  }
+  const body = new Uint8Array(size);
+  let at = 0;
+  for (const p of parts) { body.set(p, at); at += p.byteLength; }
+  return new Request(req, { body });
 }
 const tooLarge = (req, rawEnv) => {
   const origin = allowedOrigin(req, rawEnv);
@@ -2537,17 +2557,15 @@ async function handle(req, rawEnv, hooks) {
 
 // Only tools/meta.test.mjs imports this. If Cloudflare ever refuses the paste because of it, delete this one line.
 // Only tools/security.test.mjs imports this. Same rule: if Cloudflare ever refuses the paste because of it, delete it.
-export const securityTest = { safeUrl, publicIp, publicHost, fetchOutside, sameText, overLimit, signGrant, useGrant, runSeal, runOpen, askClaude, json, DNS_SEEN };
+export const securityTest = { safeUrl, publicIp, publicHost, fetchOutside, sameText, overLimit, signGrant, useGrant, runSeal, runOpen, askClaude, askClaudeSearch, readCreatives, json, DNS_SEEN, resetLimits: () => { limitsDbOffUntil = 0; } };
 export const metaTest = { PAID, readBrand, sitemapPages, signState, verifyState, parseSignedRequest, encryptToken, decryptToken, toMinorUnits, OBJECTIVE: META_GOALS, buildCampaign, buildAdSet, buildCreative, metaCall, saveConnection, loadConnection, saveSelection, deleteConnection, listAssets, selectAssets, launchPaused, activateLaunch, metaCallback, metaDeletion, metaRoute };
 
 export default {
   async fetch(req, rawEnv) {
     const hooks = {};
-    const cap = capBody(req);
-    if (cap.state.over) return tooLarge(req, rawEnv);
-    let res;
-    try { res = await handle(cap.req, rawEnv, hooks); } catch (e) { if (!cap.state.over) throw e; }
-    if (cap.state.over) res = tooLarge(req, rawEnv);
+    const capped = await capBody(req);
+    if (!capped) return tooLarge(req, rawEnv);
+    const res = await handle(capped, rawEnv, hooks);
     // A charged action that did not succeed costs nothing: give the credits back (safe to repeat).
     if (hooks.charge && res.status >= 400) {
       try { await dbRpc(rawEnv, "billing_refund", { uid: hooks.charge.uid, ref_id: hooks.charge.ref }); } catch (e) { console.log("refund failed", hooks.charge.ref); }
