@@ -8,7 +8,8 @@ import { PLAN_NAME, PLAN_CREDITS, PRO_PLANS, loadAccount } from "./billing.js";
 const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
 
 /* Doc, the AdDoctor mascot (public/mascot/*.webp: flat sticker art, blue, white and black only, so it can be recoloured). Decorative, so screen readers skip it. */
-const MASCOT_SIZE = { wave: [523, 640], look: [539, 640], clipboard: [500, 640], shrug: [669, 640] };
+// Pixel sizes of the files: 3x the largest size each is shown at (h-28, 112 px; shrug also 150 px on 404.html).
+const MASCOT_SIZE = { wave: [294, 360], look: [303, 360], clipboard: [281, 360], shrug: [470, 450] };
 const Mascot = ({ pose = "wave", className = "h-24" }) => (
   <img src={`${import.meta.env.BASE_URL}mascot/${pose}.webp`} width={MASCOT_SIZE[pose][0]} height={MASCOT_SIZE[pose][1]} alt="" aria-hidden="true" draggable={false} className={`w-auto select-none ${className}`} />
 );
