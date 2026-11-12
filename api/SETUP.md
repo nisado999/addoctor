@@ -79,6 +79,8 @@ worker.js limits itself. Set these in Cloudflare > addoctor-api > Settings > Var
 - RATE_PER_HOUR (optional, default 60): paid calls one visitor may make per hour. A 30-post Social Pack needs about 35.
 - DAILY_CAP (optional, default 300): paid calls per day across all visitors.
 - MAX_ADS (optional, default 200, never above 800): ads read per Competitor Spy analysis.
-The counters use Cloudflare's edge cache, so they are approximate. The hard stop for money is a spending cap at each
+The counters are exact and worldwide once `supabase/rate_limits.sql` has been run (Supabase > SQL Editor > paste >
+Run; needs SUPABASE_SERVICE_ROLE on the Worker). Until then the Worker falls back to Cloudflare's edge cache, which every
+data centre keeps on its own, so a burst spread over many locations can get several times the limit. The hard stop for money is a spending cap at each
 provider: Apify (Settings > Billing > usage limit), Anthropic (Console > Limits) and Google AI Studio / Cloud billing budget.
 On Cloudflare's free plan the Worker itself cannot run up a charge: it stops at 100,000 requests a day.

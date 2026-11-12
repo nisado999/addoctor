@@ -10,6 +10,8 @@ Everything is built, tested and safe to ship with billing **off**. Nothing chang
 ## 1. Supabase: the credit ledger
 Dashboard > SQL Editor > New query > paste the whole of `supabase/billing.sql` > Run. It is safe to run twice. It creates `billing_accounts` and `credit_ledger` and the functions the Worker calls. Only the Worker can change balances.
 
+Then run `supabase/rate_limits.sql` the same way. It makes the Worker's rate limits one count worldwide instead of one per Cloudflare data centre. Without it the Worker still works, with the looser edge-cache counters.
+
 Then Project Settings > API > copy the **service_role** key (secret!).
 
 ## 2. Paddle: products and prices (sandbox)

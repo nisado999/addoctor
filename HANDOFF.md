@@ -86,3 +86,17 @@ When a video or image is replaced, give it a new file name (new id). GitHub Page
 - Answers and the last plan stay in localStorage addoctor.metaplan.v1. Copy and Download (.txt) use planText().
 - "Want Nisado to run this for you?" lead form at the end. It inserts into Supabase table agency_leads: RUN supabase/leads.sql ONCE in the SQL editor, or every send falls back to a pre-filled email link. Visitors can insert but never read; read leads in Table Editor. For an email per lead add a Database Webhook on INSERT (or Zapier/Make). Name, email and an optional booking link come from VITE_AGENCY_NAME / VITE_AGENCY_EMAIL / VITE_AGENCY_BOOKING. GTM events: plan_start, plan_made, plan_copy, plan_download, agency_lead, agency_lead_failed, agency_booking.
 - Privacy page has a row for the lead form. No landing page in public/ yet (would help SEO: "meta ads plan generator").
+
+## Security pass (2026-11-12)
+Full review of api/worker.js, supabase/*.sql and the client. No critical or high findings in our own code. Fixed:
+- Rate limits are now counted in Supabase (`supabase/rate_limits.sql`, function `rate_check`, service_role only), one count worldwide and atomic. `overLimit()` in the Worker falls back to the old edge-cache `bump()` until the SQL is run or when Supabase is unreachable. `/log` stays on the edge cache on purpose (it is unauthenticated, so it must not write to the database).
+- SSRF: `safeUrl()` now parses the address instead of matching a prefix: blocks carrier-grade NAT 100.64/10 (Alibaba's metadata address), multicast, broadcast, benchmark and documentation ranges, `.lan`/`.home.arpa`/`.intranet`, trailing-dot names, IPv6 literals and any non-default port. `publicHost()` looks each new name up over DNS-over-HTTPS (cloudflare-dns.com, cached 5 minutes, ad-image CDNs skipped) and refuses names that point at a private address. All outside fetches (getText, loadRef, readAdImages) go through `fetchOutside()`, which re-checks every redirect hop.
+- Every secret or signature comparison uses `sameText()` (constant time): free-edit grants, sealed runs, the Paddle signature, APP_KEY.
+- Sign-in cache is 60 s (was 5 min) and is cleared when an account is deleted.
+- Every Claude call has a system note: copied site, ad and post text is data, never instructions.
+- API answers carry `X-Content-Type-Options: nosniff`.
+- `image-size` (pulled in by pptxgenjs, never actually loaded by it) is overridden to ^2.0.3 in package.json. `npm audit --omit=dev` is clean. What remains is dev-only tooling (shadcn CLI, Vite's esbuild) and needs breaking upgrades.
+- Tests: `tools/security.test.mjs` (19 attack tests), run by `npm test` with the Meta tests.
+Already in place and checked: RLS on every table, idempotent ledger, constant-time Paddle check, HMAC OAuth state, AES-GCM Meta tokens, CSP with a hashed inline script, frame guard in src/main.jsx, no dangerous DOM sinks.
+To do by hand: paste the new api/worker.js into Cloudflare (addoctor-api > Edit code > Deploy), run supabase/rate_limits.sql, and check ALLOW_ORIGIN is not `*` (see the note on line 17).
+

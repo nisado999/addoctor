@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src",
-    "test": "node --test tools/meta.test.mjs",
+    "test": "node --test tools/meta.test.mjs tools/security.test.mjs",
     "library": "node tools/build-library.mjs"
   },
   "dependencies": {
@@ -39,5 +39,8 @@
     "sharp": "^0.35.5",
     "tailwindcss": "3.4",
     "vite": "^5.4.0"
+  },
+  "overrides": {
+    "image-size": "^2.0.3"
   }
 }
