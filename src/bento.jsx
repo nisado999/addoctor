@@ -10,7 +10,6 @@ import SplitText from "./components/bits/SplitText/SplitText.jsx";
    drifting across the page, and four flat links into the tools. No cards, no tints, no made-up figures: the only
    numbers are counted from the gallery itself. */
 
-const IS_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
 const COUNT = TEMPLATES.length;
 const RANK = new Map(FEATURED_TOP.map((id, i) => [id, i]));
 // The carousel is the top of the Featured order: my best generated ads (see featuredOrder.js).
@@ -223,10 +222,12 @@ function Stream({ onPick }) {
         {[...STREAM, ...STREAM].map((t, i) => (
           <button
             key={t.id + "-" + i} type="button" onClick={() => onPick(t)} tabIndex={i >= STREAM.length ? -1 : 0} aria-hidden={i >= STREAM.length ? "true" : undefined}
-            aria-label={`Use the preset ${t.title}`}
             className={`ad-card relative aspect-[4/5] w-[190px] shrink-0 overflow-hidden rounded-[14px] bg-[#F6F6F6] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)] ${ring}`}
           >
-            <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact className="h-full w-full object-cover" />
+            {/* The first card is the page's largest image, so the two a phone shows at load are fetched at once and
+                ahead of everything else. The rest stay lazy: on a wide screen the ones in view still load straight away,
+                and eager ones off a phone's screen only compete with the first. */}
+            <TemplateImage src={TEMPLATE_IMGS[t.id]} alt="" title={t.title} compact decorative lazy={i >= 2} priority={i < 2} className="h-full w-full object-cover" />
             <span className="xray pointer-events-none absolute inset-0" aria-hidden="true">
               <span className="scan-sweep absolute inset-x-0 top-0 h-[2px] bg-blue-500 shadow-[0_0_14px_3px_rgba(43,89,255,.55)]" style={{ "--h": "234px" }} />
               <span className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent" />
@@ -240,7 +241,11 @@ function Stream({ onPick }) {
             </span>
             {/* The niche the format was made for; there is no per-ad score to show, so none is made up. */}
             <span className="absolute left-3 top-3 max-w-[60%] truncate rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-[#111] shadow-[0_2px_8px_rgba(0,0,0,.12)]">{t.label}</span>
-            <span className="ad-badge absolute bottom-3 left-1/2 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] shadow-[0_4px_14px_rgba(0,0,0,0.18)]">Use Preset →</span>
+            {/* The button is named by its own text: the niche chip, the preset's title (for screen readers only) and
+                "Use Preset", so the words on the card are part of its name (WCAG 2.5.3, label in name). The photo, or the
+                slate panel if the photo fails, is decorative here, so the title is never said twice. */}
+            <span className="sr-only">: {t.title}, </span>
+            <span className="ad-badge absolute bottom-3 left-1/2 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-[#111] shadow-[0_4px_14px_rgba(0,0,0,0.18)]">Use Preset<span aria-hidden="true"> →</span></span>
           </button>
         ))}
       </div>

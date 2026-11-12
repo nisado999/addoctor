@@ -232,6 +232,16 @@ var LIB = {
   },
 };
 
+/* The one fix for the weakest vital sign: the worst leak in the same area (Hook, Clarity, Offer, CTA), or null. Every
+   leak's detail ends with what to do, so its last sentence is the action. leaks must be worst first. (A report opened
+   from the Vault is analysed again from its saved input, so every report carries r.fix.) */
+function fixFor(weakest, leaks) {
+  var l = weakest && Array.isArray(leaks) ? leaks.filter(function (x) { return x && x.title && String(x.area).toLowerCase() === weakest.key; })[0] : null;
+  if (!l) return null;
+  var steps = splitSentences(String(l.detail || "")).map(function (x) { return x.trim(); }).filter(Boolean);
+  return { title: l.title, action: steps[steps.length - 1] || String(l.detail || "") };
+}
+
 function analyze(input) {
   var brand = (input.brand || "").trim();
   var h = (input.headline || "").trim();
@@ -316,7 +326,7 @@ function analyze(input) {
   }
   if (!h) leak("Hook", 96, "No headline to stop the scroll", "Without a headline the creative has nothing to make a cold viewer stop. Lead with the outcome or the pain in under 40 characters.");
   if (generic.length)
-    leak("Hook", 86, "Generic opener", "\"" + clip(h, 60) + "\" leads with \"" + generic[0].toLowerCase() + "\", a word every competitor in the feed also uses. Nothing in it gives a viewer a reason to stop.");
+    leak("Hook", 86, "Generic opener", "\"" + clip(h, 60) + "\" leads with \"" + generic[0].toLowerCase() + "\", a word every competitor in the feed also uses. Nothing in it gives a viewer a reason to stop. Lead with the result or the pain instead.");
   if (h && !STOP_RE.test(h) && !/\?/.test(h) && !/\d/.test(h))
     leak("Hook", 72, "Weak curiosity gap in the headline", "\"" + clip(h, 60) + "\" states a fact but never opens a question the viewer needs answered. Add a number, a question or a contrarian claim.");
   if (c && (!OUTCOME_RE.test(firstTwo) || opensWeak))
@@ -351,13 +361,14 @@ function analyze(input) {
   if (align.flags.acMismatch)
     leak("Hook", 76, "Creative and copy point in different directions", "The creative shows \"" + align.flags.acMismatch + "\", but the copy never mentions it. Name what the viewer is looking at.");
   if (type === "video")
-    leak("Hook", 34, "Hook the first 3 seconds", "On video, put the hook on screen as text in the first 3 seconds instead of a spoken intro. Most viewers watch muted.");
+    leak("Hook", 34, "Hook the first 3 seconds", "Most viewers watch muted, so put the hook on screen as text in the first 3 seconds instead of a spoken intro.");
   else
-    leak("Hook", 34, "Keep one focal point", "On a static, one focal point and fewer than 7 words of overlay text stop the scroll better than a busy layout.");
+    leak("Hook", 34, "Keep one focal point", "Keep one focal point and fewer than 7 words of overlay text: on a static, that stops the scroll better than a busy layout.");
 
   leak("Hook", 20, "Only one angle is being tested", "Even a healthy ad fatigues. Build 3 to 5 angles (pain point, outcome, social proof, contrarian) and test them against each other.");
   leak("Clarity", 18, "Proof can sit higher", "Put one verified customer quote or a hard number in the first line of copy, before the feature list.");
   leaks.sort(function (a, b) { return b.sev - a.sev; });
+  var allLeaks = leaks;   // every leak found, worst first; the report lists the top 3
   leaks = leaks.slice(0, 3);
 
   /* Prescription */
@@ -379,6 +390,8 @@ function analyze(input) {
     return v;
   });
   var weakest = vitals.slice().sort(function (a, b) { return a.value - b.value; })[0];
+  // Taken from every leak, so the fix is there even when its area did not make the top 3.
+  var fix = fixFor(weakest, allLeaks);
 
   return {
     score: score,
@@ -386,6 +399,7 @@ function analyze(input) {
     tone: scoreTone(score),
     vitals: vitals,
     weakest: weakest,
+    fix: fix,
     leaks: leaks,
     headlines: headlines,
     hooks: hooks,
@@ -399,6 +413,7 @@ function prescriptionText(input, r) {
   L.push("AdDoctor: The Doctor's Prescription");
   L.push((input.brand ? input.brand + " | " : "") + (input.type === "video" ? "Short-Form Video" : "Static Image"));
   L.push("Ad Health Score: " + r.score + "/100 (" + r.status + ")");
+  if (r.fix) L.push("Start here: " + r.fix.title + ". " + r.fix.action);
   L.push("");
   L.push("VITAL SIGNS");
   r.vitals.forEach(function (v) {

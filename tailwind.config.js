@@ -12,8 +12,11 @@ const themed = (id, light, dark) => {
 const SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 const scale = (name, light, dark, bg) => Object.fromEntries(SHADES.map((n) => [n, themed(`${bg ? "b" : "c"}-${name}-${n}`, light[n], (bg && bg[n]) || dark[n])]));
 
-const slateLight = { 50: "#faf9f7", 100: "#f3f1ed", 200: "#e7e4de", 300: "#d4d0c8", 400: "#a29d94", 500: "#6f6a62", 600: "#55514a", 700: "#3d3a35", 800: "#252320", 900: "#151412", 950: "#0b0a09" };
-const slateDark = { 50: "#0b0a09", 100: "#151412", 200: "#262421", 300: "#3d3a35", 400: "#7d786f", 500: "#9a958c", 600: "#b5b0a6", 700: "#d4d0c8", 800: "#e7e4de", 900: "#f3f1ed", 950: "#faf9f7" };
+// 400 is the muted text colour (labels, captions, placeholders). It is the lightest tone of this grey that reads at
+// WCAG AA (4.5:1) on the white and near-white surfaces: light #767169 is 4.8:1 on white (was #a29d94, 2.7:1), dark
+// #8b867d is 5.1:1 on the dark page (was #7d786f, 4.2:1).
+const slateLight = { 50: "#faf9f7", 100: "#f3f1ed", 200: "#e7e4de", 300: "#d4d0c8", 400: "#767169", 500: "#6f6a62", 600: "#55514a", 700: "#3d3a35", 800: "#252320", 900: "#151412", 950: "#0b0a09" };
+const slateDark = { 50: "#0b0a09", 100: "#151412", 200: "#262421", 300: "#3d3a35", 400: "#8b867d", 500: "#9a958c", 600: "#b5b0a6", 700: "#d4d0c8", 800: "#e7e4de", 900: "#f3f1ed", 950: "#faf9f7" };
 // Backgrounds are themed on their own: the near-black buttons (bg-slate-950 with white text) stay dark and readable.
 const slateBg = { 50: "#181715", 100: "#1f1d1b", 200: "#2a2825", 300: "#3d3a35", 400: "#55514a", 500: "#6f6a62", 600: "#55514a", 700: "#4a4640", 800: "#3d3a35", 900: "#34312c", 950: "#2c2a26" };
 const blueLight = { 50: "#f1f5ff", 100: "#e3eaff", 200: "#cad7ff", 300: "#a7bdff", 400: "#7a9bff", 500: "#4d77ff", 600: "#2b59ff", 700: "#1f43e0", 800: "#1d37b0", 900: "#1c3289", 950: "#131e52" };
@@ -36,6 +39,8 @@ export default {
       fontFamily: {
         sans: ['"Inter Tight"', '"Inter Tight Fallback"', '"Inter Tight Fallback Android"', "ui-sans-serif", "system-ui", "-apple-system", '"Segoe UI"', "sans-serif"],
         display: ['"Archivo"', '"Archivo Fallback"', '"Archivo Fallback Android"', '"Inter Tight"', "system-ui", "sans-serif"],
+        // Doc's handwriting (Caveat 600, loaded in main.jsx). Only for short notes: a few words, never body text.
+        hand: ['"Caveat"', '"Segoe Script"', "cursive"],
       },
       /* The whole app is drawn in two families: a warm stone neutral (under the name slate, so every screen and
          dialog picks it up) and one electric accent (under blue, close to the logo's blue but louder). */

@@ -8,7 +8,9 @@ import { PLAN_NAME, PLAN_CREDITS, PRO_PLANS, loadAccount } from "./billing.js";
 const LOGO_SRC = import.meta.env.BASE_URL + "logo.png";
 
 /* Doc, the AdDoctor mascot (public/mascot/*.webp: flat sticker art, blue, white and black only, so it can be recoloured). Decorative, so screen readers skip it. */
-const MASCOT_SIZE = { wave: [523, 640], look: [539, 640], clipboard: [500, 640], shrug: [669, 640] };
+// Pixel sizes of the files (3x the largest size each is shown at: h-28, 112 px; shrug also 150 px on 404.html). The
+// width and height only give the aspect ratio here (CSS sets the height); 404.html repeats the shrug numbers.
+const MASCOT_SIZE = { wave: [294, 360], look: [303, 360], clipboard: [281, 360], shrug: [470, 450] };
 const Mascot = ({ pose = "wave", className = "h-24" }) => (
   <img src={`${import.meta.env.BASE_URL}mascot/${pose}.webp`} width={MASCOT_SIZE[pose][0]} height={MASCOT_SIZE[pose][1]} alt="" aria-hidden="true" draggable={false} className={`w-auto select-none ${className}`} />
 );
@@ -65,11 +67,14 @@ const cardWebp = (src) => (/templates\/[^/]+\.jpg$/.test(src) ? src.replace(/tem
 const altFor = (t) => (t.type !== "video" && t.headline ? `${t.title} ad with the headline "${t.headline}"` : `${t.title} ad`);
 
 /* What shows when a template's media cannot be loaded: an old tab after a publish (files are renamed), or a dropped
-   connection. A plain slate panel with the title reads as "missing", where a broken image would read as "broken". */
-function MediaFallback({ title, label, compact = false }) {
-  if (compact) return <span role="img" aria-label={label || title} className="absolute inset-0 bg-slate-200" />;
+   connection. A plain slate panel with the title reads as "missing", where a broken image would read as "broken".
+   "decorative": the card around it already names the template, so the panel is hidden from screen readers rather than
+   saying the title a second time. */
+function MediaFallback({ title, label, compact = false, decorative = false }) {
+  const named = decorative ? { "aria-hidden": "true" } : { role: "img", "aria-label": label || title };
+  if (compact) return <span {...named} className="absolute inset-0 bg-slate-200" />;
   return (
-    <span role="img" aria-label={label || title} className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-slate-100 to-slate-200 p-4 text-center">
+    <span {...named} className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-slate-100 to-slate-200 p-4 text-center">
       <Icon.Image className="h-6 w-6 text-slate-400" aria-hidden="true" />
       <span aria-hidden="true" className="line-clamp-3 text-[13px] font-semibold leading-snug text-slate-600">{title}</span>
     </span>
@@ -77,10 +82,10 @@ function MediaFallback({ title, label, compact = false }) {
 }
 
 /* A template photo: the card WebP first, the JPEG if that fails, then the slate panel. */
-function TemplateImage({ src, alt, title, focus, lazy = true, priority = false, compact = false, className = "cr-photo-img" }) {
+function TemplateImage({ src, alt, title, focus, lazy = true, priority = false, compact = false, decorative = false, className = "cr-photo-img" }) {
   const [stage, setStage] = useState(0); // 0: WebP with JPEG fallback, 1: JPEG only, 2: nothing loaded
   const webp = stage === 0 ? cardWebp(src) : "";
-  if (!src || stage === 2) return <MediaFallback title={title} label={alt} compact={compact} />;
+  if (!src || stage === 2) return <MediaFallback title={title} label={alt} compact={compact} decorative={decorative} />;
   const img = (
     <img
       key={stage} src={src} alt={alt} width="360" height="450" draggable="false"

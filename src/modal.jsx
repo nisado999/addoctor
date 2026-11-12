@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { SAMPLES } from "./data";
-import { Icon, Creative, pill } from "./ui";
+import { Icon, Creative, pill, Mascot } from "./ui";
 import { readAsset, renderSampleAsset, AssetZone } from "./asset";
 import { analyze, prescriptionText } from "./analysis.js";
 import { TONE, copyText, inputKey, field } from "./shared.js";
@@ -16,21 +16,45 @@ function useMounted(delay = 60) {
   return on;
 }
 
+const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* Counts from 0 up to target in step with the ring (same start delay, same length, ease-out). With reduced motion
+   it shows the final number straight away. */
+function useCountUp(target, delay = 60, ms = 1100) {
+  const [n, setN] = useState(() => (reducedMotion() ? target : 0));
+  useEffect(() => {
+    if (reducedMotion()) { setN(target); return undefined; }
+    let raf = 0, start = null;
+    const tick = (t) => {
+      if (start == null) start = t;
+      const p = Math.min(1, (t - start) / ms);
+      setN(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    const id = setTimeout(() => { raf = requestAnimationFrame(tick); }, delay);
+    return () => { clearTimeout(id); cancelAnimationFrame(raf); };
+  }, [target, delay, ms]);
+  return n;
+}
+
 function ScoreRing({ score, tone }) {
   const on = useMounted();
+  const shown = useCountUp(score);
+  const calm = reducedMotion();
   const r = 52, C = 2 * Math.PI * r;
   return (
     <div className="relative h-36 w-36 shrink-0">
       <svg viewBox="0 0 120 120" className="h-36 w-36 -rotate-90" role="img" aria-label={`Ad health score ${score} out of 100`}>
-        <circle cx="60" cy="60" r={r} fill="none" stroke="#E2E8F0" strokeWidth="10" />
+        {/* The track follows the theme (warm stone in light, near-black in dark). */}
+        <circle cx="60" cy="60" r={r} fill="none" className="stroke-slate-200" strokeWidth="10" />
         <circle
           cx="60" cy="60" r={r} fill="none" stroke={TONE[tone].hex} strokeWidth="10" strokeLinecap="round"
-          strokeDasharray={C} strokeDashoffset={on ? C * (1 - score / 100) : C}
-          style={{ transition: "stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)" }}
+          strokeDasharray={C} strokeDashoffset={on || calm ? C * (1 - score / 100) : C}
+          style={{ transition: calm ? "none" : "stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)" }}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl font-semibold tabular-nums tracking-tight text-slate-900">{score}</span>
+      <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
+        <span className="text-4xl font-semibold tabular-nums tracking-tight text-slate-900">{shown}</span>
         <span className="text-xs font-medium text-slate-400">out of 100</span>
       </div>
     </div>
@@ -79,16 +103,28 @@ function HookParts({ parts, asset }) {
 function Report({ input, r }) {
   const on = useMounted();
   const tone = TONE[r.tone];
+  const fix = r.fix;
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 md:grid-cols-[minmax(0,300px)_1fr]">
-        <section className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+        {/* Only as tall as its content, and it stays in view while the vital signs scroll past on wide screens. */}
+        <section className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm md:sticky md:top-2 md:self-start">
           <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">Ad Health Score</p>
           <div className="mt-4"><ScoreRing score={r.score} tone={r.tone} /></div>
           <span className={`mt-4 rounded-full px-3 py-1 text-xs font-semibold ${tone.chip}`}>{r.status}</span>
           <p className="mt-3 text-[13px] leading-relaxed text-slate-500">
             Weakest vital sign: <span className="font-semibold text-slate-700">{r.weakest.label}</span> at {r.weakest.value}%. Fix that first.
           </p>
+          {fix && (
+            <figure className="mt-5 w-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 pb-4 pt-3 text-left">
+              <figcaption className="flex items-end gap-2.5">
+                <Mascot pose="clipboard" className="-mb-1 h-12 shrink-0" />
+                <span className="-rotate-2 font-hand text-[23px] font-semibold leading-none text-blue-700">Start here</span>
+              </figcaption>
+              <p className="mt-3 text-[13px] font-semibold text-slate-900">{fix.title}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-600">{fix.action}</p>
+            </figure>
+          )}
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -140,7 +176,7 @@ function Report({ input, r }) {
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-blue-100 bg-slate-100/40 p-6">
+      <section className="rounded-2xl border border-blue-100 bg-slate-100/40 p-6 dark:border-slate-200">
         <div className="flex items-center gap-2.5">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-slate-950 text-xs font-bold text-white">Rx</span>
           <h3 className="text-base font-semibold tracking-tight text-slate-900">The Doctor's Prescription</h3>
@@ -252,10 +288,11 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     if (closeRef.current) closeRef.current.focus();
+    const pending = timers.current;   // only ever pushed to, never replaced, so this is the live list
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
-      timers.current.forEach((t) => (clearTimeout(t), clearInterval(t)));
+      pending.forEach((t) => (clearTimeout(t), clearInterval(t)));
     };
   }, [onClose]);
 
@@ -361,7 +398,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
           </button>
         </header>
 
-        <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50">
+        <div ref={bodyRef} tabIndex={0} role="region" aria-label="Your ad and its report" className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-slate-900/15">
           {stage === "input" && (
             <div className={`grid gap-6 px-6 py-6 md:px-8 ${tpl ? "md:grid-cols-[minmax(0,280px)_1fr]" : ""}`}>
               {tpl && (
@@ -499,7 +536,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
               </button>
               <button
                 onClick={() => !saved && onSave(snap, report)} disabled={saved}
-                className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 ${saved ? "cursor-default bg-emerald-50 text-emerald-700 shadow-none" : "bg-slate-950 text-white shadow-slate-900/20 hover:bg-slate-800"}`}
+                className={`order-first inline-flex basis-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/25 sm:order-none sm:basis-auto ${saved ? "cursor-default bg-emerald-50 text-emerald-700 shadow-none" : "bg-slate-950 text-white shadow-slate-900/20 hover:bg-slate-800"}`}
               >
                 {saved ? <Icon.Check className="h-4 w-4" /> : <Icon.Bookmark className="h-4 w-4" />}
                 {saved ? "Saved to Vault" : "Save to Vault"}
