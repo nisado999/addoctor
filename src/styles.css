@@ -301,7 +301,7 @@ button, [role="button"], a, select { touch-action: manipulation; }
 .sx-step + .sx-step { border-top: 1px solid rgba(21, 20, 18, .08); }
 .sx-step { padding: 22px 0; }
 .sx-step:first-child { padding-top: 0; }
-.sx-num { display: grid; place-items: center; flex: none; width: 22px; height: 22px; margin-top: 1px; border-radius: 99px; font: 600 11px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .04em; color: #9a968f; transition: background-color .5s var(--ease), color .5s var(--ease), transform .6s var(--ease); }
+.sx-num { display: grid; place-items: center; flex: none; width: 22px; height: 22px; margin-top: 1px; border-radius: 99px; font: 600 11px/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .04em; color: rgb(var(--c-slate-400)); transition: background-color .5s var(--ease), color .5s var(--ease), transform .6s var(--ease); }
 .sx-num.is-done { background: #151412; color: #fff; transform: scale(1.04); }
 .sx-thumb { box-shadow: 0 0 0 1px rgba(21, 20, 18, .1), 0 12px 22px -14px rgba(21, 20, 18, .45); animation: sx-phase .7s var(--ease) backwards; }
 .sx-drop { transition: border-color .4s var(--ease), background-color .4s var(--ease), box-shadow .5s var(--ease); }
@@ -316,7 +316,7 @@ button, [role="button"], a, select { touch-action: manipulation; }
 .sx-actions { border-top: 1px solid rgba(21, 20, 18, .08); }
 .sx-action { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 4px; text-align: left; border-bottom: 1px solid rgba(21, 20, 18, .08); transition: padding .5s var(--ease), background-color .4s var(--ease); }
 .sx-action b { display: block; font-size: 15px; font-weight: 600; color: #151412; }
-.sx-action small { display: block; margin-top: 2px; font-size: 12px; color: #8b877f; }
+.sx-action small { display: block; margin-top: 2px; font-size: 12px; color: rgb(var(--c-slate-400)); }   /* the muted text tone, AA in both themes */
 .sx-action i { font-style: normal; font-size: 18px; color: #151412; transition: transform .5s var(--ease); }
 .sx-action:not(:disabled):hover { padding-left: 12px; padding-right: 0; }
 .sx-action:not(:disabled):hover i { transform: translateX(6px); }
