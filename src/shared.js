@@ -1,9 +1,10 @@
 /* Small helpers used by several screens. Kept apart so each screen can load on demand. */
 
 const TONE = {
-  good: { text: "text-emerald-600", bg: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700", hex: "#10B981" },
-  warn: { text: "text-amber-600", bg: "bg-amber-500", chip: "bg-amber-50 text-amber-700", hex: "#F59E0B" },
-  bad: { text: "text-rose-600", bg: "bg-rose-500", chip: "bg-rose-50 text-rose-700", hex: "#F43F5E" },
+  // text is one shade darker than the bar so small coloured numbers read at WCAG AA (4.5:1) on white and stone.
+  good: { text: "text-emerald-700", bg: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700", hex: "#10B981" },
+  warn: { text: "text-amber-700", bg: "bg-amber-500", chip: "bg-amber-50 text-amber-700", hex: "#F59E0B" },
+  bad: { text: "text-rose-700", bg: "bg-rose-500", chip: "bg-rose-50 text-rose-700", hex: "#F43F5E" },
 };
 
 async function copyText(text) {

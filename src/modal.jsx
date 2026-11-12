@@ -409,7 +409,7 @@ function ExamineModal({ init, onClose, credits, onSpend, onSave, savedKeys, noti
           </button>
         </header>
 
-        <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50">
+        <div ref={bodyRef} tabIndex={0} role="region" aria-label="Your ad and its report" className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50 focus:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-slate-900/15">
           {stage === "input" && (
             <div className={`grid gap-6 px-6 py-6 md:px-8 ${tpl ? "md:grid-cols-[minmax(0,280px)_1fr]" : ""}`}>
               {tpl && (
